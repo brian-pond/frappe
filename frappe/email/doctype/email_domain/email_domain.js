@@ -5,6 +5,17 @@ frappe.ui.form.on("Email Domain", {
 	},
 
 	refresh:function(frm){
+		
+		if(1 == 1) {
+			frm.add_custom_button(__('Validate Email'), () => {
+				/*erpnext.utils.update_child_items({
+					frm: frm,
+					child_docname: "items",
+					child_doctype: "Sales Order Detail",
+					cannot_add_row: false,
+* 				*/
+				})
+		}
 		if (frm.doc.email_id){
 			frm.set_value("domain_name",frm.doc.email_id.split("@")[1])
 		}

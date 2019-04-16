@@ -20,8 +20,9 @@ frappe.ui.form.Sidebar = Class.extend({
 		this.make_attachments();
 		this.make_shared();
 		this.make_viewers();
-		this.make_review();
-
+		if (frappe.get_single('Energy Point Settings').enabled) {
+			this.make_review();
+		}
 		this.make_tags();
 		this.make_like();
 		this.make_follow();

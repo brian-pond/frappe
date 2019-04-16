@@ -16,6 +16,7 @@ class EmailDomain(Document):
 
 
 	def validate(self):
+		print("-------> Called the validate() on EmailDomain")
 		"""Validate email id and check POP3/IMAP and SMTP connections is enabled."""
 		if self.email_id:
 			validate_email_address(self.email_id, True)
@@ -60,6 +61,7 @@ class EmailDomain(Document):
 
 	def on_update(self):
 		"""update all email accounts using this domain"""
+		print("-------> Called the update() function on EmailDomain")
 		for email_account in frappe.get_all("Email Account",
 		filters={"domain": self.name}):
 

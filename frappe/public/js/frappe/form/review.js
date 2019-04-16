@@ -7,12 +7,15 @@ frappe.ui.form.Review = class Review {
 	constructor({parent, frm}) {
 		this.parent = parent;
 		this.frm = frm;
+		console.warn('<BrianPond> Stopping this energy points in its tracks...');
+		/*
 		this.fetch_energy_points()
 			.then(() => {
 				this.make_review_container();
 				this.add_review_button();
 				this.update_reviewers();
 			});
+ 		*/
 	}
 	fetch_energy_points() {
 		return frappe.xcall('frappe.social.doctype.energy_point_log.energy_point_log.get_energy_points', {
