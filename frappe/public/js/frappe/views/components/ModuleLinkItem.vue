@@ -14,7 +14,7 @@
 		>
 			<div class="arrow"></div>
 			<h3 class="popover-title" style="display: none;"></h3>
-			<div class="popover-content">
+			<div class="popover-content" style="padding: 12px;">
 				<div class="small text-muted">{{ __("You need to create these first: ") }}</div>
 				<div class="small">{{ __(incomplete_dependencies.join(", ")) }}</div>
 			</div>
@@ -92,6 +92,7 @@ a:hover, a:focus {
 
 .link-content {
 	flex: 1;
+	font-size: 1.1em;
 }
 
 .popover {

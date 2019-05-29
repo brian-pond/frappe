@@ -450,17 +450,7 @@ frappe.views.CommunicationComposer = Class.extend({
 
 
 		if(form_values.attach_document_print) {
-			if (cur_frm.print_preview.is_old_style(form_values.select_print_format || "")) {
-				cur_frm.print_preview.with_old_style({
-					format: form_values.select_print_format,
-					callback: function(print_html) {
-						me.send_email(btn, form_values, selected_attachments, print_html);
-					}
-				});
-			} else {
-				me.send_email(btn, form_values, selected_attachments, null, form_values.select_print_format || "");
-			}
-
+			me.send_email(btn, form_values, selected_attachments, null, form_values.select_print_format || "");
 		} else {
 			me.send_email(btn, form_values, selected_attachments);
 		}
@@ -549,6 +539,7 @@ frappe.views.CommunicationComposer = Class.extend({
 				print_format: print_format,
 				sender: form_values.sender,
 				sender_full_name: form_values.sender?frappe.user.full_name():undefined,
+				email_template: form_values.email_template,
 				attachments: selected_attachments,
 				_lang : me.lang_code,
 				read_receipt:form_values.send_read_receipt,

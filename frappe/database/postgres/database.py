@@ -30,6 +30,7 @@ class PostgresDatabase(Database):
 	REGEX_CHARACTER = '~'
 
 	def setup_type_map(self):
+		self.db_type = 'postgres'
 		self.type_map = {
 			'Currency':		('decimal', '18,6'),
 			'Int':			('bigint', None),
@@ -64,10 +65,10 @@ class PostgresDatabase(Database):
 
 	def get_connection(self):
 		# warnings.filterwarnings('ignore', category=psycopg2.Warning)
-		conn = psycopg2.connect('host={} dbname={}'.format(self.host, self.user))
+		conn = psycopg2.connect('host={} dbname={} user={} password={} port={}'.format(
+			self.host, self.user, self.user, self.password, self.port
+		))
 		conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT) # TODO: Remove this
-		# conn = psycopg2.connect('host={} dbname={} user={} password={}'.format(self.host,
-		# 	self.user, self.user, self.password))
 
 		return conn
 

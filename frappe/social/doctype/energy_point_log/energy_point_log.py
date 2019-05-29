@@ -11,8 +11,15 @@ from frappe.utils import cint, get_fullname, getdate
 
 class EnergyPointLog(Document):
 	def validate(self):
+		self.map_milestone_reference()
 		if self.type in ['Appreciation', 'Criticism'] and self.user == self.owner:
 			frappe.throw(_('You cannot give review points to yourself'))
+
+	def map_milestone_reference(self):
+		# link energy point to the original reference, if set by milestone
+		if self.reference_doctype == 'Milestone':
+			self.reference_doctype, self.reference_name = frappe.db.get_value('Milestone', self.reference_name,
+				['reference_type', 'reference_name'])
 
 	def after_insert(self):
 		alert_dict = get_alert_dict(self)
@@ -24,36 +31,51 @@ class EnergyPointLog(Document):
 		frappe.publish_realtime('update_points', after_commit=True)
 
 def get_alert_dict(doc):
-	alert_dict = frappe._dict({
-		'message': '',
-		'indicator': 'green'
-	})
+	alert_dict = frappe._dict()
 	owner_name = get_fullname(doc.owner)
 	doc_link = frappe.get_desk_link(doc.reference_doctype, doc.reference_name)
-	points = frappe.bold(doc.points)
+	points = doc.points
+	bold_points = frappe.bold(doc.points)
 	if doc.type == 'Auto':
-		alert_dict.message=_('You gained {} points').format(points)
+		if points == 1:
+			message = _('You gained {0} point')
+		else:
+			message = _('You gained {0} points')
+		alert_dict.message = message.format(bold_points)
+		alert_dict.indicator = 'green'
 	elif doc.type == 'Appreciation':
-		alert_dict.message = _('{} appreciated your work on {} with {} points').format(
+		if points == 1:
+			message = _('{0} appreciated your work on {1} with {2} point')
+		else:
+			message = _('{0} appreciated your work on {1} with {2} points')
+		alert_dict.message = message.format(
 			owner_name,
 			doc_link,
-			points
+			bold_points
 		)
+		alert_dict.indicator = 'green'
 	elif doc.type == 'Criticism':
-		alert_dict.message = _('{} criticized your work on {} with {} points').format(
+		if points == 1:
+			message = _('{0} criticized your work on {1} with {2} point')
+		else:
+			message = _('{0} criticized your work on {1} with {2} points')
+
+		alert_dict.message = message.format(
 			owner_name,
 			doc_link,
-			points
+			bold_points
 		)
 		alert_dict.indicator = 'red'
 	elif doc.type == 'Revert':
-		alert_dict.message = _('{} reverted your points on {}').format(
+		if points == 1:
+			message = _('{0} reverted your point on {1}')
+		else:
+			message = _('{0} reverted your points on {1}')
+		alert_dict.message = message.format(
 			owner_name,
 			doc_link,
 		)
 		alert_dict.indicator = 'red'
-	else:
-		alert_dict = {}
 
 	return alert_dict
 
@@ -109,26 +131,35 @@ def get_energy_points(user):
 @frappe.whitelist()
 def get_user_energy_and_review_points(user=None, from_date=None, as_dict=True):
 	conditions = ''
-	values = []
+	given_points_condition = ''
+	values = frappe._dict()
 	if user:
-		conditions = 'WHERE `user` = %s'
-		values.append(user)
+		conditions = 'WHERE `user` = %(user)s'
+		values.user = user
 	if from_date:
 		conditions += 'WHERE' if not conditions else 'AND'
-		conditions += ' `creation` >= %s'
-		values.append(from_date)
+		given_points_condition += "AND `creation` >= %(from_date)s"
+		conditions += " `creation` >= %(from_date)s OR `type`='Review'"
+		values.from_date = from_date
 
 	points_list =  frappe.db.sql("""
 		SELECT
-			SUM(CASE WHEN `type`!= 'Review' THEN `points` ELSE 0 END) as energy_points,
-			SUM(CASE WHEN `type`='Review' THEN `points` ELSE 0 END) as review_points,
-			SUM(CASE WHEN `type`='Review' and `points` < 0 THEN ABS(`points`) ELSE 0 END) as given_points,
+			SUM(CASE WHEN `type` != 'Review' THEN `points` ELSE 0 END) AS energy_points,
+			SUM(CASE WHEN `type` = 'Review' THEN `points` ELSE 0 END) AS review_points,
+			SUM(CASE
+				WHEN `type`='Review' AND `points` < 0 {given_points_condition}
+				THEN ABS(`points`)
+				ELSE 0
+			END) as given_points,
 			`user`
 		FROM `tabEnergy Point Log`
 		{conditions}
 		GROUP BY `user`
 		ORDER BY `energy_points` DESC
-	""".format(conditions=conditions), values=values or (), as_dict=1)
+	""".format(
+		conditions=conditions,
+		given_points_condition=given_points_condition
+	), values=values, as_dict=1)
 
 	if not as_dict:
 		return points_list
@@ -238,7 +269,7 @@ def send_summary(timespan):
 
 def get_footer_message(timespan):
 	if timespan == 'Monthly':
-		return _("Stats based on last month's performance (from {} to {})")
+		return _("Stats based on last month's performance (from {0} to {1})")
 	else:
-		return _("Stats based on last week's performance (from {} to {})")
+		return _("Stats based on last week's performance (from {0} to {1})")
 
