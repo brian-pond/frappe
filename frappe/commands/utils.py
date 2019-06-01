@@ -702,10 +702,12 @@ def print_in_app_help_deprecation():
 	return
 
 commands = [
+        add_to_email_queue,
+	auto_deploy,
 	build,
+	_bulk_rename,
 	clear_cache,
 	clear_website_cache,
-	jupyter,
 	console,
 	destroy_all_sessions,
 	execute,
@@ -713,13 +715,17 @@ commands = [
 	export_doc,
 	export_fixtures,
 	export_json,
+	get_all_docs_apps,
+	get_docs_app,
 	get_version,
 	import_csv,
 	import_doc,
+	jupyter,
 	make_app,
-	mysql,
 	mariadb,
+	mysql,
 	postgres,
+	rebuild_global_search,
 	request,
 	reset_perms,
 	run_tests,
@@ -727,11 +733,8 @@ commands = [
 	run_setup_wizard_ui_test,
 	serve,
 	set_config,
-	show_config,
-	watch,
-	_bulk_rename,
-	add_to_email_queue,
 	setup_global_help,
 	setup_help,
-	rebuild_global_search
+	show_config,
+	watch
 ]

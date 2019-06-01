@@ -536,9 +536,11 @@ class DocType(Document):
 		# a DocType's name should not start with a number or underscore
 		# and should only contain letters, numbers and underscore
 		if six.PY2:
-			is_a_valid_name = re.match("^(?![\W])[^\d_\s][\w ]+$", name)
+			#is_a_valid_name = re.match("^(?![\W])[^\d_\s][\w ]+$", name)
+			is_a_valid_name = re.match("^(?![\W])[^\d_][\w][\S*]+$", name)	#BPond - No spaces alllowed in DocType names
 		else:
-			is_a_valid_name = re.match("^(?![\W])[^\d_\s][\w ]+$", name, flags = re.ASCII)
+			#is_a_valid_name = re.match("^(?![\W])[^\d_\s][\w ]+$", name, flags = re.ASCII)
+			is_a_valid_name = re.match("^(?![\W])[^\d_][\w][\S*]+$", name, flags = re.ASCII)	#BPond - No spaces alllowed in DocType names
 		if not is_a_valid_name:
 			frappe.throw(_("DocType's name should start with a letter and it can only consist of letters, numbers, spaces and underscores"), frappe.NameError)
 
