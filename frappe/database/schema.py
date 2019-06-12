@@ -128,6 +128,9 @@ class DBTable:
 		if self.is_new():
 			return
 
+		if not validate_table_name(self.table_name):
+			frappe.throw(_("Table {0} contains invalid characters.").format(self.table_name))
+
 		self.setup_table_columns()
 
 		columns = [frappe._dict({"fieldname": f, "fieldtype": "Data"}) for f in
@@ -298,6 +301,9 @@ def validate_column_name(n):
 		frappe.throw(_("Fieldname {0} cannot have special characters like {1}").format(
 			frappe.bold(cstr(n)), special_characters), frappe.db.InvalidColumnName)
 	return n
+
+def validate_table_name(name):
+	return re.match("^(?![\W])[^\d_][\w][\S*]+$", name)
 
 def validate_column_length(fieldname):
 	if len(fieldname) > frappe.db.MAX_COLUMN_LENGTH:

@@ -67,7 +67,7 @@ def get_expiry_message():
 
 	message = ""
 	if today > expires_on:
-		message = _("Your subscription has expired.")
+		message = _("Your subscription expired as of {0}. (System Managers message)").format(formatdate(expires_on))
 	else:
 		days_to_expiry = (expires_on - today).days
 
