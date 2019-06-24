@@ -2,64 +2,139 @@
 	<div class="profile-sidebar flex flex-column">
 		<div class="user-details">
 			<h3>{{ user.fullname }}</h3>
+			<p><a @click="view_energy_point_list(user)" class="text-muted">
+				{{ __("Energy Points") }}: {{ energy_points }}</a></p>
 			<p>{{ user.bio }}</p>
 			<div class="location" v-if="user.location">
-				<span class="text-muted"><i class="fa fa-map-marker">&nbsp;</i>{{ user.location }}</span>
+				<span class="text-muted">
+					<i class="fa fa-map-marker">&nbsp;</i>
+					{{ user.location }}
+				</span>
 			</div>
 			<div class="interest" v-if="user.interest">
-				<span class="text-muted"><i class="fa fa-puzzle-piece">&nbsp;</i>{{ user.interest }}</span>
+				<span class="text-muted">
+					<i class="fa fa-puzzle-piece">&nbsp;</i>
+					{{ user.interest }}
+				</span>
 			</div>
-			<a v-if="show_add_info_link" @click="go_to_user_settings">{{ __('Add your information') }}</a>
 		</div>
-		<a class="home-link" @click="go_to_home()"> ← {{ __('Back To Home') }}</a>
+		<a
+			class="edit-profile-link"
+			v-if="can_edit_profile"
+			@click="edit_profile()"
+		>{{ __('Edit Profile') }}</a>
 	</div>
 </template>
 <script>
 export default {
 	props: {
-		'user_id': String,
+		user_id: String
 	},
 	data() {
 		return {
-			'user': frappe.user_info(this.user_id),
-			'show_add_info_link': false
-		}
+			user: frappe.user_info(this.user_id),
+			can_edit_profile: frappe.social.is_session_user_page(),
+			energy_points: 0
+		};
 	},
-	created() {
-		if (frappe.social.is_session_user_page() && this.is_info_missing()) {
-			this.show_add_info_link = true;
-		}
+	mounted() {
+		frappe.xcall('frappe.social.doctype.energy_point_log.energy_point_log.get_user_energy_and_review_points', {user: this.user_id}).then(r => {
+			this.energy_points = r[this.user_id].energy_points;
+		});
 	},
 	methods: {
-		is_info_missing() {
-			return !this.user.location || !this.user.interest || !this.user.bio;
+		edit_profile() {
+			const edit_profile_dialog = new frappe.ui.Dialog({
+				title: __('Edit Profile'),
+				fields: [
+					{
+						fieldtype: 'Attach Image',
+						fieldname: 'user_image',
+						label: 'Profile Image',
+						reqd: 1
+					},
+					{
+						fieldtype: 'Data',
+						fieldname: 'interest',
+						label: 'Interests',
+						reqd: 1
+					},
+					{
+						fieldtype: 'Column Break'
+					},
+					{
+						fieldtype: 'Attach Image',
+						fieldname: 'banner_image',
+						label: 'Banner Image',
+						reqd: 1
+					},
+					{
+						fieldtype: 'Data',
+						fieldname: 'location',
+						label: 'Location',
+						reqd: 1
+					},
+					{
+						fieldtype: 'Section Break',
+						fieldname: 'Interest'
+					},
+					{
+						fieldtype: 'Small Text',
+						fieldname: 'bio',
+						label: 'Bio',
+						reqd: 1
+					}
+				],
+				primary_action: values => {
+					edit_profile_dialog.disable_primary_action();
+					frappe
+						.xcall('frappe.core.doctype.user.user.update_profile_info', {
+							profile_info: values
+						})
+						.then(user => {
+							user.image = user.user_image;
+							let user_info = frappe.user_info(this.user_id);
+							this.user = Object.assign(user_info, user);
+							this.$root.$emit('user_image_updated');
+							edit_profile_dialog.hide();
+						})
+						.finally(() => {
+							edit_profile_dialog.enable_primary_action();
+						});
+				},
+				primary_action_label: __('Save')
+			});
+			edit_profile_dialog.set_values({
+				user_image: this.user.image,
+				banner_image: this.user.banner_image,
+				location: this.user.location,
+				interest: this.user.interest,
+				bio: this.user.bio
+			});
+			edit_profile_dialog.show();
 		},
-		go_to_home() {
-			frappe.set_route('social', 'home');
-		},
-		go_to_user_settings() {
-			frappe.set_route('Form', 'User', this.user_id).then(()=> {
-				frappe.dom.scroll_to_section('More Information');
-			})
+		view_energy_point_list(user) {
+			frappe.set_route('List', 'Energy Point Log', {user:user.name});
 		}
 	}
-}
+};
 </script>
 
 <style lang="less" scoped>
 .profile-sidebar {
-	padding: 10px 10px 0 0
+	padding: 10px 10px 0 0;
 }
 .user-details {
 	min-height: 150px;
-	.location, .interest {
+	.location,
+	.interest {
 		margin-bottom: 10px;
 		i {
 			width: 15px;
 		}
 	}
-	.home-link {
-		margin-top: 15px;
-	}
+}
+.edit-profile-link {
+	margin-top: 15px;
 }
 </style>

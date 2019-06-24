@@ -4,6 +4,7 @@
 frappe.provide('frappe.dashboards');
 frappe.provide('frappe.dashboards.chart_sources');
 
+
 frappe.pages['dashboard'].on_page_load = function(wrapper) {
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
@@ -60,7 +61,12 @@ class Dashboard {
 	show_dashboard(current_dashboard_name) {
 		if(this.dashboard_name !== current_dashboard_name) {
 			this.dashboard_name = current_dashboard_name;
-			this.page.set_title(this.dashboard_name);
+			let title = this.dashboard_name;
+			if (!this.dashboard_name.toLowerCase().includes(__('dashboard'))) {
+				// ensure dashboard title has "dashboard"
+				title = __('{0} Dashboard', [title]);
+			}
+			this.page.set_title(title);
 			this.set_dropdown();
 			this.container.empty();
 			this.refresh();
@@ -221,18 +227,18 @@ class DashboardChart {
 			"Bar": "bar",
 		};
 		let chart_args = {
-			title: this.chart_doc.chart_name.bold(),
+			title: this.chart_doc.chart_name,
 			data: this.data,
 			type: chart_type_map[this.chart_doc.type],
 			colors: [this.chart_doc.color || "light-blue"],
 			axisOptions: {
 				xIsSeries: this.chart_doc.timeseries
-			},
+			}
 		};
 		this.chart_container.find('.chart-loading-state').addClass('hide');
 
 		if(!this.chart) {
-			this.chart = new Chart(this.chart_container.find(".chart-wrapper")[0], chart_args);
+			this.chart = new frappe.Chart(this.chart_container.find(".chart-wrapper")[0], chart_args);
 		} else {
 			this.chart.update(this.data);
 		}

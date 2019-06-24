@@ -4,6 +4,7 @@
 // My HTTP Request
 
 frappe.provide('frappe.request');
+frappe.provide('frappe.request.error_handlers');
 frappe.request.url = '/';
 frappe.request.ajax_count = 0;
 frappe.request.waiting_for_ajax = [];
@@ -197,10 +198,15 @@ frappe.request.call = function(opts) {
 		async: opts.async,
 		headers: Object.assign({
 			"X-Frappe-CSRF-Token": frappe.csrf_token,
-			"Accept": "application/json"
+			"Accept": "application/json",
+ 			"X-Frappe-CMD": (opts.args && opts.args.cmd  || '') || ''
 		}, opts.headers),
 		cache: false
 	};
+
+	if (opts.args && opts.args.doctype) {
+		ajax_args.headers["X-Frappe-Doctype"] = opts.args.doctype;
+	}
 
 	frappe.last_request = ajax_args.data;
 
@@ -313,11 +319,23 @@ frappe.request.cleanup = function(opts, r) {
 			return;
 		}
 
+		// global error handlers
+		if (r.exc_type) {
+			let handlers = frappe.request.error_handlers[r.exc_type] || [];
+			handlers.forEach(handler => {
+				handler(r);
+			});
+		}
+
 		// show messages
 		if(r._server_messages && !opts.silent) {
-			r._server_messages = JSON.parse(r._server_messages);
-			frappe.hide_msgprint();
-			frappe.msgprint(r._server_messages);
+			let handlers = frappe.request.error_handlers[r.exc_type] || [];
+			// dont show server messages if their handlers exist
+			if (!handlers.length) {
+				r._server_messages = JSON.parse(r._server_messages);
+				frappe.hide_msgprint();
+				frappe.msgprint(r._server_messages);
+			}
 		}
 
 		// show errors
@@ -380,14 +398,16 @@ frappe.after_ajax = function(fn) {
 
 frappe.request.report_error = function(xhr, request_opts) {
 	var data = JSON.parse(xhr.responseText);
+	var exc;
 	if (data.exc) {
-		var exc = (JSON.parse(data.exc) || []).join("\n");
-		var locals = (JSON.parse(data.locals) || []).join("\n");
+		try {
+			exc = (JSON.parse(data.exc) || []).join("\n");
+		} catch (e) {
+			exc = data.exc;
+		}
 		delete data.exc;
-		delete data.locals;
 	} else {
-		var exc = "";
-		locals = "";
+		exc = "";
 	}
 
 	var show_communication = function() {
@@ -420,11 +440,11 @@ frappe.request.report_error = function(xhr, request_opts) {
 				name: frappe.session.user
 			}
 		});
-		communication_composer.dialog.$wrapper.css("z-index", cint(msg_dialog.$wrapper.css("z-index")) + 1);
+		communication_composer.dialog.$wrapper.css("z-index", cint(frappe.msg_dialog.$wrapper.css("z-index")) + 1);
 	}
 
 	if (exc) {
-		var error_report_email = (frappe.boot.error_report_email || []).join(", ");
+		var error_report_email = frappe.boot.error_report_email;
 
 		request_opts = frappe.request.cleanup_request_opts(request_opts);
 
@@ -469,6 +489,11 @@ frappe.request.cleanup_request_opts = function(request_opts) {
 	}
 	return request_opts;
 };
+
+frappe.request.on_error = function(error_type, handler) {
+	frappe.request.error_handlers[error_type] = frappe.request.error_handlers[error_type] || [];
+	frappe.request.error_handlers[error_type].push(handler);
+}
 
 $(document).ajaxSend(function() {
 	frappe.request.ajax_count++;

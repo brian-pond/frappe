@@ -39,7 +39,7 @@ Cypress.Commands.add('fill_field', (fieldname, value, fieldtype='Data') => {
 	let selector = `.form-control[data-fieldname="${fieldname}"]`;
 
 	if (fieldtype === 'Text Editor') {
-		selector = `[data-fieldname="${fieldname}"] .ql-editor`;
+		selector = `[data-fieldname="${fieldname}"] .ql-editor[contenteditable=true]`;
 	}
 	if (fieldtype === 'Code') {
 		selector = `[data-fieldname="${fieldname}"] .ace_text-input`;
@@ -64,6 +64,12 @@ Cypress.Commands.add('new_form', (doctype) => {
 
 Cypress.Commands.add('go_to_list', (doctype) => {
 	cy.visit(`/desk#List/${doctype}/List`);
+});
+
+Cypress.Commands.add('clear_cache', () => {
+	cy.window().its('frappe').then(frappe => {
+		frappe.ui.toolbar.clear_cache();
+	});
 });
 
 Cypress.Commands.add('dialog', (title, fields) => {

@@ -13,14 +13,18 @@ def get_feed(start, page_length):
 	match_conditions_comment = get_feed_match_conditions(frappe.session.user, 'Comment')
 
 	result = frappe.db.sql("""select X.*
-		from (select name, owner, modified, creation, seen, comment_type,
-				reference_doctype, reference_name, link_doctype, link_name, subject,
-				communication_type, communication_medium, content
+		from (select `tabCommunication`.name, `tabCommunication`.owner, `tabCommunication`.modified,
+				`tabCommunication`.creation, `tabCommunication`.seen, `tabCommunication`.comment_type,
+				`tabCommunication`.reference_doctype, `tabCommunication`.reference_name, `tabCommunication`.subject,
+				`tabCommunication`.communication_type, `tabCommunication`.communication_medium, `tabCommunication`.content,
+				`tabCommunication Link`.link_doctype, `tabCommunication Link`.link_name
 			from
 				`tabCommunication`
+					inner join `tabCommunication Link`
+						on `tabCommunication`.name=`tabCommunication Link`.parent
 			where
-				communication_type = "Communication"
-				and communication_medium != "Email"
+				`tabCommunication`.communication_type = "Communication"
+				and `tabCommunication`.communication_medium != "Email"
 				and {match_conditions_communication}
 		UNION
 			select name, owner, modified, creation, '0', 'Updated',
@@ -38,7 +42,8 @@ def get_feed(start, page_length):
 				{match_conditions_comment}
 		) X
 		order by X.creation DESC
-		limit %(start)s, %(page_length)s"""
+		LIMIT %(page_length)s
+		OFFSET %(start)s"""
 		.format(match_conditions_comment = match_conditions_comment,
 			match_conditions_communication = match_conditions_communication), {
 			"user": frappe.session.user,

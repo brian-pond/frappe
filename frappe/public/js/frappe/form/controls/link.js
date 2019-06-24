@@ -41,6 +41,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 				me.$link.toggle(false);
 			}, 500);
 		});
+		this.$input.attr('data-target', this.df.options);
 		this.input = this.$input.get(0);
 		this.has_input = true;
 		this.translate_values = true;
@@ -166,14 +167,45 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 						return;
 					}
 
+					// show filter description in awesomplete
+					if (args.filters) {
+						let filter_string = [];
+
+						if (Array.isArray(args.filters)) {
+							let filters = args.filters;
+
+							filters.forEach((filter) => {
+								filter_string.push(`<b>${frappe.model.unscrub(filter[1])}</b> ${filter[2]} <b>${filter[3]}</b>`);
+							});
+						} else {
+							for (let [key, value] of Object.entries(args.filters)) {
+								if (Array.isArray(value) && value[1]) {
+									filter_string.push(`<b>${frappe.model.unscrub(key)}</b> ${value[0]} <b>${value[1]}</b>`);
+								} else if (value) {
+									filter_string.push(`<b>${frappe.model.unscrub(key)}</b> as <b>${value}</b>`);
+								}
+							}
+						}
+
+						if (filter_string.length > 0) {
+							filter_string = "Filters applied for " + filter_string.join(", ");
+
+							r.results.push({
+								label: "<span class='text-muted disable-select' style='line-height: 20px;'>"
+									+ __("{0}", [filter_string])
+									+ "</span>",
+								value: ""
+							});
+						}
+					}
+
 					if(!me.df.only_select) {
-						if(frappe.model.can_create(doctype)
-							&& me.df.fieldtype !== "Dynamic Link") {
+						if(frappe.model.can_create(doctype)) {
 							// new item
 							r.results.push({
 								label: "<span class='text-primary link-option'>"
 									+ "<i class='fa fa-plus' style='margin-right: 5px;'></i> "
-									+ __("Create a new {0}", [__(me.df.options)])
+									+ __("Create a new {0}", [__(me.get_options())])
 									+ "</span>",
 								value: "create_new__link_option",
 								action: me.new_doc
@@ -213,6 +245,8 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 		this.$input.on("awesomplete-open", function() {
 			me.$wrapper.css({"z-index": 100});
 			me.$wrapper.find('ul').css({"z-index": 100});
+			me.$wrapper.find('.disable-select').parents('li').css({"pointer-events": "none"});
+			me.$wrapper.find('.disable-select').unwrap();
 			me.autocomplete_open = true;
 		});
 

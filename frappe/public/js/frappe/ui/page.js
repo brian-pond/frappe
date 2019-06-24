@@ -138,7 +138,7 @@ frappe.ui.Page = Class.extend({
 	},
 
 	clear_indicator: function() {
-		return this.indicator.removeClass().addClass("indicator hide");
+		return this.indicator.removeClass().addClass("indicator whitespace-nowrap hide");
 	},
 
 	get_icon_label: function(icon, label) {
@@ -521,6 +521,11 @@ frappe.ui.Page = Class.extend({
 	},
 	add_field: function(df) {
 		this.show_form();
+
+		if (!df.placeholder) {
+			df.placeholder = df.label;
+		}
+
 		var f = frappe.ui.form.make_control({
 			df: df,
 			parent: this.page_form,

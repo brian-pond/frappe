@@ -4,14 +4,17 @@
 from __future__ import unicode_literals, print_function
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, has_gravatar, format_datetime, now_datetime, get_formatted_email
+from frappe.utils import cint, has_gravatar, format_datetime, now_datetime, get_formatted_email, today
 from frappe import throw, msgprint, _
 from frappe.utils.password import update_password as _update_password
 from frappe.desk.notifications import clear_notifications
 from frappe.utils.user import get_system_managers
+from bs4 import BeautifulSoup
 import frappe.permissions
 import frappe.share
 import re
+import json
+
 from frappe.limits import get_limits
 from frappe.website.utils import is_signup_enabled
 from frappe.utils.background_jobs import enqueue
@@ -93,7 +96,7 @@ class User(Document):
 		clear_notifications(user=self.name)
 		frappe.clear_cache(user=self.name)
 		self.send_password_notification(self.__new_password)
-		create_contact(self)
+		create_contact(self, ignore_mandatory=True)
 		if self.name not in ('Administrator', 'Guest') and not self.user_image:
 			frappe.enqueue('frappe.core.doctype.user.user.update_gravatar', name=self.name)
 
@@ -152,7 +155,7 @@ class User(Document):
 		if new_password and not self.flags.in_insert:
 			_update_password(user=self.name, pwd=new_password, logout_all_sessions=self.logout_all_sessions)
 
-			if self.send_password_update_notification:
+			if self.send_password_update_notification and self.enabled:
 				self.password_update_mail(new_password)
 				frappe.msgprint(_("New password emailed"))
 
@@ -216,13 +219,17 @@ class User(Document):
 	def validate_reset_password(self):
 		pass
 
-	def reset_password(self, send_email=False):
+	def reset_password(self, send_email=False, password_expired=False):
 		from frappe.utils import random_string, get_url
 
 		key = random_string(32)
 		self.db_set("reset_password_key", key)
-		link = get_url("/update-password?key=" + key)
 
+		url = "/update-password?key=" + key
+		if password_expired:
+			url = "/update-password?key=" + key + '&password_expired=true'
+
+		link = get_url(url)
 		if send_email:
 			self.password_reset_mail(link)
 
@@ -589,6 +596,9 @@ def update_password(new_password, logout_all_sessions=0, key=None, old_password=
 
 	frappe.local.login_manager.login_as(user)
 
+	frappe.db.set_value("User", user,
+		'last_password_reset_date', today())
+
 	if user_doc.user_type == "System User":
 		return "/desk"
 	else:
@@ -934,11 +944,13 @@ def notify_admin_access_to_system_manager(login_manager=None):
 		)
 
 def extract_mentions(txt):
-	"""Find all instances of @name in the string.
-	The mentions will be separated by non-word characters or may appear at the start of the string"""
-	txt = txt.replace("<div>", "<div> ")
-	txt = re.sub(r'(<[a-zA-Z\/][^>]*>)', '', txt)
-	return re.findall(r'(?:[^\w\.\-\@]|^)@([\w\.\-\@]*)', txt)
+	"""Find all instances of @mentions in the html."""
+	soup = BeautifulSoup(txt, 'html.parser')
+	emails = []
+	for mention in soup.find_all(class_='mention'):
+		email = mention['data-id']
+		emails.append(email)
+	return emails
 
 def handle_password_test_fail(result):
 	suggestions = result['feedback']['suggestions'][0] if result['feedback']['suggestions'] else ''
@@ -1087,3 +1099,11 @@ def generate_keys(user):
 
 		return {"api_secret": api_secret}
 	frappe.throw(frappe._("Not Permitted"), frappe.PermissionError)
+
+@frappe.whitelist()
+def update_profile_info(profile_info):
+	profile_info = json.loads(profile_info)
+	user = frappe.get_doc('User', frappe.session.user)
+	user.update(profile_info)
+	user.save()
+	return user

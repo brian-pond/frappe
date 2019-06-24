@@ -16,9 +16,9 @@ from frappe.desk.form.load import get_meta_bundle
 from frappe.utils.change_log import get_versions
 from frappe.translate import get_lang_dict
 from frappe.email.inbox import get_email_accounts
-from frappe.core.doctype.feedback_trigger.feedback_trigger import get_enabled_feedback_trigger
 from frappe.social.doctype.energy_point_settings.energy_point_settings import is_energy_point_enabled
 from frappe.social.doctype.energy_point_log.energy_point_log import get_energy_points
+from frappe.social.doctype.post.post import frequently_visited_links
 
 def get_bootinfo():
 	"""build and return boot info"""
@@ -72,16 +72,16 @@ def get_bootinfo():
 		bootinfo.lang = text_type(bootinfo.lang)
 	bootinfo.versions = {k: v['version'] for k, v in get_versions().items()}
 
-	bootinfo.error_report_email = frappe.get_hooks("error_report_email")
+	bootinfo.error_report_email = frappe.conf.error_report_email
 	bootinfo.calendars = sorted(frappe.get_hooks("calendars"))
 	bootinfo.treeviews = frappe.get_hooks("treeviews") or []
 	bootinfo.lang_dict = get_lang_dict()
-	bootinfo.feedback_triggers = get_enabled_feedback_trigger()
 	bootinfo.gsuite_enabled = get_gsuite_status()
 	bootinfo.success_action = get_success_action()
 	bootinfo.update(get_email_accounts(user=frappe.session.user))
 	bootinfo.energy_points_enabled = is_energy_point_enabled()
 	bootinfo.points = get_energy_points(frappe.session.user)
+	bootinfo.frequently_visited_links = frequently_visited_links()
 
 	return bootinfo
 

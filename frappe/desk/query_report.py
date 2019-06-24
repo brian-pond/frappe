@@ -132,6 +132,8 @@ def background_enqueue_run(report_name, filters=None, user=None):
 		})
 	track_instance.insert(ignore_permissions=True)
 	frappe.db.commit()
+	track_instance.enqueue_report()
+
 	return {
 		"name": track_instance.name,
 		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
@@ -207,6 +209,9 @@ def add_data_to_custom_columns(columns, result):
 	data = []
 	for row in result:
 		row_obj = {}
+		if isinstance(row, tuple):
+			row = list(row)
+
 		if isinstance(row, list):
 			for idx, column in enumerate(columns):
 				if column.get('link_field'):
@@ -236,7 +241,15 @@ def get_prepared_report_result(report, filters, dn="", user=None):
 		doc = frappe.get_doc("Prepared Report", dn)
 	else:
 		# Only look for completed prepared reports with given filters.
-		doc_list = frappe.get_all("Prepared Report", filters={"status": "Completed", "filters": json.dumps(filters), "owner": user})
+		doc_list = frappe.get_all("Prepared Report",
+			filters={
+				"status": "Completed",
+				"filters": json.dumps(filters),
+				"owner": user,
+				"report_name": report.report_name
+			}
+		)
+
 		if doc_list:
 			# Get latest
 			doc = frappe.get_doc("Prepared Report", doc_list[0])
@@ -250,11 +263,18 @@ def get_prepared_report_result(report, filters, dn="", user=None):
 			uncompressed_content = gzip_decompress(compressed_content)
 			data = json.loads(uncompressed_content)
 			if data:
+				columns = json.loads(doc.columns) if doc.columns else data[0]
+
+				for column in columns:
+					if isinstance(column, dict):
+						column["label"] = _(column["label"])
+
 				latest_report_data = {
-					"columns": json.loads(doc.columns) if doc.columns else data[0],
+					"columns": columns,
 					"result": data
 				}
 		except Exception:
+			frappe.log_error(frappe.get_traceback())
 			frappe.delete_doc("Prepared Report", doc.name)
 			frappe.db.commit()
 			doc = None
@@ -280,6 +300,10 @@ def export_query():
 		filters = json.loads(data["filters"])
 	if isinstance(data.get("report_name"), string_types):
 		report_name = data["report_name"]
+		frappe.permissions.can_export(
+			frappe.get_cached_value('Report', report_name, 'ref_doctype'),
+			raise_exception=True
+		)
 	if isinstance(data.get("file_format_type"), string_types):
 		file_format_type = data["file_format_type"]
 
@@ -360,6 +384,8 @@ def add_total_row(result, columns, meta = None):
 			options = col.get("options")
 
 		for row in result:
+			if i >= len(row): continue
+
 			cell = row.get(fieldname) if isinstance(row, dict) else row[i]
 			if fieldtype in ["Currency", "Int", "Float", "Percent"] and flt(cell):
 				total_row[i] = flt(total_row[i]) + flt(cell)

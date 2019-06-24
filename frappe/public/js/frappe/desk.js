@@ -42,7 +42,10 @@ frappe.Application = Class.extend({
 		this.setup_frappe_vue();
 		this.load_bootinfo();
 		this.load_user_permissions();
-		this.make_nav_bar();
+		this.set_app_logo_url()
+			.then(() => {
+				this.make_nav_bar();
+			});
 		this.set_favicon();
 		this.setup_analytics();
 		this.set_fullwidth_if_enabled();
@@ -124,7 +127,7 @@ frappe.Application = Class.extend({
 				}
 			}
 		}
-
+		this.link_preview = new frappe.ui.LinkPreview();
 	},
 
 	setup_frappe_vue() {
@@ -269,7 +272,10 @@ frappe.Application = Class.extend({
 	refresh_notifications: function() {
 		var me = this;
 		if(frappe.session_alive && frappe.boot && frappe.boot.home_page !== 'setup-wizard') {
-			return frappe.call({
+			if (this._refresh_notifications) {
+				this._refresh_notifications.abort();
+			}
+			this._refresh_notifications = frappe.call({
 				type: 'GET',
 				method: "frappe.desk.notifications.get_notifications",
 				callback: function(r) {
@@ -454,6 +460,13 @@ frappe.Application = Class.extend({
 		$('<link rel="icon" href="' + link + '" type="image/x-icon">').appendTo("head");
 	},
 
+	set_app_logo_url: function() {
+		return frappe.call('frappe.client.get_hooks', { hook: 'app_logo_url' })
+			.then(r => {
+				frappe.app.logo_url = (r.message || []).slice(-1)[0];
+			});
+	},
+
 	trigger_primary_action: function() {
 		if(window.cur_dialog && cur_dialog.display) {
 			// trigger primary
@@ -466,7 +479,7 @@ frappe.Application = Class.extend({
 	},
 
 	set_rtl: function() {
-		if (["ar", "he", "fa"].indexOf(frappe.boot.lang) >= 0) {
+		if (frappe.utils.is_rtl()) {
 			var ls = document.createElement('link');
 			ls.rel="stylesheet";
 			ls.href= "assets/css/frappe-rtl.css";

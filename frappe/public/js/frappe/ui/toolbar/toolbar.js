@@ -69,7 +69,7 @@ frappe.ui.toolbar.Toolbar = Class.extend({
 			scroll_container.css("overflow-y", "hidden");
 
 			layout_side_section.find(".close-sidebar").on('click', close_sidebar);
-			layout_side_section.on("click", "a", close_sidebar);
+			layout_side_section.on("click", "a:not(.dropdown-toggle)", close_sidebar);
 
 			function close_sidebar(e) {
 				scroll_container.css("overflow-y", "");
@@ -219,12 +219,6 @@ frappe.ui.toolbar.clear_cache = function() {
 			}
 		}
 	});
-	return false;
-};
-
-frappe.ui.toolbar.download_backup = function() {
-	frappe.msgprint(__("Your download is being built, this may take a few moments..."));
-	$c('frappe.utils.backups.get_backup',{},function(r,rt) {});
 	return false;
 };
 

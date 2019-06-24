@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 import frappe, json
 from frappe.core.page.dashboard.dashboard import cache_source, get_from_date_from_timespan
-from frappe.utils import nowdate, add_to_date, getdate, get_last_day
+from frappe.utils import nowdate, add_to_date, getdate, get_last_day, formatdate
 from frappe.model.document import Document
 
 @frappe.whitelist()
@@ -59,7 +59,7 @@ def get(chart_name, from_date=None, to_date=None, refresh = None):
 	result = add_missing_values(result, timegrain, from_date, to_date)
 
 	return {
-		"labels": [r[0].strftime('%Y-%m-%d') for r in result],
+		"labels": [formatdate(r[0].strftime('%Y-%m-%d')) for r in result],
 		"datasets": [{
 			"name": chart.name,
 			"values": [r[1] for r in result]
@@ -85,7 +85,7 @@ def convert_to_dates(data, timegrain):
 def get_unit_function(datefield, timegrain):
 	unit_function = ''
 	if timegrain=='Daily':
-		if frappe.conf.db_type == 'mariadb':
+		if frappe.db.db_type == 'mariadb':
 			unit_function = 'dayofyear({})'.format(datefield)
 		else:
 			unit_function = 'extract(doy from {datefield})'.format(
@@ -193,3 +193,12 @@ class DashboardChart(Document):
 	def on_update(self):
 		frappe.cache().delete_key('chart-data:{}'.format(self.name))
 
+	def validate(self):
+		if self.chart_type != 'Custom':
+			self.check_required_field()
+
+	def check_required_field(self):
+		if not self.based_on:
+			frappe.throw("Time series based on is required to create a dashboard chart")
+		if not self.document_type:
+			frappe.throw("Document type is required to create a dashboard chart")

@@ -70,7 +70,7 @@ def to_timedelta(time_str):
 	else:
 		return time_str
 
-def add_to_date(date, years=0, months=0, weeks=0, days=0, hours=0, as_string=False, as_datetime=False):
+def add_to_date(date, years=0, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0, as_string=False, as_datetime=False):
 	"""Adds `days` to the given date"""
 	from dateutil.relativedelta import relativedelta
 
@@ -86,7 +86,7 @@ def add_to_date(date, years=0, months=0, weeks=0, days=0, hours=0, as_string=Fal
 			as_datetime = True
 		date = parser.parse(date)
 
-	date = date + relativedelta(years=years, months=months, weeks=weeks, days=days, hours=hours)
+	date = date + relativedelta(years=years, months=months, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds)
 
 	if as_string:
 		if as_datetime:
@@ -107,6 +107,11 @@ def add_years(date, years):
 
 def date_diff(string_ed_date, string_st_date):
 	return (getdate(string_ed_date) - getdate(string_st_date)).days
+
+def month_diff(string_ed_date, string_st_date):
+	ed_date = getdate(string_ed_date)
+	st_date = getdate(string_st_date)
+	return (ed_date.year - st_date.year) * 12 + ed_date.month - st_date.month + 1
 
 def time_diff(string_ed_date, string_st_date):
 	return get_datetime(string_ed_date) - get_datetime(string_st_date)
@@ -176,6 +181,9 @@ def get_first_day(dt, d_years=0, d_months=0):
 	year = dt.year + d_years + overflow_years
 
 	return datetime.date(year, month + 1, 1)
+
+def get_first_day_of_week(dt):
+	return dt - datetime.timedelta(days=dt.weekday())
 
 def get_last_day(dt):
 	"""
@@ -256,6 +264,12 @@ def format_datetime(datetime_string, format_string=None):
 def get_weekdays():
 	return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+def get_weekday(datetime=None):
+	if not datetime:
+		datetime = now_datetime()
+	weekdays = get_weekdays()
+	return weekdays[datetime.weekday()]
+
 def global_date_format(date, format="long"):
 	"""returns localized date in the form of January 1, 2012"""
 	date = getdate(date)
@@ -326,6 +340,7 @@ def ceil(s):
 
 def cstr(s, encoding='utf-8'):
 	return frappe.as_unicode(s, encoding)
+
 def rounded(num, precision=0):
 	"""round method for round halfs to nearest even algorithm aka banker's rounding - compatible with python3"""
 	precision = cint(precision)
@@ -340,7 +355,10 @@ def rounded(num, precision=0):
 	if not precision and decimal_part == 0.5:
 		num = floor if (floor % 2 == 0) else floor + 1
 	else:
-		num = round(num)
+		if decimal_part == 0.5:
+			num = floor + 1
+		else:
+			num = round(num)
 
 	return (num / multiplier) if precision else num
 

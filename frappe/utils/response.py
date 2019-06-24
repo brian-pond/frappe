@@ -20,6 +20,7 @@ from werkzeug.exceptions import NotFound, Forbidden
 from frappe.website.render import render
 from frappe.utils import cint
 from six import text_type
+from six.moves.urllib.parse import quote
 
 def report_error(status_code):
 	'''Build error. Show traceback in developer mode'''
@@ -105,8 +106,6 @@ def make_logs(response = None):
 
 	if frappe.error_log:
 		response['exc'] = json.dumps([frappe.utils.cstr(d["exc"]) for d in frappe.local.error_log])
-		if frappe.conf.developer_mode:
-			response['locals'] = json.dumps([frappe.utils.cstr(d["locals"]) for d in frappe.local.error_log])
 
 	if frappe.local.message_log:
 		response['_server_messages'] = json.dumps([frappe.utils.cstr(d) for
@@ -180,7 +179,7 @@ def send_private_file(path):
 	if frappe.local.request.headers.get('X-Use-X-Accel-Redirect'):
 		path = '/protected/' + path
 		response = Response()
-		response.headers['X-Accel-Redirect'] = frappe.utils.encode(path)
+		response.headers['X-Accel-Redirect'] = frappe.utils.encode(quote(path))
 
 	else:
 		filepath = frappe.utils.get_site_path(path)
