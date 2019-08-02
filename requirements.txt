@@ -47,6 +47,7 @@ pypng
 pyqrcode
 python-dateutil
 pytz
+PyYAML==3.13
 rauth>=0.6.2
 redis==2.10.6
 requests
