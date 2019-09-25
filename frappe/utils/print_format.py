@@ -4,6 +4,7 @@ import frappe, os
 from frappe import _
 
 from frappe.utils.pdf import get_pdf,cleanup
+from frappe.core.doctype.access_log.access_log import make_access_log
 from PyPDF2 import PdfFileWriter
 
 no_cache = 1
@@ -93,6 +94,7 @@ def download_pdf(doctype, name, format=None, doc=None, no_letterhead=0):
 
 @frappe.whitelist()
 def report_to_pdf(html, orientation="Landscape"):
+	make_access_log(file_type='PDF', method='PDF', page=html)
 	frappe.local.response.filename = "report.pdf"
 	frappe.local.response.filecontent = get_pdf(html, {"orientation": orientation})
 	frappe.local.response.type = "pdf"
@@ -104,7 +106,7 @@ def print_by_server(doctype, name, print_format=None, doc=None, no_letterhead=0)
 		import cups
 	except ImportError:
 		frappe.throw(_("You need to install pycups to use this feature!"))
-		return
+
 	try:
 		cups.setServer(print_settings.server_ip)
 		cups.setPort(print_settings.port)

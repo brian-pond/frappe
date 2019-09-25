@@ -129,5 +129,3 @@ class TestDashboardChart(unittest.TestCase):
 		self.assertEqual(result.get('datasets')[0].get('values')[2], 0)
 
 		frappe.db.rollback()
-
-

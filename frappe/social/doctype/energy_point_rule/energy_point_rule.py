@@ -18,33 +18,51 @@ class EnergyPointRule(Document):
 		frappe.cache_manager.clear_doctype_map('Energy Point Rule', self.name)
 
 	def apply(self, doc):
-		if frappe.safe_eval(self.condition, None, {'doc': doc.as_dict()}):
+		if self.rule_condition_satisfied(doc):
 			multiplier = 1
 
+			points = self.points
 			if self.multiplier_field:
 				multiplier = doc.get(self.multiplier_field) or 1
+				points = round(points * multiplier)
+				max_points = self.max_points
+				if max_points and points > max_points:
+					points = max_points
 
-			points = round(self.points * multiplier)
 			reference_doctype = doc.doctype
 			reference_name = doc.name
-			user = doc.get(self.user_field)
+			users = []
+			if self.for_assigned_users:
+				users = doc.get_assigned_users()
+			else:
+				users = [doc.get(self.user_field)]
 			rule = self.name
 
 			# incase of zero as result after roundoff
 			if not points: return
 
-			# if user_field has no value
-			if not user or user == 'Administrator': return
-
 			try:
-				create_energy_points_log(reference_doctype, reference_name, {
-					'points': points,
-					'user': user,
-					'rule': rule
-				})
+				for user in users:
+					if not user or user == 'Administrator': continue
+					create_energy_points_log(reference_doctype, reference_name, {
+						'points': points,
+						'user': user,
+						'rule': rule
+					})
 			except Exception as e:
 				frappe.log_error(frappe.get_traceback(), 'apply_energy_point')
 
+	def rule_condition_satisfied(self, doc):
+		if self.for_doc_event == 'New':
+			# indicates that this was a new doc
+			return doc.get_doc_before_save() == None
+		if self.for_doc_event == 'Submit':
+			return doc.docstatus == 1
+		if self.for_doc_event == 'Cancel':
+			return doc.docstatus == 2
+		if self.for_doc_event == 'Custom' and self.condition:
+			return frappe.safe_eval(self.condition, None, {'doc': doc.as_dict()})
+		return False
 
 def process_energy_points(doc, state):
 	if (frappe.flags.in_patch

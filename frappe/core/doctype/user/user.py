@@ -15,7 +15,6 @@ import frappe.share
 import re
 import json
 
-from frappe.limits import get_limits
 from frappe.website.utils import is_signup_enabled
 from frappe.utils.background_jobs import enqueue
 
@@ -91,7 +90,6 @@ class User(Document):
 
 	def on_update(self):
 		# clear new password
-		self.validate_user_limit()
 		self.share_with_self()
 		clear_notifications(user=self.name)
 		frappe.clear_cache(user=self.name)
@@ -154,10 +152,6 @@ class User(Document):
 	def email_new_password(self, new_password=None):
 		if new_password and not self.flags.in_insert:
 			_update_password(user=self.name, pwd=new_password, logout_all_sessions=self.logout_all_sessions)
-
-			if self.send_password_update_notification and self.enabled:
-				self.password_update_mail(new_password)
-				frappe.msgprint(_("New password emailed"))
 
 	def set_system_user(self):
 		'''Set as System User if any of the given roles has desk_access'''
@@ -251,10 +245,6 @@ class User(Document):
 	def password_reset_mail(self, link):
 		self.send_login_mail(_("Password Reset"),
 			"password_reset", {"link": link}, now=True)
-
-	def password_update_mail(self, password):
-		self.send_login_mail(_("Password Update"),
-			"password_update", {"new_password": password}, now=True)
 
 	def send_welcome_mail_to_user(self):
 		from frappe.utils import get_url
@@ -473,34 +463,6 @@ class User(Document):
 	def get_blocked_modules(self):
 		"""Returns list of modules blocked for that user"""
 		return [d.module for d in self.block_modules] if self.block_modules else []
-
-	def validate_user_limit(self):
-		'''
-			Validate if user limit has been reached for System Users
-			Checked in 'Validate' event as we don't want welcome email sent if max users are exceeded.
-		'''
-
-		if self.user_type == "Website User":
-			return
-
-		if not self.enabled:
-			# don't validate max users when saving a disabled user
-			return
-
-		limits = get_limits()
-		if not limits.users:
-			# no limits defined
-			return
-
-		total_users = get_total_users()
-		if self.is_new():
-			# get_total_users gets existing users in database
-			# a new record isn't inserted yet, so adding 1
-			total_users += 1
-
-		if total_users > limits.users:
-			frappe.throw(_("Sorry. You have reached the maximum user limit for your subscription. You can either disable an existing user or buy a higher subscription plan."),
-				MaxUsersReachedError)
 
 	def validate_user_email_inbox(self):
 		""" check if same email account added in User Emails twice """
@@ -1068,16 +1030,23 @@ def create_contact(user, ignore_links=False, ignore_mandatory=False):
 	if user.name in ["Administrator", "Guest"]: return
 
 	if not frappe.db.get_value("Contact", {"email_id": user.email}):
-		frappe.get_doc({
+		contact = frappe.get_doc({
 			"doctype": "Contact",
 			"first_name": user.first_name,
 			"last_name": user.last_name,
-			"email_id": user.email,
 			"user": user.name,
 			"gender": user.gender,
-			"phone": user.phone,
-			"mobile_no": user.mobile_no
-		}).insert(ignore_permissions=True, ignore_links=ignore_links, ignore_mandatory=ignore_mandatory)
+		})
+
+		if user.email:
+			contact.add_email(user.email)
+
+		if user.phone:
+			contact.add_phone(user.phone)
+
+		if user.mobile_no:
+			contact.add_phone(user.mobile_no)
+		contact.insert(ignore_permissions=True, ignore_links=ignore_links, ignore_mandatory=ignore_mandatory)
 
 
 @frappe.whitelist()
@@ -1099,11 +1068,3 @@ def generate_keys(user):
 
 		return {"api_secret": api_secret}
 	frappe.throw(frappe._("Not Permitted"), frappe.PermissionError)
-
-@frappe.whitelist()
-def update_profile_info(profile_info):
-	profile_info = json.loads(profile_info)
-	user = frappe.get_doc('User', frappe.session.user)
-	user.update(profile_info)
-	user.save()
-	return user
