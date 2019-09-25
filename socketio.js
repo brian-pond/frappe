@@ -260,17 +260,20 @@ function get_chat_room(socket, room) {
 }
 
 function get_site_name(socket) {
+	// pcon : storing result in a variable, to assist with debugging.
+	var site_name = ''
 	if (socket.request.headers['x-frappe-site-name']) {
-		return get_hostname(socket.request.headers['x-frappe-site-name']);
+		site_name = get_hostname(socket.request.headers['x-frappe-site-name']);
 	} else if (['localhost', '127.0.0.1'].indexOf(socket.request.headers.host) !== -1 &&
 		conf.default_site) {
 		// from currentsite.txt since host is localhost
-		return conf.default_site;
+		site_name = conf.default_site;
 	} else if (socket.request.headers.origin) {
-		return get_hostname(socket.request.headers.origin);
+		site_name = get_hostname(socket.request.headers.origin);
 	} else {
-		return get_hostname(socket.request.headers.host);
+		site_name = get_hostname(socket.request.headers.host);
 	}
+	return site_name;
 }
 
 function get_hostname(url) {

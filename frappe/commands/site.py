@@ -300,7 +300,7 @@ def use(site, sites_path='.'):
 		with open(os.path.join(sites_path,  "currentsite.txt"), "w") as sitefile:
 			sitefile.write(site)
 	else:
-		print("{} does not exist".format(site))
+		raise Exception("Site {} does not exist.  (../frappe/commands/site.py)".format(site))
 
 @click.command('backup')
 @click.option('--with-files', default=False, is_flag=True, help="Take backup with files")
@@ -402,7 +402,7 @@ def _drop_site(site, root_login='root', root_password=None, archived_sites_path=
 
 def move(dest_dir, site):
 	if not os.path.isdir(dest_dir):
-		raise Exception("destination is not a directory or does not exist")
+		raise Exception("Destination is not a directory or does not exist")
 
 	frappe.init(site)
 	old_path = frappe.utils.get_site_path()

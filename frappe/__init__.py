@@ -220,7 +220,9 @@ def get_site_config(sites_path=None, site_path=None):
 		if os.path.exists(site_config):
 			config.update(get_file_json(site_config))
 		elif local.site and not local.flags.new_site:
-			print("{0} does not exist".format(local.site))
+			print("\nERROR: Cannot get Site's configuration file.  Site '{0}' does not exist.".format(local.site))
+			print("If in Production Mode, do not enter an IP address in the URL.")
+			print("Instead, enter the Site in the URL, where the Site is mapped to an IP with an entry in '/etc/hosts'\n")
 			sys.exit(1)
 			#raise IncorrectSitePath, "{0} does not exist".format(site_config)
 

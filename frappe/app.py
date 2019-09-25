@@ -211,7 +211,7 @@ def after_request(rollback):
 
 application = local_manager.make_middleware(application)
 
-def serve(port=8000, profile=False, no_reload=False, no_threading=False, site=None, sites_path='.'):
+def serve(ip_address='0.0.0.0', port=8000, profile=False, no_reload=False, no_threading=False, site=None, sites_path='.'):
 	global application, _site, _sites_path
 	_site = site
 	_sites_path = sites_path
@@ -240,7 +240,8 @@ def serve(port=8000, profile=False, no_reload=False, no_threading=False, site=No
 		log = logging.getLogger('werkzeug')
 		log.setLevel(logging.ERROR)
 
-	run_simple('0.0.0.0', int(port), application,
+	# pcon - Make this a variable, so you can change between 0.0.0.0, or 127.0.0.1, or whatever you want.
+	run_simple(ip_address, int(port), application,
 		use_reloader=False if in_test_env else not no_reload,
 		use_debugger=not in_test_env,
 		use_evalex=not in_test_env,
