@@ -1044,7 +1044,9 @@ frappe.chat.emoji  = function (fn) {
 			resolve(frappe.chat.emojis)
 		}
 		else
-			$.get('https://cdn.rawgit.com/frappe/emoji/master/emoji', (data) => {
+			//  raw.githubusercontent.com domain is used to serve unprocessed versions of files stored in GitHub repositories.
+			//  When you browse to a file on GitHub, and click the Raw link, that's where you go.
+			$.get('https://raw.githubusercontent.com/frappe/emoji/master/emoji', (data) => {
 				frappe.chat.emojis = JSON.parse(data)
 
 				if ( fn )
