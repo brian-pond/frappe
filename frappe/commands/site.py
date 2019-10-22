@@ -1,6 +1,12 @@
-from __future__ import unicode_literals, absolute_import, print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
+from __future__ import print_function
 import click
-import hashlib, os, sys, compileall, re
+import hashlib
+import os
+import sys
+import compileall
+import re
 import frappe
 from frappe import _
 from frappe.commands import pass_context, get_site
@@ -8,6 +14,7 @@ from frappe.commands.scheduler import _is_scheduler_enabled
 from frappe.installer import update_site_config
 from frappe.utils import touch_file, get_site_path
 from six import text_type
+
 
 @click.command('new-site')
 @click.argument('site')
@@ -33,6 +40,7 @@ def new_site(site, mariadb_root_username=None, mariadb_root_password=None, admin
 
 	if len(frappe.utils.get_sites()) == 1:
 		use(site)
+
 
 def _new_site(db_name, site, mariadb_root_username=None, mariadb_root_password=None,
 	admin_password=None, verbose=False, install_apps=None, source_sql=None, force=False,
@@ -87,6 +95,7 @@ def _new_site(db_name, site, mariadb_root_username=None, mariadb_root_password=N
 
 		frappe.destroy()
 
+
 @click.command('restore')
 @click.argument('sql-file-path')
 @click.option('--mariadb-root-username', default='root', help='Root username for MariaDB')
@@ -127,6 +136,7 @@ def restore(context, sql_file_path, mariadb_root_username=None, mariadb_root_pas
 		private = extract_tar_files(site, with_private_files, 'private')
 		os.remove(private)
 
+
 @click.command('reinstall')
 @click.option('--admin-password', help='Administrator Password for reinstalled site')
 @click.option('--mariadb-root-username', help='Root username for MariaDB')
@@ -137,6 +147,7 @@ def reinstall(context, admin_password=None, mariadb_root_username=None, mariadb_
 	"Reinstall site ie. wipe all data and start over"
 	site = get_site(context)
 	_reinstall(site, admin_password, mariadb_root_username, mariadb_root_password, yes, verbose=context.verbose)
+
 
 def _reinstall(site, admin_password=None, mariadb_root_username=None, mariadb_root_password=None, yes=False, verbose=False):
 	if not yes:
@@ -159,6 +170,7 @@ def _reinstall(site, admin_password=None, mariadb_root_username=None, mariadb_ro
 		mariadb_root_username=mariadb_root_username, mariadb_root_password=mariadb_root_password,
 		admin_password=admin_password)
 
+
 @click.command('install-app')
 @click.argument('apps', nargs=-1)
 @pass_context
@@ -174,13 +186,18 @@ def install_app(context, apps):
 		finally:
 			frappe.destroy()
 
-@click.command('list-apps')
+
+@click.command('list-installed-apps')
 @pass_context
-def list_apps(context):
+def list_installed_apps(context):
 	"List apps in site"
 	site = get_site(context)
+	if not site:
+		print("Error: No site is currently set as the default.")
+		return
 	frappe.init(site=site)
 	frappe.connect()
+	print("Current site '{0}' has these apps installed:".format(site))
 	print("\n".join(frappe.get_installed_apps()))
 	frappe.destroy()
 
@@ -529,7 +546,7 @@ commands = [
 	backup,
 	drop_site,
 	install_app,
-	list_apps,
+	list_installed_apps,
 	migrate,
 	new_site,
 	reinstall,
