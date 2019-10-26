@@ -476,7 +476,10 @@ def run_ui_tests(context, app, headless=False):
 
 	# run for headless mode
 	run_or_open = 'run' if headless else 'open'
-	command = '{site_env} {password_env} yarn run cypress:{run_or_open}'
+
+    # Brian - This may not work, simply substituting "npm" for "yarn"
+    # Here's some info on the cypress CLI https://docs.cypress.io/guides/guides/command-line.html
+	command = '{site_env} {password_env} npm run cypress:{run_or_open}'
 	formatted_command = command.format(site_env=site_env, password_env=password_env, run_or_open=run_or_open)
 	frappe.commands.popen(formatted_command, cwd=app_base_path, raise_err=True)
 

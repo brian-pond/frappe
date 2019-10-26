@@ -23,7 +23,7 @@ def setup():
 	app_paths = [os.path.dirname(pymodule.__file__) for pymodule in pymodules]
 
 def get_node_pacman():
-	pacmans = ['yarn', 'npm']
+	pacmans = ['npm']
 	for exec_ in pacmans:
 		exec_ = find_executable(exec_)
 		if exec_:
@@ -43,7 +43,6 @@ def bundle(no_compress, app=None, make_copy=False, restore=False, verbose=False)
 		command += ' --app {app}'.format(app=app)
 
 	frappe_app_path = abspath(join_path(app_paths[0], '..'))
-	check_yarn()
 	frappe.commands.popen(command, cwd=frappe_app_path)
 
 def watch(no_compress):
@@ -53,16 +52,8 @@ def watch(no_compress):
 	pacman = get_node_pacman()
 
 	frappe_app_path = abspath(join_path(app_paths[0], '..'))
-	check_yarn()
 	frappe_app_path = frappe.get_app_path('frappe', '..')
 	frappe.commands.popen('{pacman} run watch'.format(pacman=pacman), cwd = frappe_app_path)
-
-def check_yarn():
-	from distutils.spawn import find_executable
-	if not find_executable('yarn'):
-		print('Please install yarn using below command and try again.')
-		print('npm install -g yarn')
-		return
 
 def make_asset_dirs(make_copy=False, restore=False):
 	# don't even think of making assets_path absolute - rm -rf ahead.
