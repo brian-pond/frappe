@@ -17,30 +17,13 @@ const {
 	get_options_for
 } = require('./config');
 
-const build_for_app = process.argv[2] === '--app' ? process.argv[3] : null;
-
-show_production_message();
-ensure_js_css_dirs();
-concatenate_files();
-create_build_file();
-
-if (build_for_app) {
-	build_assets_for_app(build_for_app)
-} else {
-	build_assets_for_all_apps();
-}
-
 function build_assets_for_all_apps() {
 	run_serially(
-		apps_list.map(app => () => build_assets(app))
+		apps_list.map(app => () => build_assets_for_app(app))
 	);
 }
 
 function build_assets_for_app(app) {
-	build_assets(app)
-}
-
-function build_assets(app) {
 	const options = get_options_for(app);
 	if (!options.length) return Promise.resolve();
 	log(chalk.yellow(`\nBuilding ${app} assets...\n`));
@@ -97,11 +80,6 @@ function concatenate_files() {
 	});
 }
 
-function create_build_file() {
-	const touch = require('touch');
-	touch(path.join(sites_path, '.build'), { force: true });
-}
-
 function ensure_js_css_dirs() {
 	const paths = [
 		path.resolve(assets_path, 'js'),
@@ -117,4 +95,20 @@ function ensure_js_css_dirs() {
 function show_production_message() {
 	const production = process.env.FRAPPE_ENV === 'production';
 	log(chalk.yellow(`${production ? 'Production' : 'Development'} mode`));
+}
+
+// Main Execution:
+show_production_message();
+ensure_js_css_dirs();
+concatenate_files();
+
+// Create a .build file
+const touch = require('touch');
+touch(path.join(sites_path, '.build'), { force: true });
+
+const build_for_app = process.argv[2] === '--app' ? process.argv[3] : null;
+if (build_for_app) {
+	build_assets_for_app(build_for_app)
+} else {
+	build_assets_for_all_apps();
 }
