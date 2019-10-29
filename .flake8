@@ -1,0 +1,4 @@
+[flake8]
+exclude = .git,__pycache__
+use-flake8-tabs=true
+
