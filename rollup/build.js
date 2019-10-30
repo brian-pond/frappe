@@ -1,8 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-const chalk = require('chalk');
+const fs     = require('fs');
+const path   = require('path');
+const chalk  = require('chalk');
 const rollup = require('rollup');
-const log = console.log; // eslint-disable-line
 
 const {
 	get_build_json,
@@ -26,12 +25,12 @@ function build_assets_for_all_apps() {
 function build_assets_for_app(app) {
 	const options = get_options_for(app);
 	if (!options.length) return Promise.resolve();
-	log(chalk.yellow(`\nBuilding ${app} assets...\n`));
+	console.log(chalk.yellow(`\nBuilding ${app} assets...\n`));
 
 	const promises = options.map(({ inputOptions, outputOptions, output_file}) => {
 		return build(inputOptions, outputOptions)
 			.then(() => {
-				log(`${chalk.green('✔')} Built ${output_file}`);
+				console.log(`${chalk.green('✔')} Built ${output_file}`);
 			});
 	});
 
@@ -39,7 +38,7 @@ function build_assets_for_app(app) {
 	return Promise.all(promises)
 		.then(() => {
 			const time = Date.now() - start;
-			log(chalk.green(`✨  Done in ${time / 1000}s`));
+			console.log(chalk.green(`✨  Done in ${time / 1000}s`));
 		});
 }
 
@@ -47,7 +46,7 @@ function build(inputOptions, outputOptions) {
 	return rollup.rollup(inputOptions)
 		.then(bundle => bundle.write(outputOptions))
 		.catch(err => {
-			log(chalk.red(err));
+			console.log(chalk.red(err));
 			// Kill process to fail in a CI environment
 			if (process.env.CI) {
 				process.kill(process.pid)
@@ -76,7 +75,7 @@ function concatenate_files() {
 		const output_file_path = output_file.slice('concat:'.length);
 		const target_path = path.resolve(assets_path, output_file_path);
 		fs.writeFileSync(target_path, file_content);
-		log(`${chalk.green('✔')} Built ${output_file_path}`);
+		console.log(`${chalk.green('✔')} Built ${output_file_path}`);
 	});
 }
 
@@ -94,7 +93,7 @@ function ensure_js_css_dirs() {
 
 function show_production_message() {
 	const production = process.env.FRAPPE_ENV === 'production';
-	log(chalk.yellow(`${production ? 'Production' : 'Development'} mode`));
+	console.log(chalk.yellow(`${production ? 'Production' : 'Development'} mode`));
 }
 
 // Main Execution:
