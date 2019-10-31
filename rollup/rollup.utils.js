@@ -47,15 +47,17 @@ const get_public_path = app => {
 };
 
 const get_build_json_path = app => {
-	// Given an 'app' parameter, return the fully qualified path to the 'public/build.json' file.
+	// Given parameter 'app', return the fully qualified path to the 'public/build.json' file.
 	return path.resolve(get_public_path(app), 'build.json');
 };
 
 function get_build_json(app) {
+	// Read 'build.json' synchronously.
 	try {
-		return require(get_build_json_path(app));
-	} catch (e) {
-		// build.json does not exist
+		const jsonString = fs.readFileSync(get_build_json_path(app))
+		return JSON.parse(jsonString)	// Returns an Object.
+	} catch(err) {
+		console.log(err)
 		return null;
 	}
 }

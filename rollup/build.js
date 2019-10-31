@@ -78,13 +78,10 @@ function concatenate_files() {
 	*/
 	console.log(chalk.yellow(`\nConcatenating app='frappe' JS assets...\n`));
 
-	const files_to_concat = Object.keys(get_build_json('frappe'))
-		.find('concat')
-	//	.filter(filename => filename.startsWith('concat:'));
+	// From build.json, get the "concat" object
+	const obj_build_concat = get_build_json('frappe')['concat']
 
-	files_to_concat.forEach(output_file => {
-		const input_files = get_build_json('frappe')[output_file];
-
+	Object.entries(obj_build_concat).map(([output_file, input_files]) => {
 		const file_content = input_files.map(file_name => {
 			let prefix = get_app_path('frappe');
 			if (file_name.startsWith('node_modules/')) {
