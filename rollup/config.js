@@ -160,6 +160,7 @@ function get_options_for(app) {
 
 	return Object.keys(build_json)
 		.map(output_file => {
+			// Skip the files we handle with simple concatenation.
 			if (output_file.startsWith('concat:')) return null;
 
 			const input_files = build_json[output_file]

@@ -24,12 +24,13 @@ function build_assets_for_all_apps() {
 }
 
 function build_assets_for_app(app) {
+	// options is an Object containing input and output configuration and generation options.
 	const options = get_options_for(app);
 	if (!options.length) return Promise.resolve();
-	console.log(chalk.yellow(`\nBuilding ${app} assets...\n`));
+	console.log(chalk.yellow(`\nPerforming rollup & bundle for app='${app}' JS & CSS assets...\n`));
 
 	const promises = options.map(({ inputOptions, outputOptions, output_file}) => {
-		return build(inputOptions, outputOptions)
+		return rollup_and_bundle(inputOptions, outputOptions)
 			.then(() => {
 				console.log(`${chalk.green('✔')} Built ${output_file}`);
 			});
@@ -43,16 +44,19 @@ function build_assets_for_app(app) {
 		});
 }
 
-function build(inputOptions, outputOptions) {
-	return rollup.rollup(inputOptions)
-		.then(bundle => bundle.write(outputOptions))
-		.catch(err => {
-			console.log(chalk.red(err));
-			// Kill process to fail in a CI environment
-			if (process.env.CI) {
-				process.kill(process.pid)
-			}
-		});
+async function rollup_and_bundle(inputOptions, outputOptions) {
+	// Rollup is a 3rd party NPM package.  
+	try {
+		const bundle = await rollup.rollup(inputOptions);
+		return bundle.write(outputOptions);
+	}
+	catch (err) {
+		console.log(chalk.red(err));
+		// Kill process to fail in a CI environment
+		if (process.env.CI) {
+			process.kill(process.pid);
+		}
+	}
 }
 
 function concatenate_files() {
@@ -111,7 +115,7 @@ function ensure_js_css_dirs() {
 
 function show_production_message() {
 	const production = process.env.FRAPPE_ENV === 'production';
-	console.log(chalk.yellow(`Running in ${production ? 'Production' : 'Development'} mode.\n`));
+	console.log(chalk.green(`Running in ${production ? 'Production' : 'Development'} mode.`));
 }
 
 // Main Execution:
