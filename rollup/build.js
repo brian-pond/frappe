@@ -89,9 +89,10 @@ function concatenate_files() {
 		}).join('\n\n');
 
 		const output_file_path = output_file.slice('concat:'.length);
+		const build_json_path = get_build_json_path('frappe')
 		const target_path = path.resolve(assets_path, output_file_path);
 		fs.writeFileSync(target_path, file_content);
-		console.log(`${chalk.green('✔')} Built ${output_file_path} using concatenation rules in ${get_build_json_path}.`);
+		console.log(`${chalk.green('✔')} Built ${output_file_path} using concatenation rules in '${build_json_path}.'`);
 	});
 }
 
