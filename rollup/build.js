@@ -72,6 +72,7 @@ function concatenate_files() {
 		4. Results are stored in each SITE's asset folders:
 			../mybench/sites/assets/js/<concatenated_file_name>
 	*/
+	console.log(chalk.yellow(`\nConcatenating app='frappe' JS assets...\n`));
 
 	const files_to_concat = Object.keys(get_build_json('frappe'))
 		.filter(filename => filename.startsWith('concat:'));
@@ -110,7 +111,7 @@ function ensure_js_css_dirs() {
 
 function show_production_message() {
 	const production = process.env.FRAPPE_ENV === 'production';
-	console.log(chalk.yellow(`${production ? 'Production' : 'Development'} mode`));
+	console.log(chalk.yellow(`Running in ${production ? 'Production' : 'Development'} mode.\n`));
 }
 
 // Main Execution:
