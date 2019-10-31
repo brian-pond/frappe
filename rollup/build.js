@@ -9,7 +9,8 @@ const {
 	apps_list,
 	run_serially,
 	assets_path,
-	sites_path
+	sites_path,
+	get_build_json_path
 } = require('./rollup.utils');
 
 const {
@@ -55,7 +56,22 @@ function build(inputOptions, outputOptions) {
 }
 
 function concatenate_files() {
-	// only concatenates files, not processed through rollup
+	/* 
+		Scope: This function is hard-coded for the Frappe App --only--.
+		Purpose: Combine multiple *.js files together, to reduce number of HTTP calls.
+		Pseudocode:
+		1. In each APP's 'public' folder, there can be a file named 'build.json'
+		2. Some of this JSON may contain keys beginning with letters "concat", like this:
+
+	 		"concat:js/moment-bundle.min.js": [
+				"node_modules/moment/min/moment-with-locales.min.js",
+				"node_modules/moment-timezone/builds/moment-timezone-with-data.min.js"
+			],
+		
+		3. This function concatenates the child files, into a larger file with the parent node's name.
+		4. Results are stored in each SITE's asset folders:
+			../mybench/sites/assets/js/<concatenated_file_name>
+	*/
 
 	const files_to_concat = Object.keys(get_build_json('frappe'))
 		.filter(filename => filename.startsWith('concat:'));
@@ -75,7 +91,7 @@ function concatenate_files() {
 		const output_file_path = output_file.slice('concat:'.length);
 		const target_path = path.resolve(assets_path, output_file_path);
 		fs.writeFileSync(target_path, file_content);
-		console.log(`${chalk.green('✔')} Built ${output_file_path}`);
+		console.log(`${chalk.green('✔')} Built ${output_file_path} using concatenation rules in ${get_build_json_path}.`);
 	});
 }
 
