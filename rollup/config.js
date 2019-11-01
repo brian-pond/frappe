@@ -155,15 +155,12 @@ function get_rollup_options_for_css(output_file, input_files) {
 }
 
 function get_options_for(app) {
-	const build_json = get_build_json(app);
-	if (!build_json) return [];
+	const obj_build_bundle = get_build_json(app)['bundle'];
+	if (!obj_build_bundle) return [];
 
-	return Object.keys(build_json)
+	return Object.keys(obj_build_bundle)
 		.map(output_file => {
-			// Skip the files we handle with simple concatenation.
-			if (output_file.startsWith('concat:')) return null;
-
-			const input_files = build_json[output_file]
+			const input_files = obj_build_bundle[output_file]
 				.map(input_file => {
 					let prefix = get_app_path(app);
 					if (input_file.startsWith('node_modules/')) {

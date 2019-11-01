@@ -52,7 +52,8 @@ const get_build_json_path = app => {
 };
 
 function get_build_json(app) {
-	// Read 'build.json' synchronously.
+	// Purpose: Read 'build.json' synchronously.
+	// Returns: Object
 	try {
 		const jsonString = fs.readFileSync(get_build_json_path(app))
 		return JSON.parse(jsonString)	// Returns an Object.
