@@ -3,14 +3,14 @@ const fs = require('fs');
 const chalk = require('chalk');
 const log = console.log; // eslint-disable-line
 
-const multi_entry = require('rollup-plugin-multi-entry');
-const commonjs = require('rollup-plugin-commonjs');
-const node_resolve = require('rollup-plugin-node-resolve');
-const postcss = require('rollup-plugin-postcss');
-const buble = require('rollup-plugin-buble');
-const { terser } = require('rollup-plugin-terser');
-const vue = require('rollup-plugin-vue');
-const frappe_html = require('./frappe-html-plugin');
+const multi_entry 	= require('rollup-plugin-multi-entry');
+const commonjs 		= require('rollup-plugin-commonjs');
+const node_resolve 	= require('rollup-plugin-node-resolve');
+const postcss 		= require('rollup-plugin-postcss');
+const buble 		= require('rollup-plugin-buble');
+const { terser } 	= require('rollup-plugin-terser');
+const vue 			= require('rollup-plugin-vue');
+const frappe_html 	= require('./frappe-html-plugin');
 
 const production = process.env.FRAPPE_ENV === 'production';
 
@@ -29,6 +29,8 @@ function get_rollup_options(output_file, input_files) {
 		return get_rollup_options_for_js(output_file, input_files);
 	} else if(output_file.endsWith('.css')) {
 		return get_rollup_options_for_css(output_file, input_files);
+	} else {
+		throw new Error(chalk.red(`Cannot determine Rollup options for file '${output_file}'`))
 	}
 }
 
@@ -55,7 +57,8 @@ function get_rollup_options_for_js(output_file, input_files) {
 			objectAssign: 'Object.assign',
 			transforms: {
 				dangerousForOf: true,
-				classes: false
+				classes: false,
+				asyncAwait: false	// Brian - Added because of async function in './frappe/website/js/website.js'
 			},
 			exclude: [path.resolve(bench_path, '**/*.css'), path.resolve(bench_path, '**/*.less')]
 		}),
