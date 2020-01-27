@@ -47,14 +47,15 @@ def bundle(no_compress, app=None, make_copy=False,
 	make_asset_dirs(make_copy=make_copy, restore=restore)
 
 	# pacman = get_node_pacman()
-	mode = 'build' if no_compress else 'production'
+	mode = 'build' if no_compress else 'build_production'
+	# Brian: package manager is hard-coded below to 'npm'.  No more yarn.
 	command = '{pacman} run {mode}'.format(pacman='npm', mode=mode)
 
 	if app:
 		command += ' --app {app}'.format(app=app)
 
 	frappe_app_path = abspath(join_path(get_app_paths()[0], '..'))
-	print('build.py-->build() command = {}'.format(command))
+	print('build.py --> build() command = {}'.format(command))
 	print('Frappe app path = {}'.format(frappe_app_path))
 	frappe.commands.popen(command, cwd=frappe_app_path)
 
