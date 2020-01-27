@@ -81,7 +81,11 @@ frappe.ui.GroupBy = class {
 	}
 
 	apply_settings(settings) {
-		this.groupby_select.val(settings.group_by);
+
+		// Extract fieldname from `tabdoctype`.`fieldname`
+		let group_by_fieldname = settings.group_by.split('.')[1].replace('`', '');
+
+		this.groupby_select.val(group_by_fieldname);
 		this.aggregate_function_select.val(settings.aggregate_function);
 		this.show_hide_aggregate_on();
 		this.aggregate_on_select.val(settings.aggregate_on);
@@ -227,12 +231,12 @@ frappe.ui.GroupBy = class {
 
 	get_group_by_fields() {
 		let group_by_fields = {};
-		let fields = this.report_view.meta.fields.filter(f => ["Select", "Link"].includes(f.fieldtype));
+		let fields = this.report_view.meta.fields.filter(f => ["Select", "Link", "Data", "Int"].includes(f.fieldtype));
 		group_by_fields[this.doctype] = fields;
 
 		const standard_fields_filter = df =>
 			!in_list(frappe.model.no_value_type, df.fieldtype) && !df.report_hide;
-		
+
 		const table_fields = frappe.meta.get_table_fields(this.doctype)
 			.filter(df => !df.hidden);
 

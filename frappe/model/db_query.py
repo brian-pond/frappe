@@ -17,6 +17,7 @@ from frappe.model import optional_fields
 from frappe.client import check_parent_permission
 from frappe.model.utils.user_settings import get_user_settings, update_user_settings
 from frappe.utils import flt, cint, get_time, make_filter_tuple, get_filter, add_to_date, cstr, nowdate
+from frappe.model.meta import get_table_columns
 
 class DatabaseQuery(object):
 	def __init__(self, doctype, user=None):
@@ -283,14 +284,18 @@ class DatabaseQuery(object):
 	def set_field_tables(self):
 		'''If there are more than one table, the fieldname must not be ambiguous.
 		If the fieldname is not explicitly mentioned, set the default table'''
+		def _in_standard_sql_methods(field):
+			methods = ('count(', 'avg(', 'sum(')
+			return field.lower().startswith(methods)
+
 		if len(self.tables) > 1:
-			for i, f in enumerate(self.fields):
-				if '.' not in f:
-					self.fields[i] = '{0}.{1}'.format(self.tables[0], f)
+			for idx, field in enumerate(self.fields):
+				if '.' not in field and not _in_standard_sql_methods(field):
+					self.fields[idx] = '{0}.{1}'.format(self.tables[0], field)
 
 	def set_optional_columns(self):
 		"""Removes optional columns like `_user_tags`, `_comments` etc. if not in table"""
-		columns = frappe.db.get_table_columns(self.doctype)
+		columns = get_table_columns(self.doctype)
 
 		# remove from fields
 		to_remove = []
@@ -496,6 +501,10 @@ class DatabaseQuery(object):
 				value = f.value or "''"
 				fallback = "''"
 
+			elif f.fieldname == 'name':
+				value = f.value or "''"
+				fallback = "''"
+
 			else:
 				value = flt(f.value)
 				fallback = 0
@@ -508,6 +517,8 @@ class DatabaseQuery(object):
 			or not can_be_null
 			or (f.value and f.operator.lower() in ('=', 'like'))
 			or 'ifnull(' in column_name.lower()):
+			if f.operator.lower() == 'like' and frappe.conf.get('db_type') == 'postgres':
+				f.operator = 'ilike'
 			condition = '{column_name} {operator} {value}'.format(
 				column_name=column_name, operator=f.operator,
 				value=value)
