@@ -34,7 +34,6 @@ passlib
 pdfkit
 Pillow
 premailer
-psycopg2==2.8.4
 psycopg2-binary==2.8.4
 pyasn1
 Pygments==2.2.0
