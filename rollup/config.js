@@ -3,11 +3,11 @@ const fs = require('fs');
 const chalk = require('chalk');
 const log = console.log; // eslint-disable-line
 
-const multi_entry 	= require('rollup-plugin-multi-entry');
-const commonjs 		= require('rollup-plugin-commonjs');
-const node_resolve 	= require('rollup-plugin-node-resolve');
+const multi_entry 	= require('@rollup/plugin-multi-entry');
+const commonjs 		= require('@rollup/plugin-commonjs');
+const node_resolve 	= require('@rollup/plugin-node-resolve');
 const postcss 		= require('rollup-plugin-postcss');
-const buble 		= require('rollup-plugin-buble');
+const buble 		= require('@rollup/plugin-buble');
 const { terser } 	= require('rollup-plugin-terser');
 const vue 			= require('rollup-plugin-vue');
 const frappe_html 	= require('./frappe-html-plugin');

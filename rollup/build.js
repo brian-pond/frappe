@@ -27,7 +27,7 @@ function build_assets_for_app(app) {
 	// options is an Object containing input and output configuration and generation options.
 	const options = get_options_for(app);
 	if (!options.length) return Promise.resolve();
-	console.log(chalk.yellow(`\nPerforming rollup & bundle for app='${app}' JS & CSS assets...\n`));
+	console.log(chalk.yellow(`\nApp: {app}. Performing rollup & bundle of JS and CSS assets...\n`));
 
 	const promises = options.map(({ inputOptions, outputOptions, output_file}) => {
 		return rollup_and_bundle(inputOptions, outputOptions)
@@ -76,7 +76,7 @@ function concatenate_files() {
 		4. Results are stored in each SITE's asset folders:
 			../mybench/sites/assets/js/<concatenated_file_name>
 	*/
-	console.log(chalk.yellow(`\nConcatenating app='frappe' JS assets...\n`));
+	console.log(chalk.yellow(`\nApp: frappe. Concatenating JS assets...\n`));
 
 	// From build.json, get the "concat" object
 	const obj_build_concat = get_build_json('frappe')['concat']
@@ -113,7 +113,7 @@ function ensure_js_css_dirs() {
 
 function show_production_message() {
 	const production = process.env.FRAPPE_ENV === 'production';
-	console.log(chalk.green(`Running in ${production ? 'Production' : 'Development'} mode.`));
+	console.log(chalk.green(`NodeJS Concat/Rollup/Bundle. Running in ${production ? 'Production' : 'Development'} mode.`));
 }
 
 // Main Execution:
