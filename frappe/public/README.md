@@ -1,7 +1,7 @@
-# build.json
+## build.json
 The JSON format does not support comments.  So adding my notes here.
 
-## Improvements of 'noyarn'
+### Improvements of 'noyarn'
 The "noyarn" branch has improved on the original 'build.json' by adding an additional level of depth: concat and bundle.
 
 **concat** (1st level)
