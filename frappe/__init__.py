@@ -23,7 +23,7 @@ if sys.version[0] == '2':
 	reload(sys)
 	sys.setdefaultencoding("utf-8")
 
-__version__ = '12.0.15'
+__version__ = '12.2.1'
 __title__ = "Frappe Framework"
 
 local = Local()
@@ -290,7 +290,7 @@ def log(msg):
 
 	debug_log.append(as_unicode(msg))
 
-def msgprint(msg, title=None, raise_exception=0, as_table=False, indicator=None, alert=False):
+def msgprint(msg, title=None, raise_exception=0, as_table=False, indicator=None, alert=False, primary_action=None):
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
 	response JSON and shown in a pop-up / modal.
@@ -299,6 +299,7 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, indicator=None,
 	:param title: [optional] Message title.
 	:param raise_exception: [optional] Raise given exception and show message.
 	:param as_table: [optional] If `msg` is a list of lists, render as HTML table.
+	:param primary_action: [optional] Bind a primary server/client side action.
 	"""
 	from frappe.utils import encode
 
@@ -337,6 +338,9 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, indicator=None,
 
 	if alert:
 		out.alert = 1
+
+	if primary_action:
+		out.primary_action = primary_action
 
 	message_log.append(json.dumps(out))
 
@@ -520,7 +524,7 @@ def read_only():
 		return wrapper_fn
 	return innfn
 
-def only_for(roles):
+def only_for(roles, message=False):
 	"""Raise `frappe.PermissionError` if the user does not have any of the given **Roles**.
 
 	:param roles: List of roles to check."""
@@ -532,6 +536,8 @@ def only_for(roles):
 	roles = set(roles)
 	myroles = set(get_roles())
 	if not roles.intersection(myroles):
+		if message:
+			msgprint(_('Only for {}'.format(', '.join(roles))))
 		raise PermissionError
 
 def get_domain_data(module):

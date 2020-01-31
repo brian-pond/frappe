@@ -1,7 +1,12 @@
 {
 	"css/frappe-web-b4.css": [
-		"public/less/indicator.less",
-		"public/scss/website.scss"
+		"public/scss/website.scss",
+		"public/less/indicator.less"
+	],
+	"css/frappe-chat-web.css": [
+		"public/css/font-awesome.css",
+		"public/css/octicons/octicons.css",
+		"public/less/chat.less"
 	],
 	"concat:js/moment-bundle.min.js": [
 		"node_modules/moment/min/moment-with-locales.min.js",
@@ -12,6 +17,9 @@
 	],
 	"js/frappe-recorder.min.js": [
 		"public/js/frappe/recorder/recorder.js"
+	],
+	"js/checkout.min.js": [
+		"public/js/integrations/razorpay.js"
 	],
 	"js/frappe-web.min.js": [
 		"public/js/frappe/class.js",
@@ -70,6 +78,7 @@
 		"public/less/indicator.less",
 		"public/less/avatar.less",
 		"public/less/navbar.less",
+		"public/less/notifications.less",
 		"public/less/sidebar.less",
 		"public/less/page.less",
 		"public/less/tree.less",
@@ -185,7 +194,9 @@
 
 		"public/js/frappe/ui/toolbar/awesome_bar.js",
 		"public/js/frappe/ui/toolbar/energy_points_notifications.js",
+		"public/js/frappe/ui/notifications/notifications.js",
 		"public/js/frappe/ui/toolbar/search.js",
+		"public/js/frappe/ui/toolbar/tag_utils.js",
 		"public/js/frappe/ui/toolbar/search.html",
 		"public/js/frappe/ui/toolbar/search_header.html",
 		"public/js/frappe/ui/toolbar/search_utils.js",
@@ -325,5 +336,8 @@
 	],
 	"js/barcode_scanner.min.js": [
 		"public/js/frappe/barcode_scanner/quagga.js"
+	],
+	"js/data_import_tools.min.js": [
+		"public/js/frappe/data_import/index.js"
 	]
 }
