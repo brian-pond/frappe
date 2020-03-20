@@ -9,7 +9,7 @@ import shutil
 import re
 import warnings
 from os.path import exists as path_exists, join as join_path, abspath, isdir
-# from distutils.spawn import find_executable
+from distutils.spawn import find_executable
 from six import iteritems, text_type
 from frappe.utils.minify import JavascriptMinify
 

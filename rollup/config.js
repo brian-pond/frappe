@@ -2,17 +2,35 @@ const path = require('path');
 const fs = require('fs');
 const chalk = require('chalk');
 const log = console.log; // eslint-disable-line
+const toml = require('toml');
 
-const multi_entry 	= require('@rollup/plugin-multi-entry');
-const commonjs 		= require('@rollup/plugin-commonjs');
-const node_resolve 	= require('@rollup/plugin-node-resolve');
-const postcss 		= require('rollup-plugin-postcss');
-const buble 		= require('@rollup/plugin-buble');
-const { terser } 	= require('rollup-plugin-terser');
-const vue 			= require('rollup-plugin-vue');
-const frappe_html 	= require('./frappe-html-plugin');
+// Determine appropriate JS Package Manager based on Bench configuration.
+const bench_config = toml.parse(fs.readFileSync('/etc/bench/gitconfig.toml', 'utf-8'));
+js_package_manager = bench_config.package_management.javascript
 
-const production = process.env.FRAPPE_ENV === 'production';
+// Some packages have slightly different names in NPM vs Yarn
+if (js_package_manager == 'npm') {
+	const multi_entry = require('@rollup/plugin-multi-entry');
+	const commonjs = require('@rollup/plugin-commonjs');
+	const node_resolve = require('@rollup/plugin-node-resolve');
+	const buble = require('@rollup/plugin-buble');	
+}
+else if (js_package_manager == 'yarn') {
+	const multi_entry = require('rollup-plugin-multi-entry');
+	const commonjs = require('rollup-plugin-commonjs');
+	const node_resolve = require('rollup-plugin-node-resolve');
+	const buble = require('rollup-plugin-buble');	
+}
+else {
+	throw new Error(chalk.red(`Package manager (per Bench) is neither NPM or Yarn.`))
+}
+
+const postcss = require('rollup-plugin-postcss');
+const { terser } = require('rollup-plugin-terser');
+const vue = require('rollup-plugin-vue');
+const frappe_html = require('./frappe-html-plugin');
+
+const is_production = process.env.FRAPPE_ENV === 'production';
 
 const {
 	apps_list,
@@ -68,7 +86,7 @@ function get_rollup_options_for_js(output_file, input_files) {
 				paths: node_resolve_paths
 			}
 		}),
-		production && terser()
+		is_production && terser()
 	];
 
 	return {
@@ -111,7 +129,7 @@ function get_rollup_options_for_js(output_file, input_files) {
 
 function get_rollup_options_for_css(output_file, input_files) {
 	const output_path = path.resolve(assets_path, output_file);
-	const minimize_css = output_path.startsWith('css/') && production;
+	const minimize_css = output_path.startsWith('css/') && is_production;
 
 	const plugins = [
 		// enables array of inputs
