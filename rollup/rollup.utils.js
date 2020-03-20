@@ -14,10 +14,7 @@ const app_paths = apps_list.reduce((out, app) => {
 	out[app] = path.resolve(bench_path, 'apps', app, app)
 	return out;
 }, {});
-const public_paths = apps_list.reduce((out, app) => {
-	out[app] = path.resolve(app_paths[app], 'public');
-	return out;
-}, {});
+
 const public_js_paths = apps_list.reduce((out, app) => {
 	out[app] = path.resolve(app_paths[app], 'public/js');
 	return out;
@@ -38,15 +35,30 @@ const bundle_map = apps_list.reduce((out, app) => {
 	return out;
 }, {});
 
-const get_public_path = app => public_paths[app];
+const public_paths = apps_list.reduce((out, app) => {
+	// This creates a Key-Value array.  [app].[path_to_public_directory]
+	out[app] = path.resolve(app_paths[app], 'public');
+	return out;
+}, {});
 
-const get_build_json_path = app => path.resolve(get_public_path(app), 'build.json');
+const get_public_path = app => {
+	// Given an 'app' parameter, return the fully qualified path to the 'public' directory.
+	return public_paths[app];
+};
+
+const get_build_json_path = app => {
+	// Given parameter 'app', return the fully qualified path to the 'public/build.json' file.
+	return path.resolve(get_public_path(app), 'build.json');
+};
 
 function get_build_json(app) {
+	// Purpose: Read 'build.json' synchronously.
+	// Returns: Object
 	try {
-		return require(get_build_json_path(app));
-	} catch (e) {
-		// build.json does not exist
+		const jsonString = fs.readFileSync(get_build_json_path(app))
+		return JSON.parse(jsonString)	// Returns an Object.
+	} catch(err) {
+		console.log(err)
 		return null;
 	}
 }

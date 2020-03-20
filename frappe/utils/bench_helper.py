@@ -9,6 +9,7 @@ import traceback
 
 click.disable_unicode_literals_warning = True
 
+
 def main():
 	commands = get_app_groups()
 	commands.update({
@@ -16,6 +17,7 @@ def main():
 		'get-frappe-help': get_frappe_help
 	})
 	click.Group(commands=commands)(prog_name='bench')
+
 
 def get_app_groups():
 	'''Get all app groups, put them in main group "frappe" since bench is
@@ -29,10 +31,12 @@ def get_app_groups():
 	ret = dict(frappe=click.group(name='frappe', commands=commands)(app_group))
 	return ret
 
+
 def get_app_group(app):
 	app_commands = get_app_commands(app)
 	if app_commands:
 		return click.group(name=app, commands=app_commands)(app_group)
+
 
 @click.option('--site')
 @click.option('--profile', is_flag=True, default=False, help='Profile')
@@ -41,7 +45,7 @@ def get_app_group(app):
 @click.pass_context
 def app_group(ctx, site=False, force=False, verbose=False, profile=False):
 	ctx.obj = {
-		'sites': get_sites(site),
+		'sites': site if site else frappe.utils.get_sites(),  # conditional iif
 		'force': force,
 		'verbose': verbose,
 		'profile': profile
@@ -61,7 +65,8 @@ def get_sites(site_arg):
 
 def get_app_commands(app):
 	if os.path.exists(os.path.join('..', 'apps', app, app, 'commands.py'))\
-		or os.path.exists(os.path.join('..', 'apps', app, app, 'commands', '__init__.py')):
+	   or os.path.exists(os.path.join('..', 'apps',
+	                                  app, app, 'commands', '__init__.py')):
 		try:
 			app_command_module = importlib.import_module(app + '.commands')
 		except Exception:
@@ -75,6 +80,7 @@ def get_app_commands(app):
 		ret[command.name] = command
 	return ret
 
+
 @click.command('get-frappe-commands')
 def get_frappe_commands():
 	commands = list(get_app_commands('frappe'))
@@ -86,12 +92,15 @@ def get_frappe_commands():
 
 	print(json.dumps(commands))
 
+
 @click.command('get-frappe-help')
 def get_frappe_help():
 	print(click.Context(get_app_groups()['frappe']).get_help())
 
+
 def get_apps():
 	return frappe.get_all_apps(with_internal_apps=False, sites_path='.')
+
 
 if __name__ == "__main__":
 	main()

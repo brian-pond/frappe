@@ -2,17 +2,35 @@ const path = require('path');
 const fs = require('fs');
 const chalk = require('chalk');
 const log = console.log; // eslint-disable-line
+const toml = require('toml');
 
-const multi_entry = require('rollup-plugin-multi-entry');
-const commonjs = require('rollup-plugin-commonjs');
-const node_resolve = require('rollup-plugin-node-resolve');
+// Determine appropriate JS Package Manager based on Bench configuration.
+const bench_config = toml.parse(fs.readFileSync('/etc/bench/gitconfig.toml', 'utf-8'));
+js_package_manager = bench_config.package_management.javascript
+
+// Some packages have slightly different names in NPM vs Yarn
+if (js_package_manager == 'npm') {
+	const multi_entry = require('@rollup/plugin-multi-entry');
+	const commonjs = require('@rollup/plugin-commonjs');
+	const node_resolve = require('@rollup/plugin-node-resolve');
+	const buble = require('@rollup/plugin-buble');	
+}
+else if (js_package_manager == 'yarn') {
+	const multi_entry = require('rollup-plugin-multi-entry');
+	const commonjs = require('rollup-plugin-commonjs');
+	const node_resolve = require('rollup-plugin-node-resolve');
+	const buble = require('rollup-plugin-buble');	
+}
+else {
+	throw new Error(chalk.red(`Package manager (per Bench) is neither NPM or Yarn.`))
+}
+
 const postcss = require('rollup-plugin-postcss');
-const buble = require('rollup-plugin-buble');
 const { terser } = require('rollup-plugin-terser');
 const vue = require('rollup-plugin-vue');
 const frappe_html = require('./frappe-html-plugin');
 
-const production = process.env.FRAPPE_ENV === 'production';
+const is_production = process.env.FRAPPE_ENV === 'production';
 
 const {
 	apps_list,
@@ -29,6 +47,8 @@ function get_rollup_options(output_file, input_files) {
 		return get_rollup_options_for_js(output_file, input_files);
 	} else if(output_file.endsWith('.css')) {
 		return get_rollup_options_for_css(output_file, input_files);
+	} else {
+		throw new Error(chalk.red(`Cannot determine Rollup options for file '${output_file}'`))
 	}
 }
 
@@ -55,7 +75,8 @@ function get_rollup_options_for_js(output_file, input_files) {
 			objectAssign: 'Object.assign',
 			transforms: {
 				dangerousForOf: true,
-				classes: false
+				classes: false,
+				asyncAwait: false	// Brian - Added because of async function in './frappe/website/js/website.js'
 			},
 			exclude: [path.resolve(bench_path, '**/*.css'), path.resolve(bench_path, '**/*.less')]
 		}),
@@ -65,7 +86,7 @@ function get_rollup_options_for_js(output_file, input_files) {
 				paths: node_resolve_paths
 			}
 		}),
-		production && terser()
+		is_production && terser()
 	];
 
 	return {
@@ -108,7 +129,7 @@ function get_rollup_options_for_js(output_file, input_files) {
 
 function get_rollup_options_for_css(output_file, input_files) {
 	const output_path = path.resolve(assets_path, output_file);
-	const minimize_css = output_path.startsWith('css/') && production;
+	const minimize_css = output_path.startsWith('css/') && is_production;
 
 	const plugins = [
 		// enables array of inputs
@@ -155,14 +176,12 @@ function get_rollup_options_for_css(output_file, input_files) {
 }
 
 function get_options_for(app) {
-	const build_json = get_build_json(app);
-	if (!build_json) return [];
+	const obj_build_bundle = get_build_json(app)['bundle'];
+	if (!obj_build_bundle) return [];
 
-	return Object.keys(build_json)
+	return Object.keys(obj_build_bundle)
 		.map(output_file => {
-			if (output_file.startsWith('concat:')) return null;
-
-			const input_files = build_json[output_file]
+			const input_files = obj_build_bundle[output_file]
 				.map(input_file => {
 					let prefix = get_app_path(app);
 					if (input_file.startsWith('node_modules/')) {

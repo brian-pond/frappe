@@ -2,29 +2,36 @@
 
 from __future__ import unicode_literals, absolute_import, print_function
 import click
-import json, os, sys, subprocess
+import json
+import os
+import sys
+import subprocess
 from distutils.spawn import find_executable
 import frappe
 from frappe.commands import pass_context, get_site
 from frappe.utils import update_progress_bar, get_bench_path
 from frappe.utils.response import json_handler
 from coverage import Coverage
-import cProfile, pstats
+import cProfile
+import pstats
 from six import StringIO
+
 
 @click.command('build')
 @click.option('--app', help='Build assets for app')
 @click.option('--make-copy', is_flag=True, default=False, help='Copy the files instead of symlinking')
 @click.option('--restore', is_flag=True, default=False, help='Copy the files instead of symlinking with force')
 @click.option('--verbose', is_flag=True, default=False, help='Verbose')
-def build(app=None, make_copy=False, restore = False, verbose=False):
+def build(app=None, make_copy=False, restore=False, verbose=False):
 	"Minify + concatenate JS and CSS files, build translations"
 	import frappe.build
 	import frappe
 	frappe.init('')
-	# don't minify in developer_mode for faster builds
+	# If in developer_mode, do not minify; this can improve the build speed.
 	no_compress = frappe.local.conf.developer_mode or False
-	frappe.build.bundle(no_compress, app=app, make_copy=make_copy, restore = restore, verbose=verbose)
+	frappe.build.bundle(no_compress, app=app, make_copy=make_copy,
+	                    restore=restore, verbose=verbose)
+
 
 @click.command('watch')
 def watch():
@@ -34,6 +41,7 @@ def watch():
 	import frappe.build
 	frappe.init('')
 	frappe.build.watch(True)
+
 
 @click.command('clear-cache')
 @pass_context
@@ -51,6 +59,7 @@ def clear_cache(context):
 		finally:
 			frappe.destroy()
 
+
 @click.command('clear-website-cache')
 @pass_context
 def clear_website_cache(context):
@@ -63,6 +72,7 @@ def clear_website_cache(context):
 			frappe.website.render.clear_cache()
 		finally:
 			frappe.destroy()
+
 
 @click.command('destroy-all-sessions')
 @click.option('--reason')
@@ -79,6 +89,7 @@ def destroy_all_sessions(context, reason=None):
 		finally:
 			frappe.destroy()
 
+
 @click.command('show-config')
 @pass_context
 def show_config(context):
@@ -89,12 +100,14 @@ def show_config(context):
 	configuration = frappe.get_site_config(sites_path=sites_path, site_path=site_path)
 	print_config(configuration)
 
+
 def print_config(config):
 	for conf, value in config.items():
 		if isinstance(value, dict):
 			print_config(value)
 		else:
 			print("\t{:<50} {:<15}".format(conf, value))
+
 
 @click.command('reset-perms')
 @pass_context
@@ -111,6 +124,7 @@ def reset_perms(context):
 					reset_perms(d)
 		finally:
 			frappe.destroy()
+
 
 @click.command('execute')
 @click.argument('method')
@@ -191,6 +205,7 @@ def export_doc(context, doctype, docname):
 		finally:
 			frappe.destroy()
 
+
 @click.command('export-json')
 @click.argument('doctype')
 @click.argument('path')
@@ -207,6 +222,7 @@ def export_json(context, doctype, path, name=None):
 		finally:
 			frappe.destroy()
 
+
 @click.command('export-csv')
 @click.argument('doctype')
 @click.argument('path')
@@ -222,6 +238,7 @@ def export_csv(context, doctype, path):
 		finally:
 			frappe.destroy()
 
+
 @click.command('export-fixtures')
 @click.option('--app', default=None, help='Export fixtures of a specific app')
 @pass_context
@@ -235,6 +252,7 @@ def export_fixtures(context, app=None):
 			export_fixtures(app=app)
 		finally:
 			frappe.destroy()
+
 
 @click.command('import-doc')
 @click.argument('path')
@@ -257,15 +275,16 @@ def import_doc(context, path, force=False):
 		finally:
 			frappe.destroy()
 
+
 @click.command('import-csv')
 @click.argument('path')
 @click.option('--only-insert', default=False, is_flag=True, help='Do not overwrite existing records')
 @click.option('--submit-after-import', default=False, is_flag=True, help='Submit document after importing it')
 @click.option('--ignore-encoding-errors', default=False, is_flag=True, help='Ignore encoding errors while coverting to unicode')
 @click.option('--no-email', default=True, is_flag=True, help='Send email if applicable')
-
 @pass_context
-def import_csv(context, path, only_insert=False, submit_after_import=False, ignore_encoding_errors=False, no_email=True):
+def import_csv(context, path, only_insert=False, submit_after_import=False,
+               ignore_encoding_errors=False, no_email=True):
 	"Import CSV using data import"
 	from frappe.core.doctype.data_import import importer
 	from frappe.utils.csvutils import read_csv_content
@@ -284,9 +303,9 @@ def import_csv(context, path, only_insert=False, submit_after_import=False, igno
 	frappe.connect()
 
 	try:
-		importer.upload(content, submit_after_import=submit_after_import, no_email=no_email,
-			ignore_encoding_errors=ignore_encoding_errors, overwrite=not only_insert,
-			via_console=True)
+		importer.upload(content, submit_after_import=submit_after_import,
+		                no_email=no_email, ignore_encoding_errors=ignore_encoding_errors,
+		                overwrite=not only_insert, via_console=True)
 		frappe.db.commit()
 	except Exception:
 		print(frappe.get_traceback())
@@ -512,7 +531,10 @@ def run_ui_tests(context, app, headless=False):
 
 	# run for headless mode
 	run_or_open = 'run' if headless else 'open'
-	command = '{site_env} {password_env} yarn run cypress:{run_or_open}'
+
+    # Brian - This may not work, simply substituting "npm" for "yarn"
+    # Here's some info on the cypress CLI https://docs.cypress.io/guides/guides/command-line.html
+	command = '{site_env} {password_env} npm run cypress:{run_or_open}'
 	formatted_command = command.format(site_env=site_env, password_env=password_env, run_or_open=run_or_open)
 	frappe.commands.popen(formatted_command, cwd=app_base_path, raise_err=True)
 

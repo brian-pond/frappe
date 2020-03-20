@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const rollup = require('rollup');
-const log = console.log; // eslint-disable-line
 
 const {
 	get_build_json,
@@ -10,45 +9,30 @@ const {
 	apps_list,
 	run_serially,
 	assets_path,
-	sites_path
+	sites_path,
+	get_build_json_path
 } = require('./rollup.utils');
 
 const {
 	get_options_for
 } = require('./config');
 
-const build_for_app = process.argv[2] === '--app' ? process.argv[3] : null;
-
-show_production_message();
-ensure_js_css_dirs();
-concatenate_files();
-create_build_file();
-
-if (build_for_app) {
-	build_assets_for_app(build_for_app)
-} else {
-	build_assets_for_all_apps();
-}
-
 function build_assets_for_all_apps() {
 	run_serially(
-		apps_list.map(app => () => build_assets(app))
+		apps_list.map(app => () => build_assets_for_app(app))
 	);
 }
 
 function build_assets_for_app(app) {
-	build_assets(app)
-}
-
-function build_assets(app) {
+	// options is an Object containing input and output configuration and generation options.
 	const options = get_options_for(app);
 	if (!options.length) return Promise.resolve();
-	log(chalk.yellow(`\nBuilding ${app} assets...\n`));
+	console.log(chalk.yellow(`\nApp: {app}. Performing rollup & bundle of JS and CSS assets...\n`));
 
 	const promises = options.map(({ inputOptions, outputOptions, output_file}) => {
-		return build(inputOptions, outputOptions)
+		return rollup_and_bundle(inputOptions, outputOptions)
 			.then(() => {
-				log(`${chalk.green('✔')} Built ${output_file}`);
+				console.log(`${chalk.green('✔')} Built ${output_file}`);
 			});
 	});
 
@@ -56,31 +40,48 @@ function build_assets(app) {
 	return Promise.all(promises)
 		.then(() => {
 			const time = Date.now() - start;
-			log(chalk.green(`✨  Done in ${time / 1000}s`));
+			console.log(chalk.green(`✨  Done in ${time / 1000}s`));
 		});
 }
 
-function build(inputOptions, outputOptions) {
-	return rollup.rollup(inputOptions)
-		.then(bundle => bundle.write(outputOptions))
-		.catch(err => {
-			log(chalk.red(err));
-			// Kill process to fail in a CI environment
-			if (process.env.CI) {
-				process.kill(process.pid)
-			}
-		});
+async function rollup_and_bundle(inputOptions, outputOptions) {
+	// Rollup is a 3rd party NPM package.  
+	try {
+		const bundle = await rollup.rollup(inputOptions);
+		return bundle.write(outputOptions);
+	}
+	catch (err) {
+		console.log(chalk.red(err));
+		// Kill process to fail in a CI environment
+		if (process.env.CI) {
+			process.kill(process.pid);
+		}
+	}
 }
 
 function concatenate_files() {
-	// only concatenates files, not processed through rollup
+	/* 
+		Scope: This function is hard-coded for the Frappe App --only--.
+		Purpose: Combine multiple *.js files together, to reduce number of HTTP calls.
+		Pseudocode:
+		1. In each APP's 'public' folder, there can be a file named 'build.json'
+		2. Some of this JSON may contain keys beginning with letters "concat", like this:
 
-	const files_to_concat = Object.keys(get_build_json('frappe'))
-		.filter(filename => filename.startsWith('concat:'));
+	 		"concat:js/moment-bundle.min.js": [
+				"node_modules/moment/min/moment-with-locales.min.js",
+				"node_modules/moment-timezone/builds/moment-timezone-with-data.min.js"
+			],
+		
+		3. This function concatenates the child files, into a larger file with the parent node's name.
+		4. Results are stored in each SITE's asset folders:
+			../mybench/sites/assets/js/<concatenated_file_name>
+	*/
+	console.log(chalk.yellow(`\nApp: frappe. Concatenating JS assets...\n`));
 
-	files_to_concat.forEach(output_file => {
-		const input_files = get_build_json('frappe')[output_file];
+	// From build.json, get the "concat" object
+	const obj_build_concat = get_build_json('frappe')['concat']
 
+	Object.entries(obj_build_concat).map(([output_file, input_files]) => {
 		const file_content = input_files.map(file_name => {
 			let prefix = get_app_path('frappe');
 			if (file_name.startsWith('node_modules/')) {
@@ -91,15 +92,11 @@ function concatenate_files() {
 		}).join('\n\n');
 
 		const output_file_path = output_file.slice('concat:'.length);
+		const build_json_path = get_build_json_path('frappe')
 		const target_path = path.resolve(assets_path, output_file_path);
 		fs.writeFileSync(target_path, file_content);
-		log(`${chalk.green('✔')} Built ${output_file_path}`);
+		console.log(`${chalk.green('✔')} Built ${output_file_path} using concatenation rules in '${build_json_path}.'`);
 	});
-}
-
-function create_build_file() {
-	const touch = require('touch');
-	touch(path.join(sites_path, '.build'), { force: true });
 }
 
 function ensure_js_css_dirs() {
@@ -116,5 +113,21 @@ function ensure_js_css_dirs() {
 
 function show_production_message() {
 	const production = process.env.FRAPPE_ENV === 'production';
-	log(chalk.yellow(`${production ? 'Production' : 'Development'} mode`));
+	console.log(chalk.green(`NodeJS Concat/Rollup/Bundle. Running in ${production ? 'Production' : 'Development'} mode.`));
+}
+
+// Main Execution:
+show_production_message();
+ensure_js_css_dirs();
+concatenate_files();
+
+// Create a .build file
+const touch = require('touch');
+touch(path.join(sites_path, '.build'), { force: true });
+
+const build_for_app = process.argv[2] === '--app' ? process.argv[3] : null;
+if (build_for_app) {
+	build_assets_for_app(build_for_app)
+} else {
+	build_assets_for_all_apps();
 }
