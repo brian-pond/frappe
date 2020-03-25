@@ -183,7 +183,12 @@ def _reinstall(site, admin_password=None, mariadb_root_username=None, mariadb_ro
 def install_app(context, apps):
 	"Install a new app to site, supports multiple apps"
 	from frappe.installer import install_app as _install_app
-	for site in context.sites:
+	# Ensure that we're referencing a Python List, not a String.
+	sites_list = context.sites
+	if isinstance(sites_list, str):
+		sites_list = [context.sites]
+
+	for site in sites_list:
 		frappe.init(site=site)
 		frappe.connect()
 		try:

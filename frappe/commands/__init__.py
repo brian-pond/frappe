@@ -8,7 +8,7 @@ import cProfile
 import pstats
 import frappe
 import frappe.utils
-import subprocess # nosec
+import subprocess  # nosec
 from functools import wraps
 from six import StringIO
 
@@ -28,7 +28,7 @@ def pass_context(f):
 			pr.disable()
 			s = StringIO()
 			ps = pstats.Stats(pr, stream=s)\
-				.sort_stats('cumtime', 'tottime', 'ncalls')
+				.sort_stats('cumtime', 'tottime', 'ncalls')  # noqa ET126
 			ps.print_stats()
 
 			# print the top-100
@@ -47,6 +47,7 @@ def get_site(context):
 		print('Please specify --site sitename')
 		sys.exit(1)
 
+# noqa E221
 def popen(command, *args, **kwargs):
 	output    = kwargs.get('output', True)
 	cwd       = kwargs.get('cwd')
@@ -54,10 +55,10 @@ def popen(command, *args, **kwargs):
 	raise_err = kwargs.get('raise_err')
 
 	proc = subprocess.Popen(command,
-		stdout = None if output else subprocess.PIPE,
-		stderr = None if output else subprocess.PIPE,
-		shell  = shell,
-		cwd    = cwd
+		stdout=None if output else subprocess.PIPE,
+		stderr=None if output else subprocess.PIPE,
+		shell=shell,
+		cwd=cwd
 	)
 
 	return_ = proc.wait()
@@ -78,5 +79,6 @@ def get_commands():
 	from .utils import commands as utils_commands
 
 	return list(set(scheduler_commands + site_commands + translate_commands + utils_commands))
+
 
 commands = get_commands()

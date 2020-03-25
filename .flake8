@@ -1,3 +1,9 @@
 [flake8]
 exclude = .git,__pycache__
 use-flake8-tabs=true
+ignore=E501,E302,ET128 #,W191,E128,E126
+tab-width=4
+
+per-file-ignores =
+    frappe/commands/__init__.py:E221
+
