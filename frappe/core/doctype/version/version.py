@@ -21,6 +21,17 @@ class Version(Document):
 		else:
 			return False
 
+	def for_insert(self, doc):
+		updater_reference = doc.flags.updater_reference
+		data = {
+			'creation': doc.creation,
+			'updater_reference': updater_reference,
+			'created_by': doc.owner
+		}
+		self.ref_doctype = doc.doctype
+		self.docname = doc.name
+		self.data = frappe.as_json(data)
+
 	def get_data(self):
 		return json.loads(self.data)
 
@@ -45,7 +56,11 @@ def get_diff(old, new, for_child=False):
 
 	# capture data import if set
 	data_import = new.flags.via_data_import
-	out = frappe._dict(changed = [], added = [], removed = [], row_changed = [], data_import=data_import)
+	updater_reference = new.flags.updater_reference
+
+	out = frappe._dict(changed = [], added = [], removed = [],
+		row_changed = [], data_import=data_import, updater_reference=updater_reference)
+
 	for df in new.meta.fields:
 		if df.fieldtype in no_value_fields and df.fieldtype not in table_fields:
 			continue

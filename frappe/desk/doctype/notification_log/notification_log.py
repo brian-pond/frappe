@@ -6,14 +6,13 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.desk.doctype.notification_settings.notification_settings import (is_notifications_enabled,
-	is_email_notifications_enabled, is_email_notifications_enabled_for_type, set_seen_value)
+from frappe.desk.doctype.notification_settings.notification_settings import (is_notifications_enabled, is_email_notifications_enabled_for_type)
 
 class NotificationLog(Document):
 	def after_insert(self):
 		frappe.publish_realtime('notification', after_commit=True, user=self.for_user)
 		set_notifications_as_unseen(self.for_user)
-		if is_email_notifications_enabled(self.for_user):
+		if is_email_notifications_enabled_for_type(self.for_user, self.type):
 			send_notification_email(self)
 
 
@@ -73,9 +72,6 @@ def make_notification_logs(doc, users):
 					_doc.insert(ignore_permissions=True)
 
 def send_notification_email(doc):
-	is_type_enabled = is_email_notifications_enabled_for_type(doc.for_user, doc.type)
-	if not is_type_enabled:
-		return
 
 	if doc.type == 'Energy Point' and doc.email_content is None:
 		return
@@ -102,13 +98,16 @@ def send_notification_email(doc):
 	)
 
 def get_email_header(doc):
-	return {
+	docname = doc.document_name
+	header_map = {
 		'Default': _('New Notification'),
-		'Mention': _('New Mention'),
-		'Assignment': _('New Assignment'),
-		'Share': _('New Document Shared'),
-		'Energy Point': _('Energy Point Update'),
-	}[doc.type or 'Default']
+		'Mention': _('New Mention on {0}').format(docname),
+		'Assignment': _('Assignment Update on {0}').format(docname),
+		'Share': _('New Document Shared {0}').format(docname),
+		'Energy Point': _('Energy Point Update on {0}').format(docname),
+	}
+
+	return header_map[doc.type or 'Default']
 
 
 @frappe.whitelist()

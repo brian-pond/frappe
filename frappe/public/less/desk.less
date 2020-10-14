@@ -1112,6 +1112,9 @@ body.no-sidebar {
 		bottom: 0;
 		margin: 0;
 		max-width: 500px;
+		.modal-content {
+			min-height: 0;
+		}
 	}
 	.modal-body {
 		display: none;
@@ -1129,5 +1132,15 @@ body.no-sidebar {
 .app-change-log-body {
 	h1 {
 		font-size: 20px;
+	}
+}
+
+.new-version-log {
+	.new-version-links {
+		padding: 5px 0px;
+	}
+
+	&:not(:last-child) {
+		margin-bottom: 1em;
 	}
 }

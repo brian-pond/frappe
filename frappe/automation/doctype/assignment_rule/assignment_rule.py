@@ -170,7 +170,7 @@ def reopen_closed_assignment(doc):
 	return True
 
 def apply(doc, method=None, doctype=None, name=None):
-	if frappe.flags.in_patch or frappe.flags.in_install:
+	if frappe.flags.in_patch or frappe.flags.in_install or frappe.flags.in_setup_wizard:
 		return
 
 	if not doc and doctype and name:
@@ -225,9 +225,10 @@ def apply(doc, method=None, doctype=None, name=None):
 				continue
 
 			if not new_apply:
-				reopen =  reopen_closed_assignment(doc)
-				if reopen:
-					break
+				if not assignment_rule.safe_eval('close_condition', doc):
+					reopen = reopen_closed_assignment(doc)
+					if reopen:
+						break
 			close = assignment_rule.apply_close(doc, assignments)
 			if close:
 				break

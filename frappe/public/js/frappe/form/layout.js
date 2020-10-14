@@ -155,7 +155,8 @@ frappe.ui.form.Layout = Class.extend({
 			doctype: this.doctype,
 			parent: this.column.wrapper.get(0),
 			frm: this.frm,
-			render_input: render
+			render_input: render,
+			doc: this.doc
 		});
 
 		fieldobj.layout = this;
@@ -499,7 +500,7 @@ frappe.ui.form.Layout = Class.extend({
 			return;
 		}
 
-		var parent = this.frm ? this.frm.doc : null;
+		var parent = this.frm ? this.frm.doc : this.doc || null;
 
 		if(typeof(expression) === 'boolean') {
 			out = expression;
