@@ -1,29 +1,32 @@
-Babel==2.6.0
+# The Python package 'install_requires' for Frappe v12
+# Frappe finally did the right thing, and pinned versions, on Nov 28, 2019.
+# However, as of February 19th 2020, they still hadn't merged into version-12  :eyeroll
+babel==2.6.0
 beautifulsoup4==4.8.1
-bleach-whitelist==0.0.10
 bleach==2.1.4
+bleach-whitelist==0.0.10
 boto3==1.10.18
 braintree==3.57.1
 chardet==3.0.4
-Click==7.0
+click==7.0
 coverage==4.5.4
 croniter==0.3.30
 cryptography==2.8
 dropbox==9.1.0
-email-reply-parser==0.5.9
+email_reply_parser==0.5.9
 Faker==2.0.4
 frontmatter==3.0.5
 future==0.18.2
 GitPython==2.1.11
 google-api-python-client==1.7.11
+google-auth==1.7.1
 google-auth-httplib2==0.0.3
 google-auth-oauthlib==0.4.1
-google-auth==1.7.1
 googlemaps==3.1.1
 gunicorn==19.10.0
 html2text==2016.9.19
 ipython==5.8.0
-Jinja2==2.10.3
+jinja2==2.10.3
 markdown2==2.3.7
 maxminddb-geolite2==2018.703
 ndg-httpsclient==0.5.1
@@ -39,11 +42,11 @@ pyasn1==0.4.7
 Pygments==2.2.0
 PyJWT==1.7.1
 PyMySQL==0.9.3
-pyOpenSSL==19.0.0
+pyopenssl==19.0.0
 pyotp==2.3.0
 PyPDF2==1.26.0
 pypng==0.0.20
-PyQRCode==1.2.1
+pyqrcode==1.2.1
 python-dateutil==2.8.1
 pytz==2019.3
 PyYAML==5.1

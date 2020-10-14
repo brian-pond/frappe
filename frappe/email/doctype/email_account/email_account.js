@@ -112,6 +112,12 @@ frappe.ui.form.on("Email Account", {
 		frm.events.notify_if_unreplied(frm);
 		frm.events.show_gmail_message_for_less_secure_apps(frm);
 
+        // Spectrum Fruits
+        frm.add_custom_button(__('Test: Show Email Id'), function() {
+            frappe.msgprint(frm.doc.email_id);
+            } // , __("GroupName")
+        );
+
 		if(frappe.route_flags.delete_user_from_locals && frappe.route_flags.linked_user) {
 			delete frappe.route_flags.delete_user_from_locals;
 			delete locals['User'][frappe.route_flags.linked_user];
@@ -188,4 +194,5 @@ frappe.ui.form.on("Email Account", {
 			});
 		}
 	}
+
 });

@@ -41,6 +41,9 @@ class PrintFormat(Document):
 		from frappe.core.doctype.file.file import extract_images_from_html
 		if self.format_data:
 			data = json.loads(self.format_data)
+			if isinstance(data, int):
+				frappe.msgprint(["Debugging Message", "Variable: 'self.format_data'", f"Value: {self.format_data}"])
+				raise Exception("Variable 'self.format_data' is unexpectedly of type 'int'")
 			for df in data:
 				if df.get('fieldtype') and df['fieldtype'] in ('HTML', 'Custom HTML') and df.get('options'):
 					df['options'] = extract_images_from_html(self, df['options'])
