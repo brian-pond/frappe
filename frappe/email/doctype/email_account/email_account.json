@@ -27,6 +27,7 @@
   "default_incoming",
   "email_sync_option",
   "initial_sync_count",
+  "create_contact",
   "section_break_12",
   "enable_automatic_linking",
   "section_break_13",
@@ -36,6 +37,7 @@
   "outgoing_mail_settings",
   "enable_outgoing",
   "smtp_server",
+  "use_ssl_for_outgoing",
   "use_tls",
   "smtp_port",
   "default_outgoing",
@@ -389,10 +391,23 @@
    "fieldname": "incoming_port",
    "fieldtype": "Data",
    "label": "Port"
+  },
+  {
+   "default": "1",
+   "fieldname": "create_contact",
+   "fieldtype": "Check",
+   "label": "Create Contacts from Incoming Emails"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!doc.domain && doc.enable_outgoing",
+   "fieldname": "use_ssl_for_outgoing",
+   "fieldtype": "Check",
+   "label": "Use SSL for Outgoing"
   }
  ],
  "icon": "fa fa-inbox",
- "modified": "2019-08-31 18:01:15.568831",
+ "modified": "2020-10-28 16:05:05.546557",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Account",

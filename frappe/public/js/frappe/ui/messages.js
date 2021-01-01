@@ -53,6 +53,37 @@ frappe.confirm = function(message, ifyes, ifno) {
 	return d;
 }
 
+frappe.warn = function(title, message_html, proceed_action, primary_label, is_minimizable) {
+	const d = new frappe.ui.Dialog({
+		title: title,
+		indicator: 'red',
+		fields: [
+			{
+				fieldtype: 'HTML',
+				fieldname: 'warning_message',
+				options: `<div class="frappe-warning-message">${message_html}</div>`
+			}
+		],
+		primary_action_label: primary_label,
+		primary_action: () => {
+			if (proceed_action) proceed_action();
+			d.hide();
+		},
+		secondary_action_label: __("Cancel"),
+		minimizable: is_minimizable
+	});
+
+	d.footer = $(`<div class="modal-footer"></div>`).insertAfter($(d.modal_body));
+
+	d.get_close_btn().appendTo(d.footer);
+	d.get_primary_btn().appendTo(d.footer);
+
+	d.footer.find('.btn-primary').removeClass('btn-primary').addClass('btn-danger');
+
+	d.show();
+	return d;
+};
+
 frappe.prompt = function(fields, callback, title, primary_label) {
 	if (typeof fields === "string") {
 		fields = [{

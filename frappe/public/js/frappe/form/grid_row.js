@@ -22,9 +22,6 @@ export default class GridRow {
 				if(me.grid.allow_on_grid_editing() && me.grid.is_editable()) {
 					// pass
 				} else {
-					if (!me.grid.is_editable()) {
-						me.docfields.map(df => df.read_only = 1);
-					}
 					me.toggle_view();
 					return false;
 				}
@@ -374,6 +371,7 @@ export default class GridRow {
 
 		// no text editor in grid
 		if (df.fieldtype=='Text Editor') {
+			df = Object.assign({}, df);
 			df.fieldtype = 'Text';
 		}
 
@@ -393,8 +391,11 @@ export default class GridRow {
 
 		// sync get_query
 		field.get_query = this.grid.get_field(df.fieldname).get_query;
-		field.df.onchange = function() {
-			me.grid.grid_rows[this.doc.idx-1].refresh_field(this.df.fieldname);
+
+		var field_on_change_function = field.df.onchange;
+		field.df.onchange = function(e) {
+			field_on_change_function && field_on_change_function(e);
+			me.grid.grid_rows[field.doc.idx - 1].refresh_field(field.df.fieldname);
 		};
 		field.refresh();
 		if(field.$input) {

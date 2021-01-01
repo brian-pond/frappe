@@ -135,13 +135,11 @@ doc_events = {
 		],
 		"on_trash": [
 			"frappe.desk.notifications.clear_doctype_notifications",
-			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
-			"frappe.cache_manager.build_table_count_cache"
+			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions"
 		],
 		"on_change": [
 			"frappe.social.doctype.energy_point_rule.energy_point_rule.process_energy_points"
-		],
-		"after_insert": "frappe.cache_manager.build_table_count_cache"
+		]
 	},
 	"Event": {
 		"after_insert": "frappe.integrations.doctype.google_calendar.google_calendar.insert_event_in_google_calendar",
@@ -153,9 +151,11 @@ doc_events = {
 		"on_update": "frappe.integrations.doctype.google_contacts.google_contacts.update_contacts_to_google_contacts",
 	},
 	"DocType": {
+		"after_insert": "frappe.cache_manager.build_domain_restriced_doctype_cache",
 		"after_save": "frappe.cache_manager.build_domain_restriced_doctype_cache",
 	},
 	"Page": {
+		"after_insert": "frappe.cache_manager.build_domain_restriced_page_cache",
 		"after_save": "frappe.cache_manager.build_domain_restriced_page_cache",
 	}
 }
@@ -198,7 +198,8 @@ scheduler_events = {
 		"frappe.integrations.doctype.google_contacts.google_contacts.sync",
 		"frappe.automation.doctype.auto_repeat.auto_repeat.make_auto_repeat_entry",
 		"frappe.automation.doctype.auto_repeat.auto_repeat.set_auto_repeat_as_completed",
-		"frappe.email.doctype.unhandled_email.unhandled_email.remove_old_unhandled_emails"
+		"frappe.email.doctype.unhandled_email.unhandled_email.remove_old_unhandled_emails",
+		"frappe.core.doctype.prepared_report.prepared_report.delete_expired_prepared_reports"
 	],
 	"daily_long": [
 		"frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backups_daily",
@@ -258,7 +259,6 @@ setup_wizard_exception = [
 ]
 
 before_migrate = ['frappe.patches.v11_0.sync_user_permission_doctype_before_migrate.execute']
-after_migrate = ['frappe.website.doctype.website_theme.website_theme.generate_theme_files_if_not_exist']
 
 otp_methods = ['OTP App','Email','SMS']
 user_privacy_documents = [

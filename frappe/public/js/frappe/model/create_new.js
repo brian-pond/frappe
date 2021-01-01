@@ -137,10 +137,8 @@ $.extend(frappe.model, {
 
 		// don't set defaults for "User" link field using User Permissions!
 		if (df.fieldtype==="Link" && df.options!=="User") {
-			// 1 - look in user permissions for document_type=="Setup".
-			// We don't want to include permissions of transactions to be used for defaults.
-			if (df.linked_document_type==="Setup"
-				&& has_user_permissions && default_doc) {
+			// If user permission has Is Default enabled or single-user permission has found against respective doctype.
+			if (has_user_permissions && default_doc) {
 				return default_doc;
 			}
 
@@ -308,6 +306,7 @@ $.extend(frappe.model, {
 				selected_children: opts.frm ? opts.frm.get_selected() : null
 			},
 			freeze: true,
+			freeze_message: opts.freeze_message || '',
 			callback: function(r) {
 				if(!r.exc) {
 					frappe.model.sync(r.message);

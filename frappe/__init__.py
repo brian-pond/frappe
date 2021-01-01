@@ -23,7 +23,7 @@ if sys.version[0] == '2':
 	reload(sys)
 	sys.setdefaultencoding("utf-8")
 
-__version__ = '12.4.1'
+__version__ = '12.13.0'
 __title__ = "Frappe Framework"
 
 local = Local()
@@ -170,6 +170,7 @@ def init(site, sites_path=None, new_site=False):
 	local.meta_cache = {}
 	local.form_dict = _dict()
 	local.session = _dict()
+	local.dev_server = os.environ.get('DEV_SERVER', False)
 
 	setup_module_map()
 
@@ -220,9 +221,8 @@ def get_site_config(sites_path=None, site_path=None):
 		if os.path.exists(site_config):
 			config.update(get_file_json(site_config))
 		elif local.site and not local.flags.new_site:
-			print("{0} does not exist".format(local.site))
+			print("Site {0} does not exist".format(local.site))
 			sys.exit(1)
-			#raise IncorrectSitePath, "{0} does not exist".format(site_config)
 
 	return _dict(config)
 
@@ -472,7 +472,8 @@ def sendmail(recipients=[], sender="", subject="No Subject", message="No Message
 	message = content or message
 
 	if as_markdown:
-		message = frappe.utils.md_to_html(message)
+		from frappe.utils import md_to_html
+		message = md_to_html(message)
 
 	if not delayed:
 		now = True
@@ -490,7 +491,9 @@ def sendmail(recipients=[], sender="", subject="No Subject", message="No Message
 whitelisted = []
 guest_methods = []
 xss_safe_methods = []
-def whitelist(allow_guest=False, xss_safe=False):
+allowed_http_methods_for_whitelisted_func = {}
+
+def whitelist(allow_guest=False, xss_safe=False, methods=None):
 	"""
 	Decorator for whitelisting a function and making it accessible via HTTP.
 	Standard request will be `/api/method/[path.to.method]`
@@ -503,9 +506,15 @@ def whitelist(allow_guest=False, xss_safe=False):
 		def myfunc(param1, param2):
 			pass
 	"""
+
+	if not methods:
+		methods = ['GET', 'POST', 'PUT', 'DELETE']
+
 	def innerfn(fn):
-		global whitelisted, guest_methods, xss_safe_methods
+		global whitelisted, guest_methods, xss_safe_methods, allowed_http_methods_for_whitelisted_func
 		whitelisted.append(fn)
+
+		allowed_http_methods_for_whitelisted_func[fn] = methods
 
 		if allow_guest:
 			guest_methods.append(fn)
@@ -580,6 +589,7 @@ def clear_cache(user=None, doctype=None):
 	else: # everything
 		from frappe import translate
 		frappe.cache_manager.clear_user_cache()
+		frappe.cache_manager.clear_domain_cache()
 		translate.clear_cache()
 		reset_metadata_version()
 		local.cache = {}
@@ -1070,8 +1080,8 @@ def get_newargs(fn, kwargs):
 		if (a in fnargs) or varkw:
 			newargs[a] = kwargs.get(a)
 
-	if "flags" in newargs:
-		del newargs["flags"]
+	newargs.pop("ignore_permissions", None)
+	newargs.pop("flags", None)
 
 	return newargs
 
@@ -1114,8 +1124,8 @@ def make_property_setter(args, ignore_validate=False, validate_fields_for_doctyp
 
 def import_doc(path, ignore_links=False, ignore_insert=False, insert=False):
 	"""Import a file using Data Import."""
-	from frappe.core.doctype.data_import import data_import
-	data_import.import_doc(path, ignore_links=ignore_links, ignore_insert=ignore_insert, insert=insert)
+	from frappe.core.doctype.data_import.data_import import import_doc
+	import_doc(path, ignore_links=ignore_links, ignore_insert=ignore_insert, insert=insert)
 
 def copy_doc(doc, ignore_no_copy=True):
 	""" No_copy fields also get copied."""
@@ -1647,7 +1657,8 @@ def mock(type, size = 1, locale = 'en'):
 			results.append(data)
 
 	from frappe.chat.util import squashify
+	return squashify(results)
 
-	results = squashify(results)
-
-	return results
+def validate_and_sanitize_search_inputs(fn):
+	from frappe.desk.search import validate_and_sanitize_search_inputs as func
+	return func(fn)

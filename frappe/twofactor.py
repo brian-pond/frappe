@@ -30,7 +30,7 @@ def two_factor_is_enabled(user=None):
 		if bypass_two_factor_auth and user:
 			user_doc = frappe.get_doc("User", user)
 			restrict_ip_list = user_doc.get_restricted_ip_list() #can be None or one or more than one ip address
-			if restrict_ip_list:
+			if restrict_ip_list and frappe.local.request_ip:
 				for ip in restrict_ip_list:
 					if frappe.local.request_ip.startswith(ip):
 						enabled = False
@@ -152,6 +152,7 @@ def confirm_otp_token(login_manager, otp=None, tmp_id=None):
 def get_verification_obj(user, token, otp_secret):
 	otp_issuer = frappe.db.get_value('System Settings', 'System Settings', 'otp_issuer_name')
 	verification_method = get_verification_method()
+
 	verification_obj = None
 	if verification_method == 'SMS':
 		verification_obj = process_2fa_for_sms(user, token, otp_secret)
@@ -187,9 +188,7 @@ def process_2fa_for_otp_app(user, otp_secret, otp_issuer):
 		otp_setup_completed = False
 
 	verification_obj = {
-		'totp_uri': totp_uri,
 		'method': 'OTP App',
-		'qrcode': get_qr_svg_code(totp_uri),
 		'setup': otp_setup_completed
 	}
 	return verification_obj
@@ -200,6 +199,7 @@ def process_2fa_for_email(user, token, otp_secret, otp_issuer, method='Email'):
 	message = None
 	status = True
 	prompt = ''
+
 	if method == 'OTP App' and not frappe.db.get_default(user + '_otplogin'):
 		'''Sending one-time email for OTP App'''
 		totp_uri = pyotp.TOTP(otp_secret).provisioning_uri(user, issuer_name=otp_issuer)
@@ -376,11 +376,11 @@ def delete_qrimage(user, check_expiry=False):
 
 def delete_all_barcodes_for_users():
 	'''Task to delete all barcodes for user.'''
-	if not two_factor_is_enabled():
-		return
 
 	users = frappe.get_all('User', {'enabled':1})
 	for user in users:
+		if not two_factor_is_enabled(user=user.name):
+			continue
 		delete_qrimage(user.name, check_expiry=True)
 
 def should_remove_barcode_image(barcode):

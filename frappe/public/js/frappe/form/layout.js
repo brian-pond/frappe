@@ -113,7 +113,7 @@ frappe.ui.form.Layout = Class.extend({
 			label: __('Dashboard'),
 			cssClass: 'form-dashboard',
 			collapsible: 1,
-			//hidden: 1
+			// hidden: 1
 		});
 	},
 
@@ -500,7 +500,7 @@ frappe.ui.form.Layout = Class.extend({
 			return;
 		}
 
-		var parent = this.frm ? this.frm.doc : null;
+		var parent = this.frm ? this.frm.doc : this.doc || null;
 
 		if(typeof(expression) === 'boolean') {
 			out = expression;

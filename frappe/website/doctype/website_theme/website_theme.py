@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from os.path import join as join_path, exists as path_exists
+from os.path import join as join_path, exists as path_exists, abspath
 
 class WebsiteTheme(Document):
 	def validate(self):
@@ -57,9 +57,17 @@ class WebsiteTheme(Document):
 	def generate_bootstrap_theme(self):
 		from subprocess import Popen, PIPE
 
-		file_name = frappe.scrub(self.name) + '_' + frappe.generate_hash('Website Theme', 8) + '.css'
-		output_path = join_path(frappe.utils.get_bench_path(), 'sites', 'assets', 'css', file_name)
-		content = self.theme_scss
+		# create theme file in site public files folder
+		folder_path = abspath(frappe.utils.get_files_path('website_theme', is_private=False))
+		# create folder if not exist
+		frappe.create_folder(folder_path)
+
+		# add a random suffix
+		suffix = frappe.generate_hash('Website Theme', 8) if self.custom else 'style'
+		file_name = frappe.scrub(self.name) + '_' + suffix + '.css'
+		output_path = join_path(folder_path, file_name)
+
+		content = self.theme_scss or ''
 		content = content.replace('\n', '\\n')
 		command = ['node', 'generate_bootstrap_theme.js', output_path, content]
 
@@ -72,14 +80,17 @@ class WebsiteTheme(Document):
 			stderr = stderr.replace('\n', '<br>')
 			frappe.throw('<div style="font-family: monospace;">{stderr}</div>'.format(stderr=stderr))
 		else:
-			self.theme_url = '/assets/css/' + file_name
+			self.theme_url = '/files/website_theme/' + file_name
 
 		frappe.msgprint(_('Compiled Successfully'), alert=True)
 
 	def generate_theme_if_not_exist(self):
 		bench_path = frappe.utils.get_bench_path()
-		theme_path = join_path(bench_path, 'sites', self.theme_url[1:])
-		if not path_exists(theme_path):
+		if self.theme_url:
+			theme_path = join_path(bench_path, 'sites', self.theme_url[1:])
+			if not path_exists(theme_path):
+				self.generate_bootstrap_theme()
+		else:
 			self.generate_bootstrap_theme()
 
 	def set_as_default(self):
@@ -103,14 +114,3 @@ def get_active_theme():
 		except frappe.DoesNotExistError:
 			pass
 
-def generate_theme_files_if_not_exist():
-	print('Generating Website Theme Files...')
-	themes = frappe.get_all('Website Theme')
-	for theme in themes:
-		doc = frappe.get_doc('Website Theme', theme.name)
-		try:
-			doc.generate_theme_if_not_exist()
-			doc.save()
-		except Exception:
-			frappe.log_error(frappe.get_traceback(), "Theme File Generation Failed")
-			pass

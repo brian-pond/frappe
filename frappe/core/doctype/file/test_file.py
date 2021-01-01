@@ -160,6 +160,31 @@ class TestSameContent(unittest.TestCase):
 	def test_saved_content(self):
 		self.assertFalse(os.path.exists(get_files_path(self.dup_filename)))
 
+	def test_attachment_limit(self):
+		doctype, docname = make_test_doc()
+		from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+		limit_property = make_property_setter('ToDo', None, 'max_attachments', 1, 'int', for_doctype=True)
+		file1 = frappe.get_doc({
+			"doctype": "File",
+			"file_name": 'test-attachment',
+			"attached_to_doctype": doctype,
+			"attached_to_name": docname,
+			"content": 'test'
+		})
+
+		file1.insert()
+
+		file2 = frappe.get_doc({
+			"doctype": "File",
+			"file_name": 'test-attachment',
+			"attached_to_doctype": doctype,
+			"attached_to_name": docname,
+			"content": 'test2'
+		})
+
+		self.assertRaises(frappe.exceptions.AttachmentLimitReached, file2.insert)
+		limit_property.delete()
+		frappe.clear_cache(doctype='ToDo')
 
 	def tearDown(self):
 		# File gets deleted on rollback, so blank
@@ -294,4 +319,59 @@ class TestFile(unittest.TestCase):
 		folder = frappe.get_doc("File", "Home/Test Folder 1/Test Folder 3")
 		self.assertRaises(frappe.ValidationError, folder.delete)
 
+	def test_same_file_url_update(self):
+		attached_to_doctype1, attached_to_docname1 = make_test_doc()
+		attached_to_doctype2, attached_to_docname2 = make_test_doc()
 
+		file1 = frappe.get_doc({
+			"doctype": "File",
+			"file_name": 'file1.txt',
+			"attached_to_doctype": attached_to_doctype1,
+			"attached_to_name": attached_to_docname1,
+			"is_private": 1,
+			"content": test_content1}).insert()
+
+		file2 = frappe.get_doc({
+			"doctype": "File",
+			"file_name": 'file2.txt',
+			"attached_to_doctype": attached_to_doctype2,
+			"attached_to_name": attached_to_docname2,
+			"is_private": 1,
+			"content": test_content1}).insert()
+
+		self.assertEqual(file1.is_private, file2.is_private, 1)
+		self.assertEqual(file1.file_url, file2.file_url)
+		self.assertTrue(os.path.exists(file1.get_full_path()))
+
+		file1.is_private = 0
+		file1.save()
+
+		file2 = frappe.get_doc('File', file2.name)
+
+		self.assertEqual(file1.is_private, file2.is_private, 0)
+		self.assertEqual(file1.file_url, file2.file_url)
+		self.assertTrue(os.path.exists(file2.get_full_path()))
+
+	def test_website_user_file_permission(self):
+		# Website User should be able to attach a file
+		# if they have write access to a document
+		from frappe.core.doctype.file.file import File
+		user = frappe.get_doc(dict(
+			doctype='User',
+			email='test-file-perm@example.com',
+			first_name='Tester'
+		))
+		user.insert(ignore_if_duplicate=True)
+		frappe.set_user('test-file-perm@example.com')
+		txt_file = frappe.get_doc({
+			"doctype": "File",
+			"file_name": 'file3.txt',
+			"attached_to_doctype": 'User',
+			"attached_to_name": user.name,
+			"content": test_content1
+		})
+		txt_file.insert()
+		# creation of file should not fail
+		# because user gets permission via has_web_form_permission
+		self.assertIsInstance(txt_file, File)
+		frappe.set_user('Administrator')

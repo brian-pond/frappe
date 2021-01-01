@@ -6,7 +6,7 @@ import frappe
 import json, datetime
 from frappe import _, scrub
 import frappe.desk.query_report
-from frappe.utils import cint
+from frappe.utils import cint, cstr
 from frappe.model.document import Document
 from frappe.modules.export_file import export_to_files
 from frappe.modules import make_boilerplate
@@ -49,6 +49,10 @@ class Report(Document):
 		self.export_doc()
 
 	def on_trash(self):
+		if (self.is_standard == 'Yes' 
+			and not cint(getattr(frappe.local.conf, 'developer_mode', 0)) 
+			and not frappe.flags.in_patch):
+			frappe.throw(_("You are not allowed to delete Standard Report"))
 		delete_custom_role('report', self.name)
 
 	def set_doctype_roles(self):
@@ -91,6 +95,18 @@ class Report(Document):
 		if self.report_type == "Script Report":
 			make_boilerplate("controller.py", self, {"name": self.name})
 			make_boilerplate("controller.js", self, {"name": self.name})
+
+	def execute_query_report(self, filters):
+		if not self.query:
+			frappe.throw(_("Must specify a Query to run"), title=_('Report Document Error'))
+
+		if not self.query.lower().startswith("select"):
+			frappe.throw(_("Query must be a SELECT"), title=_('Report Document Error'))
+
+		result = [list(t) for t in frappe.db.sql(self.query, filters)]
+		columns = [cstr(c[0]) for c in frappe.db.get_description()]
+
+		return [columns, result]
 
 	def execute_script_report(self, filters):
 		# save the timestamp to automatically set to prepared
@@ -161,8 +177,6 @@ class Report(Document):
 				columns = params.get('fields')
 			elif params.get('columns'):
 				columns = params.get('columns')
-			elif params.get('fields'):
-				columns = params.get('fields')
 			else:
 				columns = [['name', self.ref_doctype]]
 				for df in frappe.get_meta(self.ref_doctype).fields:
@@ -192,12 +206,23 @@ class Report(Document):
 			if params.get('sort_by_next'):
 				order_by += ', ' + _format(params.get('sort_by_next').split('.')) + ' ' + params.get('sort_order_next')
 
+			group_by = None
+			if params.get('group_by'):
+				group_by_args = frappe._dict(params['group_by'])
+				group_by = group_by_args['group_by']
+				order_by = '_aggregate_column desc'
+
 			result = frappe.get_list(self.ref_doctype,
-				fields = [_format([c[1], c[0]]) for c in columns],
+				fields = [
+					get_group_by_field(group_by_args, c[1]) if c[0] == '_aggregate_column' and group_by_args
+					else _format([c[1], c[0]])
+					for c in columns
+				],
 				filters=_filters,
 				order_by = order_by,
 				as_list=True,
 				limit=limit,
+				group_by=group_by,
 				user=user)
 
 			_columns = []
@@ -208,7 +233,12 @@ class Report(Document):
 				if meta.get_field(fieldname):
 					field = meta.get_field(fieldname)
 				else:
-					field = frappe._dict(fieldname=fieldname, label=meta.get_label(fieldname))
+					if fieldname == '_aggregate_column':
+						label = get_group_by_column_label(group_by_args, meta)
+					else:
+						label = meta.get_label(fieldname)
+
+					field = frappe._dict(fieldname=fieldname, label=label)
 					# since name is the primary key for a document, it will always be a Link datatype
 					if fieldname == "name":
 						field.fieldtype = "Link"
@@ -250,3 +280,30 @@ def is_prepared_report_disabled(report):
 def get_report_module_dotted_path(module, report_name):
 	return frappe.local.module_app[scrub(module)] + "." + scrub(module) \
 		+ ".report." + scrub(report_name) + "." + scrub(report_name)
+
+def get_group_by_field(args, doctype):
+	if args['aggregate_function'] == 'count':
+		group_by_field = 'count(*) as _aggregate_column'
+	else:
+		group_by_field = '{0}(`tab{1}`.{2}) as _aggregate_column'.format(
+			args.aggregate_function,
+			doctype,
+			args.aggregate_on
+		)
+
+	return group_by_field
+
+def get_group_by_column_label(args, meta):
+	if args['aggregate_function'] == 'count':
+		label = 'Count'
+	else:
+		sql_fn_map = {
+			'avg': 'Average',
+			'sum': 'Sum'
+		}
+		aggregate_on_label = meta.get_label(args.aggregate_on)
+		label = _('{function} of {fieldlabel}').format(
+			function=sql_fn_map[args.aggregate_function],
+			fieldlabel = aggregate_on_label
+		)
+	return label
