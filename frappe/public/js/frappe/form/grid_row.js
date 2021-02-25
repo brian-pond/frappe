@@ -124,7 +124,7 @@ export default class GridRow {
 			default: this.doc.idx,
 		}, function(values) {
 			if (me.doc._sortable === false) {
-				frappe.msgprint(__('Cannot move row'));
+				frappe.msgprint(__('Cannot move row; only Custom Fields are sortable. Workaround is editing DocType code.'));
 				return;
 			}
 

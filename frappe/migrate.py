@@ -47,7 +47,7 @@ def migrate(verbose=True, rebuild_website=False, skip_failing=False):
 		# run patches
 		frappe.modules.patch_handler.run_all(skip_failing)
 		# sync
-		frappe.model.sync.sync_all(verbose=verbose)
+		frappe.model.sync.sync_all()
 		frappe.translate.clear_cache()
 		sync_fixtures()
 		sync_customizations()

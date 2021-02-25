@@ -22,7 +22,8 @@ PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError
 
 
 def get_pdf(html, options=None, output=None):
-	html = scrub_urls(html)
+	""" Convert HTML string to a PDF document. """
+	html = scrub_urls(html)  # will convert Relative paths to Absolute
 	html, options = prepare_options(html, options)
 
 	options.update({
@@ -37,7 +38,6 @@ def get_pdf(html, options=None, output=None):
 	try:
 		# Set filename property to false, so no file is actually created
 		filedata = pdfkit.from_string(html, False, options=options or {})
-
 		# https://pythonhosted.org/PyPDF2/PdfFileReader.html
 		# create in-memory binary streams from filedata and create a PdfFileReader object
 		reader = PdfFileReader(io.BytesIO(filedata))
