@@ -58,6 +58,7 @@ requests==2.22.0
 RestrictedPython==5.0
 rq==0.12.0
 schedule==0.6.0
+schema==0.7.2
 selenium==3.141.0
 semantic-version==2.8.2
 six==1.13.0
