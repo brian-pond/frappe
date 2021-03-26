@@ -104,6 +104,7 @@ class Document(BaseDocument):
 					if self.name is None:
 						frappe.throw(_("{0} {1} not found").format(_(args[0]), args[1]),
 							frappe.DoesNotExistError)
+					# DATAHENGE
 					if len(self.name) > 100:
 						frappe.throw(_("DocType name is longer than 100 characters:\n{0}").format(_(args[1])),
 							frappe.DoesNotExistError)
