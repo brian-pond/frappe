@@ -942,15 +942,17 @@ class Document(BaseDocument):
 		self.load_doc_before_save()
 		self.reset_seen()
 
+		# before_validate method should be executed before ignoring validations
+		if self._action in ("save", "submit"):
+			self.run_method("before_validate")
+
 		if self.flags.ignore_validate:
 			return
 
 		if self._action=="save":
-			self.run_method("before_validate")
 			self.run_method("validate")
 			self.run_method("before_save")
 		elif self._action=="submit":
-			self.run_method("before_validate")
 			self.run_method("validate")
 			self.run_method("before_submit")
 		elif self._action=="cancel":
@@ -1016,6 +1018,8 @@ class Document(BaseDocument):
 
 	def notify_update(self):
 		"""Publish realtime that the current document is modified"""
+		if frappe.flags.in_patch: return
+
 		frappe.publish_realtime("doc_update", {"modified": self.modified, "doctype": self.doctype, "name": self.name},
 			doctype=self.doctype, docname=self.name, after_commit=True)
 

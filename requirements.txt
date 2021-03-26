@@ -16,7 +16,6 @@ cryptography==3.2
 dropbox==9.1.0
 email_reply_parser==0.5.9
 Faker==2.0.4
-# frontmatter==3.0.5
 future==0.18.2
 gitdb2==2.0.6;python_version<'3.4'
 GitPython==2.1.15
@@ -45,7 +44,6 @@ Pillow==8.0.0
 premailer==3.6.1
 psycopg2-binary==2.8.4
 pyasn1==0.4.8
-# Pygments==2.2.0
 pycryptodome==3.9.8
 PyJWT==1.7.1
 PyMySQL==0.9.3
@@ -56,7 +54,7 @@ pypng==0.0.20
 pyqrcode==1.2.1
 python-dateutil==2.8.1
 pytz==2019.3
-PyYAML==5.3.1
+PyYAML==5.4
 razorpay==1.2.0
 rauth==0.7.3
 redis==3.5.3
