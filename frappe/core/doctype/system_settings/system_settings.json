@@ -60,7 +60,8 @@
   "prepared_report_expiry_period",
   "chat",
   "enable_chat",
-  "use_socketio_to_upload_file"
+  "use_socketio_to_upload_file",
+  "dns_server"
  ],
  "fields": [
   {
@@ -420,11 +421,17 @@
    "fieldname": "prepared_report_section",
    "fieldtype": "Section Break",
    "label": "Prepared Report"
+  },
+  {
+   "default": "8.8.8.8",
+   "fieldname": "dns_server",
+   "fieldtype": "Data",
+   "label": "DNS Server"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2020-07-26 15:57:34.197718",
+ "modified": "2021-04-07 22:05:41.285065",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

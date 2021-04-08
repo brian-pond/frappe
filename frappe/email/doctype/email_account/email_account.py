@@ -671,18 +671,42 @@ class EmailAccount(Document):
 			if frappe.db.exists("Email Account", {"enable_automatic_linking": 1, "name": ('!=', self.name)}):
 				frappe.throw(_("Automatic Linking can be activated only for one Email Account."))
 
+
+	def send_email(self, target_email_address):
+		""" Send a test email, to verify an Email Account is correctly configured. """
+		if not isinstance(target_email_address, str):
+			raise TypeError(f"Expected argument '{target_email_address}' to be of type String.")
+
+		email_args = {
+			"recipients": target_email_address,
+			"sender": None,
+			"subject": "ERPNext Email Account Test",
+			"message": f"This is a test of ERPNext Account named '{self.name}'",
+			"now": True,
+			"attachments": None
+		}
+		enqueue(method=frappe.sendmail, queue='short', timeout=300, is_async=True, **email_args)
+
+
 @frappe.whitelist()
 def get_append_to(doctype=None, txt=None, searchfield=None, start=None, page_len=None, filters=None):
 	if not txt: txt = ""
 	return [[d] for d in frappe.get_hooks("email_append_to") if txt in d]
 
-def test_internet(host="8.8.8.8", port=53, timeout=3):
+def test_internet(host=None, port=53, timeout=3):
 	"""Returns True if internet is connected
 
-	Host: 8.8.8.8 (google-public-dns-a.google.com)
+	Host: Specified in System Settings
 	OpenPort: 53/tcp
 	Service: domain (DNS/TCP)
 	"""
+
+	host = frappe.get_single('DNS Server')
+	if not host:
+		raise Exception("No DNS server specified; please check System Settings.")
+	
+	frappe.msgprint(_(f"Testing internet by making connection to '{host}:53']]"))
+
 	try:
 		socket.setdefaulttimeout(timeout)
 		socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
@@ -763,3 +787,4 @@ def get_max_email_uid(email_account):
 	else:
 		max_uid = cint(result[0].get("uid", 0)) + 1
 		return max_uid
+

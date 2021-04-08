@@ -112,11 +112,29 @@ frappe.ui.form.on("Email Account", {
 		frm.events.notify_if_unreplied(frm);
 		frm.events.show_gmail_message_for_less_secure_apps(frm);
 
-        // Spectrum Fruits
-        frm.add_custom_button(__('Test: Show Email Id'), function() {
-            frappe.msgprint(frm.doc.email_id);
-            } // , __("GroupName")
-        );
+        // Spectrum Fruits: Begin
+        frm.add_custom_button(__('Send Test Email'), function() {
+			// frappe.msgprint(frm.doc.email_id);
+			frappe.prompt(
+				{
+					label: 'Destination Email',
+					fieldname: 'email_address',
+					fieldtype: 'Data'
+				},
+				(values) => {
+					console.log("Sending test email to " + values.email_address);
+					// Call a Document function on email_account.py
+					frm.call('send_email', { target_email_address: values.email_address})
+					.then(r => {
+						if (r.message) {
+							console.log("Response was: " +r.message);
+						}
+					})
+				}
+			)
+		});
+
+		// Spectrum Fruits: End
 
 		if(frappe.route_flags.delete_user_from_locals && frappe.route_flags.linked_user) {
 			delete frappe.route_flags.delete_user_from_locals;

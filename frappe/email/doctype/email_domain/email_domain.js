@@ -25,5 +25,27 @@ frappe.ui.form.on("Email Domain", {
 			},
 			frappe.set_route(route);
 		}
+
+		// Spectrum Fruits
+		frm.add_custom_button(__("Validate Email Settings"), () => {
+			validate_domain(cur_frm, cur_frm.doc);
+		});
+		// EOM
 	}
 })
+
+
+function validate_domain (caller_frm, doc) {
+	// Validate the email domain's settings
+	let foo = frappe.call({
+		method: 'frappe.email.doctype.email_domain.email_domain.validate_domain',
+		args: { 'email_domain_name': doc.name },  // Warning: Python function must have same argument name.
+		callback: function(r) {
+			if (r.message) {
+				// Once complete, do this:
+				frappe.msgprint(__(r.message));
+				caller_frm.reload_doc();
+			}
+		}
+	});
+}
