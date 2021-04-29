@@ -848,8 +848,14 @@ def get_module_path(module, *joins):
 
 	:param module: Module name.
 	:param *joins: Join additional path elements using `os.path.join`."""
+
 	module = scrub(module)
-	return get_pymodule_path(local.module_app[module] + "." + module, *joins)
+	try:
+		return get_pymodule_path(local.module_app[module] + "." + module, *joins)
+	except KeyError as ex:
+		msg = f"Cannot find Python module (directory/file) named '{module}'"
+		msg += f"If you recently renamed Modules, you may need to refresh your Redis cache."
+		raise KeyError(msg)
 
 def get_app_path(app_name, *joins):
 	"""Return path of given app.
