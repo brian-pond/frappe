@@ -189,7 +189,12 @@ class Database(object):
 
 			if ignore_ddl and (self.is_missing_column(e) or self.is_missing_table(e) or self.cant_drop_field_or_key(e)):
 				pass
+			# Spectrum Fruits
+			if e.args[0] == 1265:  # Data Truncation
+				print("Data Truncation issue; dodging exception.")
+				pass
 			else:
+				print(f"Brian, the value of e is {e}")
 				raise
 
 		if auto_commit: self.commit()

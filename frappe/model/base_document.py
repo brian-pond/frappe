@@ -668,6 +668,10 @@ class BaseDocument(object):
 			sanitized_value = value
 
 			if df and (df.get("ignore_xss_filter")
+				# Patch per Szu Fisher to make Ignore XSS Filter work properly
+				# https://discuss.erpnext.com/t/developer-suggestions-for-improved-ui-grid/77624/21
+				or self.get_valid_dict().get("ignore_xss_filter")
+				# end patch
 				or (df.get("fieldtype") in ("Data", "Small Text", "Text") and df.get("options")=="Email")
 				or df.get("fieldtype") in ("Attach", "Attach Image", "Barcode", "Code")
 
