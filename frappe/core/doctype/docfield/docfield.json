@@ -53,7 +53,8 @@
   "column_break_22",
   "description",
   "oldfieldname",
-  "oldfieldtype"
+  "oldfieldtype",
+  "developer_notes"
  ],
  "fields": [
   {
@@ -421,11 +422,17 @@
    "hidden": 1,
    "oldfieldname": "oldfieldtype",
    "oldfieldtype": "Data"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "developer_notes",
+   "fieldtype": "Small Text",
+   "label": "Developer Notes"
   }
  ],
  "idx": 1,
  "istable": 1,
- "modified": "2020-03-17 21:29:59.983533",
+ "modified": "2021-07-21 19:37:14.952883",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

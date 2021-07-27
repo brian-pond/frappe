@@ -1668,3 +1668,18 @@ def mock(type, size = 1, locale = 'en'):
 def validate_and_sanitize_search_inputs(fn):
 	from frappe.desk.search import validate_and_sanitize_search_inputs as func
 	return func(fn)
+
+# Datahenge LLC
+def whatis(message, backend=True, frontend=True):
+	"""
+	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
+	"""
+	import inspect
+	caller_function = inspect.stack()[2][3]
+	message_type = str(type(message)).replace('<', '').replace('>', '')
+	msg = f"---> DEBUG\n  * Value: {message}\n  * Type: {message_type}\n  * Caller: {caller_function}\n"
+	if backend:
+		print(msg)
+	if frontend:
+		msg = msg.replace('\n', '<br>')
+		msgprint(msg)
