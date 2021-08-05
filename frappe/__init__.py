@@ -967,11 +967,20 @@ def get_hooks(hook=None, default=None, app_name=None):
 
 	if app_name:
 		hooks = _dict(load_app_hooks(app_name))
+		
 	else:
 		if no_cache:
 			hooks = _dict(load_app_hooks())
 		else:
-			hooks = _dict(cache().get_value("app_hooks", load_app_hooks))
+			# Datahenge: Try the cache.  But if things go wrong
+			# print the Error, then try again without the cache.
+			try:
+				hooks = _dict(cache().get_value("app_hooks", load_app_hooks))
+			except Exception as ex:
+				print(ex)
+				print("Check your hooks.py for imports without an underscore.")
+				hooks = _dict(load_app_hooks())
+
 
 	if hook:
 		return hooks.get(hook) or (default if default is not None else [])
@@ -1669,7 +1678,7 @@ def validate_and_sanitize_search_inputs(fn):
 	from frappe.desk.search import validate_and_sanitize_search_inputs as func
 	return func(fn)
 
-# Datahenge LLC
+# Datahenge
 def whatis(message, backend=True, frontend=True):
 	"""
 	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
