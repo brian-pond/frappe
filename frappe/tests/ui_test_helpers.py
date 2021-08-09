@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.utils import add_to_date, now
 
 @frappe.whitelist()
@@ -10,7 +11,7 @@ def create_if_not_exists(doc):
 	'''
 
 	if not frappe.local.dev_server:
-		frappe.throw('This method can only be accessed in development', frappe.PermissionError)
+		frappe.throw(_('This method can only be accessed in development'), frappe.PermissionError)
 
 	doc = frappe.parse_json(doc)
 
@@ -41,12 +42,12 @@ def create_todo_records():
 
 	frappe.get_doc({
 		"doctype": "ToDo",
-		"date": add_to_date(now(), days=3),
+		"date": add_to_date(now(), days=7),
 		"description": "this is first todo"
 	}).insert()
 	frappe.get_doc({
 		"doctype": "ToDo",
-		"date": add_to_date(now(), days=-3),
+		"date": add_to_date(now(), days=-7),
 		"description": "this is second todo"
 	}).insert()
 	frappe.get_doc({

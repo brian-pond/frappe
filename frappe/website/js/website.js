@@ -211,12 +211,11 @@ $.extend(frappe, {
 		if (frappe.is_user_logged_in()) {
 			$(".btn-login-area").toggle(false);
 			$(".logged-in").toggle(true);
-			$(".full-name").html(frappe.get_cookie("full_name"));
 			$(".user-image").attr("src", frappe.get_cookie("user_image"));
 
-			$('.user-image-wrapper').html(frappe.avatar(null, 'avatar-small'));
-			$('.user-image-sidebar').html(frappe.avatar(null, 'avatar-small'));
-			$('.user-image-myaccount').html(frappe.avatar(null, 'avatar-large'));
+			$('.user-image-wrapper').html(frappe.avatar(null, 'avatar-medium', null, null, null, true));
+			$('.user-image-sidebar').html(frappe.avatar(null, 'avatar-medium', null, null, null, true));
+			$('.user-image-myaccount').html(frappe.avatar(null, 'avatar-large', null, null, null, true));
 		}
 	},
 	freeze_count: 0,
@@ -377,6 +376,39 @@ $.extend(frappe, {
 			// Start observing an element
 			io.observe(el);
 		});
+	},
+	show_language_picker() {
+		if (frappe.session.user === 'Guest' && window.show_language_picker) {
+			frappe.call("frappe.translate.get_all_languages", {
+				with_language_name: true
+			}).then(res => {
+				let language_list = res.message;
+				let language = frappe.get_cookie('preferred_language');
+				let language_codes = [];
+				let language_switcher = $("#language-switcher .form-control");
+				language_list.forEach(language_doc => {
+					language_codes.push(language_doc.language_code);
+					language_switcher
+						.append(
+							$("<option></option>")
+								.attr("value", language_doc.language_code)
+								.text(language_doc.language_name)
+						);
+				});
+				$("#language-switcher").removeClass('hide');
+				language = language || (language_codes.includes(navigator.language) ? navigator.language : 'en');
+				language_switcher.val(language);
+				document.documentElement.lang = language;
+				language_switcher.change(() => {
+					let lang = language_switcher.val();
+					frappe.call("frappe.translate.set_preferred_language_cookie", {
+						"preferred_language": lang
+					}).then(() => {
+						window.location.reload();
+					});
+				});
+			});
+		}
 	}
 });
 
@@ -386,6 +418,9 @@ frappe.setup_search = function (target, search_scope) {
 	}
 
 	let $search_input = $(`<div class="dropdown" id="dropdownMenuSearch">
+			<input type="search" class="form-control" placeholder="Search the docs (Press / to focus)" />
+			<div class="overflow-hidden shadow dropdown-menu w-100" aria-labelledby="dropdownMenuSearch">
+			</div>
 			<div class="search-icon">
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
 					fill="none"
@@ -395,9 +430,6 @@ frappe.setup_search = function (target, search_scope) {
 					<circle cx="11" cy="11" r="8"></circle>
 					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 				</svg>
-			</div>
-			<input type="search" class="form-control" placeholder="Search the docs (Press / to focus)" />
-			<div class="overflow-hidden shadow dropdown-menu w-100" aria-labelledby="dropdownMenuSearch">
 			</div>
 		</div>`);
 
@@ -600,17 +632,13 @@ $(document).on("page-change", function() {
 
 
 frappe.ready(function() {
-	frappe.call({
-		method: 'frappe.website.doctype.website_settings.website_settings.is_chat_enabled',
-		callback: (r) => {
-			if (r.message) {
-				frappe.require(['/assets/js/moment-bundle.min.js', "/assets/css/frappe-chat-web.css", "/assets/frappe/js/lib/socket.io.min.js"], () => {
-					frappe.require('/assets/js/chat.js', () => {
-						frappe.chat.setup();
-					});
-				});
-			}
-		}
-	});
+	frappe.show_language_picker();
+	if (window.is_chat_enabled) {
+		frappe.require(['/assets/js/moment-bundle.min.js', "/assets/css/frappe-chat-web.css", "/assets/frappe/js/lib/socket.io.min.js"], () => {
+			frappe.require('/assets/js/chat.js', () => {
+				frappe.chat.setup();
+			});
+		});
+	}
 	frappe.socketio.init(window.socketio_port);
 });

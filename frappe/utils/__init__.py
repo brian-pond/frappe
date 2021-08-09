@@ -1,42 +1,35 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-# util __init__.py
+from __future__ import print_function, unicode_literals
 
-from __future__ import unicode_literals, print_function
-from werkzeug.test import Client
-import os, re, sys, json, hashlib, requests, traceback
 import functools
-from .html_utils import sanitize_html
-import frappe
-from frappe.utils.identicon import Identicon
-from email.utils import parseaddr, formataddr
+import hashlib
+import io
+import json
+import os
+import re
+import sys
+import traceback
+import typing
+
 from email.header import decode_header, make_header
+from email.utils import formataddr, parseaddr
+from gzip import GzipFile
+from typing import Generator, Iterable
+
+from urllib.parse import quote, urlparse
+from werkzeug.test import Client
+
+import frappe
 # utility functions like cint, int, flt, etc.
 from frappe.utils.data import *
-from six.moves.urllib.parse import quote
-from six import text_type, string_types
-import io
-from gzip import GzipFile
+from frappe.utils.html_utils import sanitize_html
+
 
 default_fields = ['doctype', 'name', 'owner', 'creation', 'modified', 'modified_by',
 	'parent', 'parentfield', 'parenttype', 'idx', 'docstatus']
 
-# used in import_docs.py
-# TODO: deprecate it
-def getCSVelement(v):
-	"""
-		 Returns the CSV value of `v`, For example:
-
-		 * apple becomes "apple"
-		 * hi"there becomes "hi""there"
-	"""
-	v = cstr(v)
-	if not v: return ''
-	if (',' in v) or ('\n' in v) or ('"' in v):
-		if '"' in v: v = v.replace('"', '""')
-		return '"'+v+'"'
-	else: return v or ''
 
 def get_fullname(user=None):
 	"""get the full name (first name + last name) of the user from User"""
@@ -78,7 +71,7 @@ def get_formatted_email(user, mail=None):
 def extract_email_id(email):
 	"""fetch only the email part of the Email Address"""
 	email_id = parse_addr(email)[1]
-	if email_id and isinstance(email_id, string_types) and not isinstance(email_id, text_type):
+	if email_id and isinstance(email_id, str) and not isinstance(email_id, str):
 		email_id = email_id.decode("utf-8", "ignore")
 	return email_id
 
@@ -167,6 +160,33 @@ def split_emails(txt):
 
 	return email_list
 
+def validate_url(txt, throw=False, valid_schemes=None):
+	"""
+		Checks whether `txt` has a valid URL string
+
+		Parameters:
+			throw (`bool`): throws a validationError if URL is not valid
+			valid_schemes (`str` or `list`): if provided checks the given URL's scheme against this 
+
+		Returns:
+			bool: if `txt` represents a valid URL
+	"""
+	url = urlparse(txt)
+	is_valid = bool(url.netloc)
+
+	# Handle scheme validation
+	if isinstance(valid_schemes, str):
+		is_valid = is_valid and (url.scheme == valid_schemes)
+	elif isinstance(valid_schemes, (list, tuple, set)):
+		is_valid = is_valid and (url.scheme in valid_schemes)
+
+	if not is_valid and throw:
+		frappe.throw(
+			frappe._("'{0}' is not a valid URL").format(frappe.bold(txt))
+		)
+
+	return is_valid
+
 def random_string(length):
 	"""generate a random string"""
 	import string
@@ -176,6 +196,8 @@ def random_string(length):
 
 def has_gravatar(email):
 	'''Returns gravatar url if user has set an avatar at gravatar.com'''
+	import requests
+
 	if (frappe.flags.in_import
 		or frappe.flags.in_install
 		or frappe.flags.in_test):
@@ -199,6 +221,8 @@ def get_gravatar_url(email):
 	return "https://secure.gravatar.com/avatar/{hash}?d=mm&s=200".format(hash=hashlib.md5(email.encode('utf-8')).hexdigest())
 
 def get_gravatar(email):
+	from frappe.utils.identicon import Identicon
+
 	gravatar_url = has_gravatar(email)
 
 	if not gravatar_url:
@@ -206,19 +230,22 @@ def get_gravatar(email):
 
 	return gravatar_url
 
-def get_traceback():
+def get_traceback() -> str:
 	"""
 		 Returns the traceback of the Exception
 	"""
 	exc_type, exc_value, exc_tb = sys.exc_info()
+
+	if not any([exc_type, exc_value, exc_tb]):
+		return ""
+
 	trace_list = traceback.format_exception(exc_type, exc_value, exc_tb)
-	body = "".join(cstr(t) for t in trace_list)
-	return body
+	return "".join(cstr(t) for t in trace_list)
 
 def log(event, details):
 	frappe.logger().info(details)
 
-def dict_to_str(args, sep='&'):
+def dict_to_str(args, sep = '&'):
 	"""
 	Converts a dictionary to URL
 	"""
@@ -226,6 +253,13 @@ def dict_to_str(args, sep='&'):
 	for k in list(args):
 		t.append(str(k)+'='+quote(str(args[k] or '')))
 	return sep.join(t)
+
+def list_to_str(seq, sep = ', '):
+	"""Convert a sequence into a string using seperator.
+
+	Same as str.join, but does type conversion and strip extra spaces.
+	"""
+	return sep.join(map(str.strip, map(str, seq)))
 
 # Get Defaults
 # ==============================================================================
@@ -302,14 +336,23 @@ def unesc(s, esc_chars):
 		s = s.replace(esc_str, c)
 	return s
 
-def execute_in_shell(cmd, verbose=0):
+def execute_in_shell(cmd, verbose=0, low_priority=False):
 	# using Popen instead of os.system - as recommended by python docs
-	from subprocess import Popen
 	import tempfile
+	from subprocess import Popen
 
 	with tempfile.TemporaryFile() as stdout:
 		with tempfile.TemporaryFile() as stderr:
-			p = Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
+			kwargs = {
+				"shell": True,
+				"stdout": stdout,
+				"stderr": stderr
+			}
+
+			if low_priority:
+				kwargs["preexec_fn"] = lambda: os.nice(10)
+
+			p = Popen(cmd, **kwargs)
 			p.wait()
 
 			stdout.seek(0)
@@ -356,14 +399,14 @@ def get_site_url(site):
 
 def encode_dict(d, encoding="utf-8"):
 	for key in d:
-		if isinstance(d[key], string_types) and isinstance(d[key], text_type):
+		if isinstance(d[key], str) and isinstance(d[key], str):
 			d[key] = d[key].encode(encoding)
 
 	return d
 
 def decode_dict(d, encoding="utf-8"):
 	for key in d:
-		if isinstance(d[key], string_types) and not isinstance(d[key], text_type):
+		if isinstance(d[key], str) and not isinstance(d[key], str):
 			d[key] = d[key].decode(encoding, "ignore")
 
 	return d
@@ -390,7 +433,7 @@ def get_test_client():
 	return Client(application)
 
 def get_hook_method(hook_name, fallback=None):
-	method = (frappe.get_hooks().get(hook_name))
+	method = frappe.get_hooks().get(hook_name)
 	if method:
 		method = frappe.get_attr(method[0])
 		return method
@@ -404,8 +447,26 @@ def call_hook_method(hook, *args, **kwargs):
 
 	return out
 
+def is_cli() -> bool:
+	"""Returns True if current instance is being run via a terminal
+	"""
+	invoked_from_terminal = False
+	try:
+		invoked_from_terminal = bool(os.get_terminal_size())
+	except Exception:
+		invoked_from_terminal = sys.stdin.isatty()
+	return invoked_from_terminal
+
 def update_progress_bar(txt, i, l):
-	if not getattr(frappe.local, 'request', None):
+	if os.environ.get("CI"):
+		if i == 0:
+			sys.stdout.write(txt)
+
+		sys.stdout.write(".")
+		sys.stdout.flush()
+		return
+
+	if not getattr(frappe.local, 'request', None) or is_cli():
 		lt = len(txt)
 		try:
 			col = 40 if os.get_terminal_size().columns > 80 else 20
@@ -463,6 +524,7 @@ def get_sites(sites_path=None):
 	return sorted(sites)
 
 def get_request_session(max_retries=3):
+	import requests
 	from urllib3.util import Retry
 	session = requests.Session()
 	session.mount("http://", requests.adapters.HTTPAdapter(max_retries=Retry(total=5, status_forcelist=[500])))
@@ -471,8 +533,9 @@ def get_request_session(max_retries=3):
 
 def watch(path, handler=None, debug=True):
 	import time
-	from watchdog.observers import Observer
+
 	from watchdog.events import FileSystemEventHandler
+	from watchdog.observers import Observer
 
 	class Handler(FileSystemEventHandler):
 		def on_any_event(self, event):
@@ -571,9 +634,9 @@ def get_installed_apps_info():
 	return out
 
 def get_site_info():
-	from frappe.utils.user import get_system_managers
 	from frappe.core.doctype.user.user import STANDARD_USERS
 	from frappe.email.queue import get_emails_sent_this_month
+	from frappe.utils.user import get_system_managers
 
 	# only get system users
 	users = frappe.get_all('User', filters={'user_type': 'System User', 'name': ('not in', STANDARD_USERS)},
@@ -620,7 +683,7 @@ def parse_json(val):
 	"""
 	Parses json if string else return
 	"""
-	if isinstance(val, string_types):
+	if isinstance(val, str):
 		val = json.loads(val)
 	if isinstance(val, dict):
 		val = frappe._dict(val)
@@ -691,13 +754,19 @@ def get_safe_filters(filters):
 
 	return filters
 
-def create_batch(iterable, batch_size):
-	"""
-	Convert an iterable to multiple batches of constant size of batch_size
+def create_batch(iterable: Iterable, size: int) -> Generator[Iterable, None, None]:
+	"""Convert an iterable to multiple batches of constant size of batch_size
+
+	Args:
+		iterable (Iterable): Iterable object which is subscriptable
+		size (int): Maximum size of batches to be generated
+
+	Yields:
+		Generator[List]: Batched iterable of maximum length `size`
 	"""
 	total_count = len(iterable)
-	for i in range(0, total_count, batch_size):
-		yield iterable[i:min(i + batch_size, total_count)]
+	for i in range(0, total_count, size):
+		yield iterable[i : min(i + size, total_count)]
 
 def set_request(**kwargs):
 	from werkzeug.test import EnvironBuilder
@@ -758,3 +827,28 @@ def get_bench_relative_path(file_path):
 		sys.exit(1)
 
 	return os.path.abspath(file_path)
+
+
+def groupby_metric(iterable: typing.Dict[str, list], key: str):
+	""" Group records by a metric.
+
+	Usecase: Lets assume we got country wise players list with the ranking given for each player(multiple players in a country can have same ranking aswell).
+	We can group the players by ranking(can be any other metric) using this function.
+
+	>>> d = {
+		'india': [{'id':1, 'name': 'iplayer-1', 'ranking': 1}, {'id': 2, 'ranking': 1, 'name': 'iplayer-2'}, {'id': 2, 'ranking': 2, 'name': 'iplayer-3'}],
+		'Aus': [{'id':1, 'name': 'aplayer-1', 'ranking': 1}, {'id': 2, 'ranking': 1, 'name': 'aplayer-2'}, {'id': 2, 'ranking': 2, 'name': 'aplayer-3'}]
+	}
+	>>> groupby(d, key='ranking')
+	{1: {'Aus': [{'id': 1, 'name': 'aplayer-1', 'ranking': 1},
+				{'id': 2, 'name': 'aplayer-2', 'ranking': 1}],
+		'india': [{'id': 1, 'name': 'iplayer-1', 'ranking': 1},
+				{'id': 2, 'name': 'iplayer-2', 'ranking': 1}]},
+	2: {'Aus': [{'id': 2, 'name': 'aplayer-3', 'ranking': 2}],
+		'india': [{'id': 2, 'name': 'iplayer-3', 'ranking': 2}]}}
+	"""
+	records = {}
+	for category, items in iterable.items():
+		for item in items:
+			records.setdefault(item[key], {}).setdefault(category, []).append(item)
+	return records

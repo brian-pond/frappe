@@ -50,14 +50,18 @@ def update_controller_context(context, controller):
 				context[prop] = getattr(module, prop)
 
 		if hasattr(module, "get_context"):
+			import inspect
 			try:
-				ret = module.get_context(context)
+				if inspect.getfullargspec(module.get_context).args:
+					ret = module.get_context(context)
+				else:
+					ret = module.get_context()
 				if ret:
 					context.update(ret)
-			except (frappe.PermissionError, frappe.DoesNotExistError, frappe.Redirect):
+			except (frappe.PermissionError, frappe.PageDoesNotExistError, frappe.Redirect):
 				raise
 			except:
-				if not frappe.flags.in_migrate:
+				if not any([frappe.flags.in_migrate, frappe.flags.in_website_search_build]):
 					frappe.errprint(frappe.utils.get_traceback())
 
 		if hasattr(module, "get_children"):
@@ -274,7 +278,7 @@ def add_metatags(context):
 
 	# Get meta tags from Website Route meta
 	# they can override the defaults set above
-	route = context.route
+	route = context.path
 	if route == '':
 		# homepage
 		route = frappe.db.get_single_value('Website Settings', 'home_page')

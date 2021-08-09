@@ -22,8 +22,8 @@ from frappe.exceptions import FileNotFoundError
 doctypes_to_skip = ("Communication", "ToDo", "DocShare", "Email Unsubscribe", "Activity Log", "File",
 	"Version", "Document Follow", "Comment" , "View Log", "Tag Link", "Notification Log", "Email Queue")
 
-def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reload=False,
-	ignore_permissions=False, flags=None, ignore_on_trash=False, ignore_missing=True):
+def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reload=False, ignore_permissions=False,
+	flags=None, ignore_on_trash=False, ignore_missing=True, delete_permanently=False):
 	"""
 		Deletes a doc(dt, dn) and validates if it is not submitted and not linked in a live record
 	"""
@@ -68,7 +68,7 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 				check_permission_and_not_submitted(doc)
 
 				frappe.db.sql("delete from `tabCustom Field` where dt = %s", name)
-				frappe.db.sql("delete from `tabCustom Script` where dt = %s", name)
+				frappe.db.sql("delete from `tabClient Script` where dt = %s", name)
 				frappe.db.sql("delete from `tabProperty Setter` where doc_type = %s", name)
 				frappe.db.sql("delete from `tabReport` where ref_doctype=%s", name)
 				frappe.db.sql("delete from `tabCustom DocPerm` where parent=%s", name)
@@ -110,7 +110,7 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 			doc.run_method("after_delete")
 
 			# delete attachments
-			remove_all(doctype, name, from_delete=True)
+			remove_all(doctype, name, from_delete=True, delete_permanently=delete_permanently)
 
 			if not for_reload:
 				# Enqueued at the end, because it gets committed
@@ -125,8 +125,13 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 		# delete tag link entry
 		delete_tags_for_document(doc)
 
-		if doc and not for_reload:
+		if for_reload:
+			delete_permanently = True
+
+		if not delete_permanently:
 			add_to_deleted_document(doc)
+
+		if doc and not for_reload:
 			if not frappe.flags.in_patch:
 				try:
 					doc.notify_update()
@@ -152,10 +157,10 @@ def update_naming_series(doc):
 	if doc.meta.autoname:
 		if doc.meta.autoname.startswith("naming_series:") \
 			and getattr(doc, "naming_series", None):
-			revert_series_if_last(doc.naming_series, doc.name)
+			revert_series_if_last(doc.naming_series, doc.name, doc)
 
 		elif doc.meta.autoname.split(":")[0] not in ("Prompt", "field", "hash"):
-			revert_series_if_last(doc.meta.autoname, doc.name)
+			revert_series_if_last(doc.meta.autoname, doc.name, doc)
 
 def delete_from_table(doctype, name, ignore_doctypes, doc):
 	if doctype!="DocType" and doctype==name:
@@ -292,8 +297,8 @@ def check_if_doc_is_dynamically_linked(doc, method="Delete"):
 					raise_link_exists_exception(doc, reference_doctype, reference_docname, at_position)
 
 def raise_link_exists_exception(doc, reference_doctype, reference_docname, row=''):
-	doc_link = '<a href="#Form/{0}/{1}">{1}</a>'.format(doc.doctype, doc.name)
-	reference_link = '<a href="#Form/{0}/{1}">{1}</a>'.format(reference_doctype, reference_docname)
+	doc_link = '<a href="/app/Form/{0}/{1}">{1}</a>'.format(doc.doctype, doc.name)
+	reference_link = '<a href="/app/Form/{0}/{1}">{1}</a>'.format(reference_doctype, reference_docname)
 
 	#hack to display Single doctype only once in message
 	if reference_doctype == reference_docname:

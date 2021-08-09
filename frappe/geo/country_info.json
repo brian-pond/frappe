@@ -953,7 +953,7 @@
   "currency_fraction_units": 100,
   "smallest_currency_fraction_value": 0.01,
   "currency_symbol": "\u20ac",
-  "number_format": "#,###.##",
+  "number_format": "#.###,##",
   "timezones": [
    "Europe/Berlin"
   ]
@@ -2729,11 +2729,11 @@
  },
  "Zimbabwe": {
   "code": "zw",
-  "currency": "ZWD",
-  "currency_fraction": "Thebe",
+  "currency": "ZWL",
+  "currency_fraction": "Cent",
   "currency_fraction_units": 100,
   "currency_name": "Zimbabwe Dollar",
-  "currency_symbol": "P",
+  "currency_symbol": "ZWL$",
   "number_format": "# ###.##",
   "timezones": [
    "Africa/Harare"

@@ -16,7 +16,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 import frappe
 from frappe import _
 from frappe.utils import scrub_urls
-
+from frappe.utils.jinja import is_rtl
 
 PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError",
 	"UnknownContentError", "RemoteHostClosedError"]
@@ -164,8 +164,7 @@ def prepare_header_footer(soup):
 	head = soup.find("head").contents
 	styles = soup.find_all("style")
 
-	bootstrap = frappe.read_file(os.path.join(frappe.local.sites_path, "assets/frappe/css/bootstrap.css"))
-	fontawesome = frappe.read_file(os.path.join(frappe.local.sites_path, "assets/frappe/css/font-awesome.css"))
+	css = frappe.read_file(os.path.join(frappe.local.sites_path, "assets/css/printview.css"))
 
 	# extract header and footer
 	for html_id in ("header-html", "footer-html"):
@@ -178,11 +177,12 @@ def prepare_header_footer(soup):
 			toggle_visible_pdf(content)
 			html = frappe.render_template("templates/print_formats/pdf_header_footer.html", {
 				"head": head,
-				"styles": styles,
 				"content": content,
+				"styles": styles,
 				"html_id": html_id,
-				"bootstrap": bootstrap,
-				"fontawesome": fontawesome
+				"css": css,
+				"lang": frappe.local.lang,
+				"layout_direction": "rtl" if is_rtl else "ltr"
 			})
 
 			# create temp file

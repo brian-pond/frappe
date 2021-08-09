@@ -6,8 +6,7 @@ from __future__ import unicode_literals
 import frappe, json
 from frappe.utils import cstr, unique, cint
 from frappe.permissions import has_permission
-from frappe.handler import is_whitelisted
-from frappe import _
+from frappe import _, is_whitelisted
 from six import string_types
 import re
 import wrapt
@@ -80,13 +79,15 @@ def search_widget(doctype, txt, query=None, searchfield=None, start=0,
 			is_whitelisted(frappe.get_attr(query))
 			frappe.response["values"] = frappe.call(query, doctype, txt,
 				searchfield, start, page_length, filters, as_dict=as_dict)
-		except Exception as e:
+		except frappe.exceptions.PermissionError as e:
 			if frappe.local.conf.developer_mode:
 				raise e
 			else:
 				frappe.respond_as_web_page(title='Invalid Method', html='Method not found',
 				indicator_color='red', http_status_code=404)
 			return
+		except Exception as e:
+			raise e
 	elif not query and doctype in standard_queries:
 		# from standard queries
 		search_widget(doctype, txt, standard_queries[doctype][0],
@@ -169,7 +170,18 @@ def search_widget(doctype, txt, query=None, searchfield=None, start=0,
 				strict=False)
 
 			if doctype in UNTRANSLATED_DOCTYPES:
-				values = tuple([v for v in list(values) if re.search(re.escape(txt)+".*", (_(v.name) if as_dict else _(v[0])), re.IGNORECASE)])
+				# Filtering the values array so that query is included in very element
+				values = (
+					v for v in values
+					if re.search(
+						f"{re.escape(txt)}.*", _(v.name if as_dict else v[0]), re.IGNORECASE
+					)
+				)
+
+			# Sorting the values array so that relevant results always come first
+			# This will first bring elements on top in which query is a prefix of element
+			# Then it will bring the rest of the elements and sort them in lexicographical order
+			values = sorted(values, key=lambda x: relevance_sorter(x, txt, as_dict))
 
 			# remove _relevance from results
 			if as_dict:
@@ -209,6 +221,13 @@ def scrub_custom_query(query, key, txt):
 		query = query.replace('%s', ((txt or '') + '%'))
 	return query
 
+def relevance_sorter(key, query, as_dict):
+	value = _(key.name if as_dict else key[0])
+	return (
+		value.lower().startswith(query.lower()) is not True,
+		value
+	)
+
 @wrapt.decorator
 def validate_and_sanitize_search_inputs(fn, instance, args, kwargs):
 	kwargs.update(dict(zip(fn.__code__.co_varnames, args)))
@@ -220,3 +239,37 @@ def validate_and_sanitize_search_inputs(fn, instance, args, kwargs):
 		return []
 
 	return fn(**kwargs)
+
+
+@frappe.whitelist()
+def get_names_for_mentions(search_term):
+	users_for_mentions = frappe.cache().get_value('users_for_mentions', get_users_for_mentions)
+	user_groups = frappe.cache().get_value('user_groups', get_user_groups)
+
+	filtered_mentions = []
+	for mention_data in users_for_mentions + user_groups:
+		if search_term.lower() not in mention_data.value.lower():
+			continue
+
+		mention_data['link'] = frappe.utils.get_url_to_form(
+			'User Group' if mention_data.get('is_group') else 'User Profile',
+			mention_data['id']
+		)
+
+		filtered_mentions.append(mention_data)
+
+	return sorted(filtered_mentions, key=lambda d: d['value'])
+
+def get_users_for_mentions():
+	return frappe.get_all('User',
+		fields=['name as id', 'full_name as value'],
+		filters={
+			'name': ['not in', ('Administrator', 'Guest')],
+			'allowed_in_mentions': True,
+			'user_type': 'System User',
+		})
+
+def get_user_groups():
+	return frappe.get_all('User Group', fields=['name as id', 'name as value'], update={
+		'is_group': True
+	})

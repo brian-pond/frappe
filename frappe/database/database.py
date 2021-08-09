@@ -16,9 +16,7 @@ import frappe.model.meta
 from frappe import _
 from time import time
 from frappe.utils import now, getdate, cast_fieldtype, get_datetime
-from frappe.utils.background_jobs import execute_job, get_queue
 from frappe.model.utils.link_count import flush_local_link_count
-from frappe.utils import cint
 
 # imports - compatibility imports
 from six import (
@@ -456,6 +454,7 @@ class Database(object):
 					elif (not ignore) and frappe.db.is_table_missing(e):
 						# table not found, look in singles
 						out = self.get_values_from_single(fields, filters, doctype, as_dict, debug, update)
+
 					else:
 						raise
 			else:
@@ -507,6 +506,7 @@ class Database(object):
 					return []
 			else:
 				return r and [[i[1] for i in r]] or []
+
 
 	def get_singles_dict(self, doctype, debug = False):
 		"""Get Single DocType as dict.
@@ -564,8 +564,7 @@ class Database(object):
 		if not df:
 			frappe.throw(_('Invalid field name: {0}').format(frappe.bold(fieldname)), self.InvalidColumnName)
 
-		if df.fieldtype in frappe.model.numeric_fieldtypes:
-			val = cint(val)
+		val = cast_fieldtype(df.fieldtype, val)
 
 		self.value_cache[doctype][fieldname] = val
 
@@ -984,7 +983,7 @@ class Database(object):
 	def log_touched_tables(self, query, values=None):
 		if values:
 			query = frappe.safe_decode(self._cursor.mogrify(query, values))
-		if query.strip().lower().split()[0] in ('insert', 'delete', 'update', 'alter'):
+		if query.strip().lower().split()[0] in ('insert', 'delete', 'update', 'alter', 'drop', 'rename'):
 			# single_word_regex is designed to match following patterns
 			# `tabXxx`, tabXxx and "tabXxx"
 
@@ -1032,6 +1031,8 @@ class Database(object):
 				insert_list = []
 
 def enqueue_jobs_after_commit():
+	from frappe.utils.background_jobs import execute_job, get_queue
+
 	if frappe.flags.enqueue_after_commit and len(frappe.flags.enqueue_after_commit) > 0:
 		for job in frappe.flags.enqueue_after_commit:
 			q = get_queue(job.get("queue"), is_async=job.get("is_async"))

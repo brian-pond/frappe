@@ -1,6 +1,7 @@
 import Awesomplete from 'awesomplete';
 
 frappe.ui.form.ControlAutocomplete = frappe.ui.form.ControlData.extend({
+	trigger_change_on_input_event: false,
 	make_input() {
 		this._super();
 		this.setup_awesomplete();
@@ -86,6 +87,14 @@ frappe.ui.form.ControlAutocomplete = frappe.ui.form.ControlData.extend({
 				this.$input.val('');
 				this.$input.trigger('input');
 			}
+		});
+
+		this.$input.on("awesomplete-open", () => {
+			this.autocomplete_open = true;
+		});
+
+		this.$input.on("awesomplete-close", () => {
+			this.autocomplete_open = false;
 		});
 
 		this.$input.on('awesomplete-selectcomplete', () => {

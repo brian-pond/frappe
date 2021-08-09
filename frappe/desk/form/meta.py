@@ -63,7 +63,7 @@ class FormMeta(Meta):
 			"__linked_with", "__messages", "__print_formats", "__workflow_docs",
 			"__form_grid_templates", "__listview_template", "__tree_js",
 			"__dashboard", "__kanban_column_fields", '__templates',
-			'__custom_js'):
+			'__custom_js', '__custom_list_js'):
 			d[k] = self.get(k)
 
 		# d['fields'] = d.get('fields', [])
@@ -109,8 +109,9 @@ class FormMeta(Meta):
 	def _add_code(self, path, fieldname):
 		js = get_js(path)
 		if js:
-			self.set(fieldname, (self.get(fieldname) or "")
-				+ "\n\n/* Adding {0} */\n\n".format(path) + js)
+			comment = f"\n\n/* Adding {path} */\n\n"
+			sourceURL = f"\n\n//# sourceURL={scrub(self.name) + fieldname}"
+			self.set(fieldname, (self.get(fieldname) or "") + comment + js + sourceURL)
 
 	def add_html_templates(self, path):
 		if self.custom:
@@ -130,9 +131,27 @@ class FormMeta(Meta):
 	def add_custom_script(self):
 		"""embed all require files"""
 		# custom script
-		custom = frappe.db.get_value("Custom Script", {"dt": self.name, "enabled": 1}, "script") or ""
+		client_scripts = frappe.db.get_all("Client Script",
+			filters={"dt": self.name, "enabled": 1},
+			fields=["script", "view"],
+			order_by="creation asc"
+		) or ""
 
-		self.set("__custom_js", custom)
+		list_script = ''
+		form_script = ''
+		for script in client_scripts:
+			if script.view == 'List':
+				list_script += script.script
+
+			if script.view == 'Form':
+				form_script += script.script
+
+		file = scrub(self.name)
+		form_script += f"\n\n//# sourceURL={file}__custom_js"
+		list_script += f"\n\n//# sourceURL={file}__custom_list_js"
+
+		self.set("__custom_js", form_script)
+		self.set("__custom_list_js", list_script)
 
 	def add_search_fields(self):
 		"""add search fields found in the doctypes indicated by link fields' options"""
@@ -202,13 +221,17 @@ class FormMeta(Meta):
 		self.load_kanban_column_fields()
 
 	def load_kanban_column_fields(self):
-		values = frappe.get_list(
-			'Kanban Board', fields=['field_name'],
-			filters={'reference_doctype': self.name})
+		try:
+			values = frappe.get_list(
+				'Kanban Board', fields=['field_name'],
+				filters={'reference_doctype': self.name})
 
-		fields = [x['field_name'] for x in values]
-		fields = list(set(fields))
-		self.set("__kanban_column_fields", fields, as_value=True)
+			fields = [x['field_name'] for x in values]
+			fields = list(set(fields))
+			self.set("__kanban_column_fields", fields, as_value=True)
+		except frappe.PermissionError:
+			# no access to kanban board
+			pass
 
 def get_code_files_via_hooks(hook, name):
 	code_files = []

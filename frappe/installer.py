@@ -249,7 +249,7 @@ def remove_app(app_name, dry_run=False, yes=False, no_backup=False, force=False)
 		linked_doctypes = frappe.get_all(
 			"DocField", filters={"fieldtype": "Link", "options": "Module Def"}, fields=["parent"]
 		)
-		ordered_doctypes = ["Desk Page", "Report", "Page", "Web Form"]
+		ordered_doctypes = ["Workspace", "Report", "Page", "Web Form"]
 		all_doctypes_with_linked_modules = ordered_doctypes + [
 			doctype.parent
 			for doctype in linked_doctypes
@@ -390,19 +390,16 @@ def get_conf_params(db_name=None, db_password=None):
 
 
 def make_site_dirs():
-	site_public_path = os.path.join(frappe.local.site_path, 'public')
-	site_private_path = os.path.join(frappe.local.site_path, 'private')
-	for dir_path in (
-			os.path.join(site_private_path, 'backups'),
-			os.path.join(site_public_path, 'files'),
-			os.path.join(site_private_path, 'files'),
-			os.path.join(frappe.local.site_path, 'logs'),
-			os.path.join(frappe.local.site_path, 'task-logs')):
-		if not os.path.exists(dir_path):
-			os.makedirs(dir_path)
-	locks_dir = frappe.get_site_path('locks')
-	if not os.path.exists(locks_dir):
-			os.makedirs(locks_dir)
+	for dir_path in [
+		os.path.join("public", "files"),
+		os.path.join("private", "backups"),
+		os.path.join("private", "files"),
+		"error-snapshots",
+		"locks",
+		"logs",
+	]:
+		path = frappe.get_site_path(dir_path)
+		os.makedirs(path, exist_ok=True)
 
 
 def add_module_defs(app):

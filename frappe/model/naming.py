@@ -67,7 +67,6 @@ def set_new_name(doc):
 		frappe.get_meta(doc.doctype).get_field("name_case")
 	)
 
-
 def set_name_from_naming_options(autoname, doc):
 	"""
 	Get a name based on the autoname field option
@@ -199,7 +198,7 @@ def getseries(key, digits):
 	return ('%0'+str(digits)+'d') % current
 
 
-def revert_series_if_last(key, name):
+def revert_series_if_last(key, name, doc=None):
 	if ".#" in key:
 		prefix, hashes = key.rsplit(".", 1)
 		if "#" not in hashes:
@@ -208,7 +207,7 @@ def revert_series_if_last(key, name):
 		prefix = key
 
 	if '.' in prefix:
-		prefix = parse_naming_series(prefix.split('.'))
+		prefix = parse_naming_series(prefix.split('.'), doc=doc)
 
 	count = cint(name.replace(prefix, ""))
 	current = frappe.db.sql("SELECT `current` FROM `tabSeries` WHERE `name`=%s FOR UPDATE", (prefix,))
@@ -255,7 +254,7 @@ def append_number_if_name_exists(doctype, value, fieldname="name", separator="-"
 	filters.update({fieldname: value})
 	exists = frappe.db.exists(doctype, filters)
 
-	regex = "^{value}{separator}\d+$".format(value=re.escape(value), separator=separator)
+	regex = "^{value}{separator}\\d+$".format(value=re.escape(value), separator=separator)
 
 	if exists:
 		last = frappe.db.sql("""SELECT `{fieldname}` FROM `tab{doctype}`

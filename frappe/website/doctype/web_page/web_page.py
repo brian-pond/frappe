@@ -40,6 +40,7 @@ class WebPage(WebsiteGenerator):
 	def get_context(self, context):
 		context.main_section = get_html_content_based_on_type(self, 'main_section', self.content_type)
 		context.source_content_type = self.content_type
+		context.title = self.title
 
 		if self.context_script:
 			_locals = dict(context = frappe._dict())
@@ -54,13 +55,12 @@ class WebPage(WebsiteGenerator):
 
 		if self.enable_comments:
 			context.comment_list = get_comment_list(self.doctype, self.name)
-
+			context.guest_allowed = True
 
 		context.update({
 			"style": self.css or "",
 			"script": self.javascript or "",
 			"header": self.header,
-			"title": self.title,
 			"text_align": self.text_align,
 		})
 
@@ -145,12 +145,13 @@ class WebPage(WebsiteGenerator):
 			raise frappe.Redirect
 
 	def set_metatags(self, context):
-		context.metatags = {
-			"name": self.meta_title or self.title,
-			"description": self.meta_description,
-			"image": self.meta_image or find_first_image(context.main_section or ""),
-			"og:type": "website"
-		}
+		if not context.metatags:
+			context.metatags = {
+				"name": self.meta_title or self.title,
+				"description": self.meta_description,
+				"image": self.meta_image or find_first_image(context.main_section or ""),
+				"og:type": "website"
+			}
 
 	def validate_dates(self):
 		if self.end_date:
@@ -242,11 +243,11 @@ def extract_script_and_style_tags(html):
 	styles = []
 
 	for script in soup.find_all('script'):
-		scripts.append(script.text)
+		scripts.append(script.string)
 		script.extract()
 
 	for style in soup.find_all('style'):
-		styles.append(style.text)
+		styles.append(style.string)
 		style.extract()
 
 	return str(soup), scripts, styles

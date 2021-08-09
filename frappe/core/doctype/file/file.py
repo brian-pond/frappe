@@ -75,7 +75,7 @@ class File(Document):
 			self.add_comment_in_reference_doc('Attachment',
 				_('Added {0}').format("<a href='{file_url}' target='_blank'>{file_name}</a>{icon}".format(**{
 					"icon": ' <i class="fa fa-lock text-warning"></i>' if self.is_private else "",
-					"file_url": quote(self.file_url) if self.file_url else self.file_name,
+					"file_url": quote(frappe.safe_encode(self.file_url)) if self.file_url else self.file_name,
 					"file_name": self.file_name or self.file_url
 				})))
 
@@ -94,52 +94,89 @@ class File(Document):
 			self.set_file_name()
 			self.validate_duplicate_entry()
 			self.validate_attachment_limit()
+
 		self.validate_folder()
 
-		if not self.file_url and not self.flags.ignore_file_validate:
-			if not self.is_folder:
+		if self.is_folder:
+			self.file_url = ""
+		else:
+			self.validate_url()
+
+		self.file_size = frappe.form_dict.file_size or self.file_size
+
+	def validate_url(self):
+		if not self.file_url or self.file_url.startswith(("http://", "https://")):
+			if not self.flags.ignore_file_validate:
 				self.validate_file()
-			self.generate_content_hash()
 
-		if frappe.db.exists('File', {'name': self.name, 'is_folder': 0}):
-			old_file_url = self.file_url
-			if not self.is_folder and (self.is_private != self.db_get('is_private')):
-				private_files = frappe.get_site_path('private', 'files')
-				public_files = frappe.get_site_path('public', 'files')
+			return
 
-				file_name = self.file_url.split('/')[-1]
-				if not self.is_private:
-					shutil.move(os.path.join(private_files, file_name),
-						os.path.join(public_files, file_name))
+		# Probably an invalid web URL
+		if not self.file_url.startswith(("/files/", "/private/files/")):
+			frappe.throw(
+				_("URL must start with http:// or https://"),
+				title=_('Invalid URL')
+			)
 
-					self.file_url = "/files/{0}".format(file_name)
+		# Ensure correct formatting and type
+		self.file_url = unquote(self.file_url)
+		self.is_private = cint(self.is_private)
 
-				else:
-					shutil.move(os.path.join(public_files, file_name),
-						os.path.join(private_files, file_name))
+		self.handle_is_private_changed()
 
-					self.file_url = "/private/files/{0}".format(file_name)
+		base_path = os.path.realpath(get_files_path(is_private=self.is_private))
+		if not os.path.realpath(self.get_full_path()).startswith(base_path):
+			frappe.throw(
+				_("The File URL you've entered is incorrect"),
+				title=_('Invalid File URL')
+			)
 
-				update_existing_file_docs(self)
+	def handle_is_private_changed(self):
+		if not frappe.db.exists(
+			'File', {
+				'name': self.name,
+				'is_private': cint(not self.is_private)
+			}
+		):
+			return
 
-			# update documents image url with new file url
-			if self.attached_to_doctype and self.attached_to_name:
-				if not self.attached_to_field:
-					field_name = None
-					reference_dict = frappe.get_doc(self.attached_to_doctype, self.attached_to_name).as_dict()
-					for key, value in reference_dict.items():
-						if value == old_file_url:
-							field_name = key
-							break
-					self.attached_to_field = field_name
-				if self.attached_to_field:
-					frappe.db.set_value(self.attached_to_doctype, self.attached_to_name,
-						self.attached_to_field, self.file_url)
+		old_file_url = self.file_url
 
-		self.validate_url()
+		file_name = self.file_url.split('/')[-1]
+		private_file_path = frappe.get_site_path('private', 'files', file_name)
+		public_file_path = frappe.get_site_path('public', 'files', file_name)
 
-		if self.file_url and (self.is_private != self.file_url.startswith('/private')):
-			frappe.throw(_('Invalid file URL. Please contact System Administrator.'))
+		if self.is_private:
+			shutil.move(public_file_path, private_file_path)
+			url_starts_with = "/private/files/"
+		else:
+			shutil.move(private_file_path, public_file_path)
+			url_starts_with = "/files/"
+
+		self.file_url = "{0}{1}".format(url_starts_with, file_name)
+		update_existing_file_docs(self)
+
+		if (
+			not self.attached_to_doctype
+			or not self.attached_to_name
+			or not self.fetch_attached_to_field(old_file_url)
+		):
+			return
+
+		frappe.db.set_value(self.attached_to_doctype, self.attached_to_name,
+			self.attached_to_field, self.file_url)
+
+	def fetch_attached_to_field(self, old_file_url):
+		if self.attached_to_field:
+			return True
+
+		reference_dict = frappe.get_doc(
+			self.attached_to_doctype, self.attached_to_name).as_dict()
+
+		for key, value in reference_dict.items():
+			if value == old_file_url:
+				self.attached_to_field = key
+				return True
 
 	def validate_attachment_limit(self):
 		attachment_limit = 0
@@ -335,8 +372,13 @@ class File(Document):
 
 	def get_content(self):
 		"""Returns [`file_name`, `content`] for given file name `fname`"""
+		if self.is_folder:
+			frappe.throw(_("Cannot get file contents of a Folder"))
+
 		if self.get('content'):
 			return self.content
+
+		self.validate_url()
 		file_path = self.get_full_path()
 
 		# read the file
@@ -423,23 +465,6 @@ class File(Document):
 		else:
 			raise Exception
 
-
-	def validate_url(self, df=None):
-		if self.file_url:
-			if not self.file_url.startswith(("http://", "https://", "/files/", "/private/files/")):
-				frappe.throw(_("URL must start with 'http://' or 'https://'"))
-				return
-
-			if not self.file_url.startswith(("http://", "https://")):
-				# local file
-				root_files_path = get_files_path(is_private=self.is_private)
-				if not os.path.commonpath([root_files_path]) == os.path.commonpath([root_files_path, self.get_full_path()]):
-					# basically the file url is skewed to not point to /files/ or /private/files
-					frappe.throw(_("{0} is not a valid file url").format(self.file_url))
-			self.file_url = unquote(self.file_url)
-			self.file_size = frappe.form_dict.file_size or self.file_size
-
-
 	def get_uploaded_content(self):
 		# should not be unicode when reading a file, hence using frappe.form
 		if 'filedata' in frappe.form_dict:
@@ -456,7 +481,7 @@ class File(Document):
 	def save_file(self, content=None, decode=False, ignore_existing_file_check=False):
 		file_exists = False
 		self.content = content
-		
+
 		if decode:
 			if isinstance(content, text_type):
 				self.content = content.encode("utf-8")
@@ -467,19 +492,19 @@ class File(Document):
 
 		if not self.is_private:
 			self.is_private = 0
-		
+
 		self.content_type = mimetypes.guess_type(self.file_name)[0]
-		
+
 		self.file_size = self.check_max_file_size()
-		
+
 		if (
-			self.content_type and "image" in self.content_type
+			self.content_type and self.content_type == "image/jpeg"
 			and frappe.get_system_settings("strip_exif_metadata_from_uploaded_images")
 		):
-			self.content = strip_exif_data(self.content, self.content_type)			
+			self.content = strip_exif_data(self.content, self.content_type)
 
 		self.content_hash = get_content_hash(self.content)
-		
+
 		duplicate_file = None
 
 		# check if a file exists with the same content hash and is also in the same folder (public or private)
@@ -718,7 +743,7 @@ def delete_file(path):
 			os.remove(path)
 
 
-def remove_file(fid=None, attached_to_doctype=None, attached_to_name=None, from_delete=False):
+def remove_file(fid=None, attached_to_doctype=None, attached_to_name=None, from_delete=False, delete_permanently=False):
 	"""Remove file and File entry"""
 	file_name = None
 	if not (attached_to_doctype and attached_to_name):
@@ -736,7 +761,7 @@ def remove_file(fid=None, attached_to_doctype=None, attached_to_name=None, from_
 		if not file_name:
 			file_name = frappe.db.get_value("File", fid, "file_name")
 		comment = doc.add_comment("Attachment Removed", _("Removed {0}").format(file_name))
-		frappe.delete_doc("File", fid, ignore_permissions=ignore_permissions)
+		frappe.delete_doc("File", fid, ignore_permissions=ignore_permissions, delete_permanently=delete_permanently)
 
 	return comment
 
@@ -745,17 +770,18 @@ def get_max_file_size():
 	return cint(conf.get('max_file_size')) or 10485760
 
 
-def remove_all(dt, dn, from_delete=False):
+def remove_all(dt, dn, from_delete=False, delete_permanently=False):
 	"""remove all files in a transaction"""
 	try:
 		for fid in frappe.db.sql_list("""select name from `tabFile` where
 			attached_to_doctype=%s and attached_to_name=%s""", (dt, dn)):
 			if from_delete:
 				# If deleting a doc, directly delete files
-				frappe.delete_doc("File", fid, ignore_permissions=True)
+				frappe.delete_doc("File", fid, ignore_permissions=True, delete_permanently=delete_permanently)
 			else:
 				# Removes file and adds a comment in the document it is attached to
-				remove_file(fid=fid, attached_to_doctype=dt, attached_to_name=dn, from_delete=from_delete)
+				remove_file(fid=fid, attached_to_doctype=dt, attached_to_name=dn,
+					from_delete=from_delete, delete_permanently=delete_permanently)
 	except Exception as e:
 		if e.args[0]!=1054: raise # (temp till for patched)
 
@@ -886,7 +912,7 @@ def extract_images_from_html(doc, content):
 		return '<img src="{file_url}"'.format(file_url=file_url)
 
 	if content and isinstance(content, string_types):
-		content = re.sub('<img[^>]*src\s*=\s*["\'](?=data:)(.*?)["\']', _save_file, content)
+		content = re.sub(r'<img[^>]*src\s*=\s*["\'](?=data:)(.*?)["\']', _save_file, content)
 
 	return content
 
@@ -940,10 +966,43 @@ def validate_filename(filename):
 	return fname
 
 @frappe.whitelist()
-def get_files_in_folder(folder):
-	return frappe.db.get_all('File',
+def get_files_in_folder(folder, start=0, page_length=20):
+	start = cint(start)
+	page_length = cint(page_length)
+
+	attachment_folder = frappe.db.get_value('File',
+		'Home/Attachments',
+		['name', 'file_name', 'file_url', 'is_folder', 'modified'],
+		as_dict=1
+	)
+
+	files = frappe.db.get_list('File',
 		{ 'folder': folder },
-		['name', 'file_name', 'file_url', 'is_folder', 'modified']
+		['name', 'file_name', 'file_url', 'is_folder', 'modified'],
+		start=start,
+		page_length=page_length + 1
+	)
+
+	if folder == 'Home' and attachment_folder not in files:
+		files.insert(0, attachment_folder)
+
+	return {
+		'files': files[:page_length],
+		'has_more': len(files) > page_length
+	}
+
+@frappe.whitelist()
+def get_files_by_search_text(text):
+	if not text:
+		return []
+
+	text = '%' + cstr(text).lower() + '%'
+	return frappe.db.get_all('File',
+		fields=['name', 'file_name', 'file_url', 'is_folder', 'modified'],
+		filters={'is_folder': False},
+		or_filters={'file_name': ('like', text), 'file_url': text, 'name': ('like', text)},
+		order_by='modified desc',
+		limit=20
 	)
 
 def update_existing_file_docs(doc):

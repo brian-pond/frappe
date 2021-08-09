@@ -18,6 +18,7 @@ def after_install():
 	# reset installed apps for re-install
 	frappe.db.set_global("installed_apps", '["frappe"]')
 
+	create_user_type()
 	install_basic_docs()
 
 	from frappe.core.doctype.file.file import make_home_folder
@@ -48,6 +49,15 @@ def after_install():
 	add_standard_navbar_items()
 
 	frappe.db.commit()
+
+def create_user_type():
+	for user_type in ['System User', 'Website User']:
+		if not frappe.db.exists('User Type', user_type):
+			frappe.get_doc({
+				'doctype': 'User Type',
+				'name': user_type,
+				'is_standard': 1
+			}).insert(ignore_permissions=True)
 
 def install_basic_docs():
 	# core users / roles
@@ -176,7 +186,7 @@ def add_standard_navbar_items():
 		{
 			'item_label': 'My Profile',
 			'item_type': 'Route',
-			'route': '#user-profile',
+			'route': '/app/user-profile',
 			'is_standard': 1
 		},
 		{
@@ -212,7 +222,7 @@ def add_standard_navbar_items():
 		{
 			'item_label': 'Background Jobs',
 			'item_type': 'Route',
-			'route': '#background_jobs',
+			'route': '/app/background_jobs',
 			'is_standard': 1
 		},
 		{
@@ -229,10 +239,6 @@ def add_standard_navbar_items():
 
 	standard_help_items = [
 		{
-			'item_type': 'Separator',
-			'is_standard': 1
-		},
-		{
 			'item_label': 'About',
 			'item_type': 'Action',
 			'action': 'frappe.ui.toolbar.show_about()',
@@ -245,6 +251,9 @@ def add_standard_navbar_items():
 			'is_standard': 1
 		}
 	]
+
+	navbar_settings.settings_dropdown = []
+	navbar_settings.help_dropdown = []
 
 	for item in standard_navbar_items:
 		navbar_settings.append('settings_dropdown', item)

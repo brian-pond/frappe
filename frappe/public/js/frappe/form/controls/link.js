@@ -6,17 +6,20 @@
 // add_fetches
 import Awesomplete from 'awesomplete';
 
+frappe.ui.form.recent_link_validations = {};
+
 frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
+	trigger_change_on_input_event: false,
 	make_input: function() {
 		var me = this;
-		// line-height: 1 is for Mozilla 51, shows extra padding otherwise
-		$('<div class="link-field ui-front" style="position: relative; line-height: 1;">\
-			<input type="text" class="input-with-feedback form-control">\
-			<span class="link-btn">\
-				<a class="btn-open no-decoration" title="' + __("Open Link") + '">\
-					<i class="octicon octicon-arrow-right"></i></a>\
-			</span>\
-		</div>').prependTo(this.input_area);
+		$(`<div class="link-field ui-front" style="position: relative;">
+			<input type="text" class="input-with-feedback form-control">
+			<span class="link-btn">
+				<a class="btn-open no-decoration" title="${__("Open Link")}">
+					${frappe.utils.icon('arrow-right', 'xs')}
+				</a>
+			</span>
+		</div>`).prependTo(this.input_area);
 		this.$input_area = $(this.input_area);
 		this.$input = this.$input_area.find('input');
 		this.$link = this.$input_area.find('.link-btn');
@@ -80,11 +83,16 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 		var doctype = this.get_options();
 		var me = this;
 
-		if(!doctype) return;
+		if (!doctype) return;
 
+		let df = this.df;
+		if (this.frm && this.frm.doctype !== this.df.parent) {
+			// incase of grid use common df set in grid
+			df = this.frm.get_docfield(this.doc.parentfield, this.df.fieldname);
+		}
 		// set values to fill in the new document
-		if(this.df.get_route_options_for_new_doc) {
-			frappe.route_options = this.df.get_route_options_for_new_doc(this);
+		if (df && df.get_route_options_for_new_doc) {
+			frappe.route_options = df.get_route_options_for_new_doc(this);
 		} else {
 			frappe.route_options = {};
 		}
@@ -133,7 +141,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 				return $('<li></li>')
 					.data('item.autocomplete', d)
 					.prop('aria-selected', 'false')
-					.html('<a><p>' + html + '</p></a>')
+					.html(`<a><p title="${_label}">${html}</p></a>`)
 					.get(0);
 			},
 			sort: function() {
@@ -181,7 +189,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 						let filter_string = me.get_filter_description(args.filters);
 						if (filter_string) {
 							r.results.push({
-								html: `<span class="text-muted">${filter_string}</span>`,
+								html: `<span class="text-muted" style="line-height: 1.5">${filter_string}</span>`,
 								value: '',
 								action: () => {}
 							});
@@ -192,10 +200,11 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 						if(frappe.model.can_create(doctype)) {
 							// new item
 							r.results.push({
-								label: "<span class='text-primary link-option'>"
+								html: "<span class='text-primary link-option'>"
 									+ "<i class='fa fa-plus' style='margin-right: 5px;'></i> "
 									+ __("Create a new {0}", [__(me.get_options())])
 									+ "</span>",
+								label: __("Create a new {0}", [__(me.get_options())]),
 								value: "create_new__link_option",
 								action: me.new_doc
 							});
@@ -205,10 +214,11 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 						if (locals && locals['DocType']) {
 							// not applicable in web forms
 							r.results.push({
-								label: "<span class='text-primary link-option'>"
+								html: "<span class='text-primary link-option'>"
 									+ "<i class='fa fa-search' style='margin-right: 5px;'></i> "
 									+ __("Advanced Search")
 									+ "</span>",
+								label: __("Advanced Search"),
 								value: "advanced_search__link_option",
 								action: me.open_advanced_search
 							});
@@ -232,15 +242,12 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			}
 		});
 
-		this.$input.on("awesomplete-open", function() {
-			me.$wrapper.css({"z-index": 100});
-			me.$wrapper.find('ul').css({"z-index": 100});
-			me.autocomplete_open = true;
+		this.$input.on("awesomplete-open", () => {
+			this.autocomplete_open = true;
 		});
 
-		this.$input.on("awesomplete-close", function() {
-			me.$wrapper.css({"z-index": 1});
-			me.autocomplete_open = false;
+		this.$input.on("awesomplete-close", () => {
+			this.autocomplete_open = false;
 		});
 
 		this.$input.on("awesomplete-select", function(e) {
@@ -445,38 +452,43 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			this.docname, value);
 	},
 	validate_link_and_fetch: function(df, doctype, docname, value) {
-		var me = this;
-
 		if(value) {
 			return new Promise((resolve) => {
 				var fetch = '';
-
 				if(this.frm && this.frm.fetch_dict[df.fieldname]) {
 					fetch = this.frm.fetch_dict[df.fieldname].columns.join(', ');
 				}
+				// if default and no fetch, no need to validate
+				if (!fetch && df.__default_value && df.__default_value===value) {
+					resolve(value);
+				}
 
-				return frappe.call({
-					method:'frappe.desk.form.utils.validate_link',
-					type: "GET",
-					args: {
-						'value': value,
-						'options': doctype,
-						'fetch': fetch
-					},
-					no_spinner: true,
-					callback: function(r) {
-						if(r.message=='Ok') {
-							if(r.fetch_values && docname) {
-								me.set_fetch_values(df, docname, r.fetch_values);
-							}
-							resolve(r.valid_value);
-						} else {
-							resolve("");
-						}
-					}
-				});
+				this.fetch_and_validate_link(resolve, df, doctype, docname, value, fetch);
 			});
 		}
+	},
+
+	fetch_and_validate_link(resolve, df, doctype, docname, value, fetch) {
+		frappe.call({
+			method: 'frappe.desk.form.utils.validate_link',
+			type: "GET",
+			args: {
+				'value': value,
+				'options': doctype,
+				'fetch': fetch
+			},
+			no_spinner: true,
+			callback: (r) => {
+				if (r.message=='Ok') {
+					if (r.fetch_values && docname) {
+						this.set_fetch_values(df, docname, r.fetch_values);
+					}
+					resolve(r.valid_value);
+				} else {
+					resolve("");
+				}
+			}
+		});
 	},
 
 	set_fetch_values: function(df, docname, fetch_values) {

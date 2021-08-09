@@ -85,14 +85,11 @@ frappe.notification = {
 			}
 
 			// set email recipient options
-			frappe.meta.get_docfield(
-				'Notification Recipient',
+			frm.fields_dict.recipients.grid.update_docfield_property(
 				'receiver_by_document_field',
-				// set first option as blank to allow notification not to be defaulted to the owner
-				frm.doc.name
-			).options = [''].concat(["owner"]).concat(receiver_fields);
-
-			frm.fields_dict.recipients.grid.refresh();
+				'options',
+				[''].concat(["owner"]).concat(receiver_fields)
+			);
 		});
 	},
 	setup_example_message: function(frm) {
@@ -198,7 +195,7 @@ frappe.ui.form.on('Notification', {
 		frappe.notification.setup_example_message(frm);
 		if (frm.doc.channel === 'SMS' && frm.doc.__islocal) {
 			frm.set_df_property('channel',
-				'description', `To use SMS Channel, initialize <a href="#Form/SMS Settings">SMS Settings</a>.`);
+				'description', `To use SMS Channel, initialize <a href="/app/sms-settings">SMS Settings</a>.`);
 		} else {
 			frm.set_df_property('channel', 'description', ` `);
 		}

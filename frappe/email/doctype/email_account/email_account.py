@@ -8,7 +8,7 @@ import re
 import json
 import socket
 import time
-from frappe import _
+from frappe import _, safe_encode
 from frappe.model.document import Document
 from frappe.utils import validate_email_address, cint, cstr, get_datetime, DATE_FORMAT, strip, comma_or, sanitize_html, add_days
 from frappe.utils.user import is_system_user
@@ -89,6 +89,29 @@ class EmailAccount(Document):
 			valid_doctypes = [d[0] for d in get_append_to()]
 			if self.append_to not in valid_doctypes:
 				frappe.throw(_("Append To can be one of {0}").format(comma_or(valid_doctypes)))
+
+	def before_save(self):
+		messages = []
+		as_list = 1
+		if not self.enable_incoming and self.default_incoming:
+			self.default_incoming = False
+			messages.append(_("{} has been disabled. It can only be enabled if {} is checked.")
+				.format(
+					frappe.bold(_('Default Incoming')),
+					frappe.bold(_('Enable Incoming'))
+				)
+			)
+		if not self.enable_outgoing and self.default_outgoing:
+			self.default_outgoing = False
+			messages.append(_("{} has been disabled. It can only be enabled if {} is checked.")
+				.format(
+						frappe.bold(_('Default Outgoing')),
+						frappe.bold(_('Enable Outgoing'))
+					)
+				)
+		if messages:
+			if len(messages) == 1: (as_list, messages) = (0, messages[0])
+			frappe.msgprint(messages, as_list= as_list, indicator='orange', title=_("Defaults Updated"))
 
 	def on_update(self):
 		"""Check there is only one default of each type."""
@@ -715,7 +738,6 @@ class EmailAccount(Document):
 
 
 	def append_email_to_sent_folder(self, message):
-
 		email_server = None
 		try:
 			email_server = self.get_incoming_server(in_receive=True)
@@ -729,7 +751,8 @@ class EmailAccount(Document):
 
 		if email_server.imap:
 			try:
-				email_server.imap.append("Sent", "\\Seen", imaplib.Time2Internaldate(time.time()), message.encode())
+				message = safe_encode(message)
+				email_server.imap.append("Sent", "\\Seen", imaplib.Time2Internaldate(time.time()), message)
 			except Exception:
 				frappe.log_error()
 

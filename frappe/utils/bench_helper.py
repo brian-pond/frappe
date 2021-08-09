@@ -6,6 +6,7 @@ import json
 import importlib
 import frappe.utils
 import traceback
+import warnings
 
 click.disable_unicode_literals_warning = True
 
@@ -54,6 +55,8 @@ def get_sites(site_arg):
 		return frappe.utils.get_sites()
 	elif site_arg:
 		return [site_arg]
+	elif os.environ.get('FRAPPE_SITE'):
+		return [os.environ.get('FRAPPE_SITE')]
 	elif os.path.exists('currentsite.txt'):
 		with open('currentsite.txt') as f:
 			site = f.read().strip()
@@ -96,5 +99,6 @@ def get_apps():
 	return frappe.get_all_apps(with_internal_apps=False, sites_path='.')
 
 if __name__ == "__main__":
+	if not frappe._dev_server:
+		warnings.simplefilter('ignore')
 	main()
-

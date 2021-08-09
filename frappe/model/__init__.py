@@ -71,7 +71,8 @@ numeric_fieldtypes = (
 data_field_options = (
 	'Email',
 	'Name',
-	'Phone'
+	'Phone',
+	'URL'
 )
 
 default_fields = (
@@ -118,7 +119,7 @@ core_doctypes_list = (
 	'Customize Form Field',
 	'Property Setter',
 	'Custom Field',
-	'Custom Script'
+	'Client Script'
 )
 
 log_types = (

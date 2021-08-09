@@ -15,7 +15,10 @@ frappe.form.formatters = {
 			return "<div style='text-align: right'>" + value + "</div>";
 		}
 	},
-	Data: function(value) {
+	Data: function(value, df) {
+		if (df && df.options == "URL") {
+			return `<a href="${value}" title="Open Link" target="_blank">${value}</a>`;
+		}
 		return value==null ? "" : value;
 	},
 	Select: function(value) {
@@ -61,11 +64,14 @@ frappe.form.formatters = {
 		return frappe.form.formatters._right(flt(value, precision) + "%", options);
 	},
 	Rating: function(value) {
-		return `<span class="rating">
-	${Array.from(new Array(5)).map((_, i) =>
-		`<i class="fa fa-fw fa-star ${i < (value || 0) ? "star-click": "" } star-icon" data-idx="${(i+1)}"></i>`
-	).join('')}
-		</span>`;
+		const rating_html =	`${[1, 2, 3, 4, 5].map(i =>
+			`<svg class="icon icon-md ${i <= (value || 0) ? "star-click": "" }" data-idx="${i}">
+				<use href="#icon-star"></use>
+			</svg>`
+		).join('')}`;
+		return `<div class="rating">
+			${rating_html}
+		</div>`;
 	},
 	Currency: function (value, docfield, options, doc) {
 		var currency  = frappe.meta.get_field_currency(docfield, doc);
@@ -94,11 +100,8 @@ frappe.form.formatters = {
 		}
 	},
 	Check: function(value) {
-		if(value) {
-			return '<i class="fa fa-check" style="margin-right: 3px;"></i>';
-		} else {
-			return '<i class="fa fa-square disabled-check"></i>';
-		}
+		return `<input type="checkbox" disabled
+			class="disabled-${value ? "selected" : "deselected"}">`;
 	},
 	Link: function(value, docfield, options, doc) {
 		var doctype = docfield._options || docfield.options;
@@ -128,16 +131,15 @@ frappe.form.formatters = {
 			return repl('<a onclick="%(onclick)s">%(value)s</a>',
 				{onclick: docfield.link_onclick.replace(/"/g, '&quot;'), value:value});
 		} else if(docfield && doctype) {
-			if (!frappe.model.can_select(doctype) && frappe.model.can_read(doctype)) {
-				return `<a class="grey"
-					href="#Form/${encodeURIComponent(doctype)}/${encodeURIComponent(original_value)}"
+			if (frappe.model.can_read(doctype)) {
+				return `<a
+					href="/app/${encodeURIComponent(frappe.router.slug(doctype))}/${encodeURIComponent(original_value)}"
 					data-doctype="${doctype}"
 					data-name="${original_value}">
 					${__(options && options.label || value)}</a>`;
 			} else {
 				return value;
 			}
-
 		} else {
 			return value;
 		}
@@ -157,7 +159,7 @@ frappe.form.formatters = {
 		return value || "";
 	},
 	DateRange: function(value) {
-		if($.isArray(value)) {
+		if (Array.isArray(value)) {
 			return __("{0} to {1}", [frappe.datetime.str_to_user(value[0]), frappe.datetime.str_to_user(value[1])]);
 		} else {
 			return value || "";
@@ -219,9 +221,13 @@ frappe.form.formatters = {
 	Tag: function(value) {
 		var html = "";
 		$.each((value || "").split(","), function(i, v) {
-			if(v) html+= '<span class="label label-info" \
-				style="margin-right: 7px; cursor: pointer;"\
-				data-field="_user_tags" data-label="'+v+'">'+v +'</span>';
+			if (v) html += `
+				<span
+					class="data-pill btn-xs align-center ellipsis"
+					style="background-color: var(--control-bg); box-shadow: none; margin-right: 4px;"
+					data-field="_user_tags" data-label="${v}'">
+					${v}
+				</span>`;
 		});
 		return html;
 	},
@@ -291,8 +297,14 @@ frappe.form.formatters = {
 			return frappe.format(value, link_field, options, row);
 		});
 		return formatted_values.join(', ');
+	},
+	Color: (value) => {
+		return value ? `<div>
+			<div class="selected-color" style="background-color: ${value}"></div>
+			<span class="color-value">${value}</span>
+		</div>` : '';
 	}
-}
+};
 
 frappe.form.get_formatter = function(fieldtype) {
 	if(!fieldtype)
@@ -302,6 +314,7 @@ frappe.form.get_formatter = function(fieldtype) {
 
 frappe.format = function(value, df, options, doc) {
 	if(!df) df = {"fieldtype":"Data"};
+	if (df.fieldname == '_user_tags') df.fieldtype = 'Tag';
 	var fieldtype = df.fieldtype || "Data";
 
 	// format Dynamic Link as a Link

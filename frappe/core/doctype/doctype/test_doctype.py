@@ -5,11 +5,16 @@ from __future__ import unicode_literals
 
 import frappe
 import unittest
-from frappe.core.doctype.doctype.doctype import UniqueFieldnameError, IllegalMandatoryError, DoctypeLinkError, WrongOptionsDoctypeLinkError,\
- HiddenAndMandatoryWithoutDefaultError, CannotIndexedError, InvalidFieldNameError, CannotCreateStandardDoctypeError
+from frappe.core.doctype.doctype.doctype import (UniqueFieldnameError,
+	IllegalMandatoryError,
+	DoctypeLinkError,
+	WrongOptionsDoctypeLinkError,
+	HiddenAndMandatoryWithoutDefaultError,
+	CannotIndexedError,
+	InvalidFieldNameError,
+	validate_links_table_fieldnames)
 
 # test_records = frappe.get_test_records('DocType')
-
 
 class TestDocType(unittest.TestCase):
 	def test_validate_name(self):
@@ -87,7 +92,7 @@ class TestDocType(unittest.TestCase):
 			fields=["parent", "depends_on", "collapsible_depends_on", "mandatory_depends_on",\
 				"read_only_depends_on", "fieldname", "fieldtype"])
 
-		pattern = """[\w\.:_]+\s*={1}\s*[\w\.@'"]+"""
+		pattern = r'[\w\.:_]+\s*={1}\s*[\w\.@\'"]+'
 		for field in docfields:
 			for depends_on in ["depends_on", "collapsible_depends_on", "mandatory_depends_on", "read_only_depends_on"]:
 				condition = field.get(depends_on)
@@ -459,7 +464,7 @@ class TestDocType(unittest.TestCase):
 			'link_doctype': "User",
 			'link_fieldname': "first_name"
 		})
-		doc.validate_links_table_fieldnames() # no error
+		validate_links_table_fieldnames(doc) # no error
 		doc.links = [] # reset links table
 
 		# check invalid doctype
@@ -467,7 +472,7 @@ class TestDocType(unittest.TestCase):
 			'link_doctype': "User2",
 			'link_fieldname': "first_name"
 		})
-		self.assertRaises(frappe.DoesNotExistError, doc.validate_links_table_fieldnames)
+		self.assertRaises(frappe.DoesNotExistError, validate_links_table_fieldnames, doc)
 		doc.links = [] # reset links table
 
 		# check invalid fieldname
@@ -475,8 +480,19 @@ class TestDocType(unittest.TestCase):
 			'link_doctype': "User",
 			'link_fieldname': "a_field_that_does_not_exists"
 		})
-		self.assertRaises(InvalidFieldNameError, doc.validate_links_table_fieldnames)
 
+		self.assertRaises(InvalidFieldNameError, validate_links_table_fieldnames, doc)
+
+	def test_create_virtual_doctype(self):
+		"""Test virtual DOcTYpe."""
+		virtual_doc = new_doctype('Test Virtual Doctype')
+		virtual_doc.is_virtual = 1
+		virtual_doc.insert()
+		virtual_doc.save()
+		doc = frappe.get_doc("DocType", "Test Virtual Doctype")
+
+		self.assertEqual(doc.is_virtual, 1)
+		self.assertFalse(frappe.db.table_exists('Test Virtual Doctype'))
 
 def new_doctype(name, unique=0, depends_on='', fields=None):
 	doc = frappe.get_doc({

@@ -107,10 +107,10 @@ def build_csv_response(data, filename):
 	frappe.response["type"] = "csv"
 
 class UnicodeWriter:
-	def __init__(self, encoding="utf-8"):
+	def __init__(self, encoding="utf-8", quoting=csv.QUOTE_NONNUMERIC):
 		self.encoding = encoding
 		self.queue = StringIO()
-		self.writer = csv.writer(self.queue, quoting=csv.QUOTE_NONNUMERIC)
+		self.writer = csv.writer(self.queue, quoting=quoting)
 
 	def writerow(self, row):
 		if six.PY2:
@@ -172,7 +172,7 @@ def import_doc(d, doctype, overwrite, row_idx, submit=False, ignore_links=False)
 			doc.get('name')))
 
 def getlink(doctype, name):
-	return '<a href="#Form/%(doctype)s/%(name)s">%(name)s</a>' % locals()
+	return '<a href="/app/Form/%(doctype)s/%(name)s">%(name)s</a>' % locals()
 
 def get_csv_content_from_google_sheets(url):
 	# https://docs.google.com/spreadsheets/d/{sheetid}}/edit#gid={gid}
