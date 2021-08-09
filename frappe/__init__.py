@@ -315,7 +315,8 @@ def log(msg):
 
 	debug_log.append(as_unicode(msg))
 
-def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, indicator=None, alert=False, primary_action=None, is_minimizable=None, wide=None):
+def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, indicator=None,
+             alert=False, primary_action=None, is_minimizable=None, wide=None, level=None):
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
 	response JSON and shown in a pop-up / modal.
@@ -328,6 +329,8 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 	:param primary_action: [optional] Bind a primary server/client side action.
 	:param is_minimizable: [optional] Allow users to minimize the modal
 	:param wide: [optional] Show wide modal
+	:param indicator: (Add Documentation Here)
+	:param alert: (Add Documentation Here)
 	"""
 	from frappe.utils import strip_html_tags
 
@@ -348,6 +351,20 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 	if flags.mute_messages:
 		_raise_exception()
 		return
+
+	# Datahenge: Do not reply if Message Level < User Message Level
+	def _get_numeric_level(level_str):
+		# In descending order of importance.
+		LEVELS = [ 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG' ]
+		try:
+			return LEVELS.index(level_str.upper())
+		except Exception:
+			raise ValueError(f"Invalid message level: {level_str.upper()}")
+
+	if level and _get_numeric_level(level) > _get_numeric_level(get_doc('User', session.user).message_level):
+		_raise_exception()
+		return
+	# Datahenge: End Modification
 
 	if as_table and type(msg) in (list, tuple):
 		out.as_table = 1
@@ -404,7 +421,7 @@ def clear_last_message():
 		local.message_log = local.message_log[:-1]
 
 def throw(msg, exc=ValidationError, title=None, is_minimizable=None, wide=None, as_list=False):
-	"""Throw execption and show message (`msgprint`).
+	"""Throw exception and show message (`msgprint`).
 
 	:param msg: Message.
 	:param exc: Exception class. Default `frappe.ValidationError`"""
@@ -1760,3 +1777,26 @@ def mock(type, size=1, locale='en'):
 def validate_and_sanitize_search_inputs(fn):
 	from frappe.desk.search import validate_and_sanitize_search_inputs as func
 	return func(fn)
+
+# --------
+# Datahenge
+# I tried guerilla patching this in FTP's hooks.py.
+# The result was inconsistent.  For example, I could not call 'automation.py' code via
+# `bench execute`, because the Bench wasn't aware of the patched Frappe module.
+# I believe that Guerilla Patching isn't worth the effort and headaches.
+# So I'm adding my function directly to the appropriate Frappe/ERPNext modules.
+# --------
+
+def whatis(message, backend=True, frontend=True):
+	"""
+	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
+	"""
+	import inspect
+	caller_function = inspect.stack()[2][3]
+	message_type = str(type(message)).replace('<', '').replace('>', '')
+	msg = f"---> DEBUG\n  * Value: {message}\n  * Type: {message_type}\n  * Caller: {caller_function}\n"
+	if backend:
+		print(msg)
+	if frontend:
+		msg = msg.replace('\n', '<br>')
+		msgprint(msg)

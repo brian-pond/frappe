@@ -125,6 +125,15 @@ def handle():
 
 				if frappe.local.request.method == "POST":
 					data = get_request_form_data()
+
+					# Datahenge Begin
+					# I strongly feel this should be standard code.  But probably cannot convince the maintainers.
+					# On POST, if a 'name' is passed, but the record already exists?  THROW ERROR!
+					if 'name' in data:
+						if frappe.db.exists(doctype, data['name']):
+							raise frappe.NameError(f"Document record with name '{data['name']}' already exists for {doctype}.")
+					# Datahenge End
+
 					data.update({
 						"doctype": doctype
 					})
