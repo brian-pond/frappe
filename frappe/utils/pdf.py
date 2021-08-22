@@ -16,6 +16,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 import frappe
 from frappe import _
 from frappe.utils import scrub_urls
+from sf import search_html_for_string
 
 PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError",
 	"UnknownContentError", "RemoteHostClosedError"]
@@ -23,7 +24,26 @@ PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError
 
 def get_pdf(html, options=None, output=None):
 	""" Convert HTML string to a PDF document. """
-	html = scrub_urls(html)  # will convert Relative paths to Absolute
+
+	# Datahenge: Official Frappe code likes to "assume" that the Site name is going to be the HTTP Domain.
+	# Pretty dumb assumption, and makes it a PITA if you want to copy whole environments.
+	# I believe I've fixed it in frappe/utils/data.py.  But leaving this debugging here anyway.
+	debug_mode = frappe.db.get_single_value("SF Data Migration", "enable_pdf_debugging")
+
+	if debug_mode:
+		results = search_html_for_string(html, "link type")
+		for result in results:
+			print(f"get_pdf() has these HTML links before 'scrub_urls': {result[1]}")
+
+	# 1. Given a relative path (such as to CSS), this will append the domain.
+	html = scrub_urls(html)
+
+	if debug_mode:
+		results = search_html_for_string(html, "link type")
+		for result in results:
+			print(f"get_pdf() has these HTML links after 'scrub_urls': {result[1]}")
+
+	# 2. Prepare options.  This strips some of the leading HTML.
 	html, options = prepare_options(html, options)
 
 	options.update({

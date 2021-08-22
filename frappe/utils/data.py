@@ -714,20 +714,70 @@ def filter_strip_join(some_list, sep):
 	"""given a list, filter None values, strip spaces and join"""
 	return (cstr(sep)).join((cstr(a).strip() for a in filter(None, some_list)))
 
-def get_url(uri=None, full_address=False):
-	"""get app url from request"""
-	host_name = frappe.local.conf.host_name or frappe.local.conf.hostname
+class URLCalc():
+	def __init__(self):
+		self.scheme = None
+		self.domain= None
+		self.port = None
 
-	if uri and (uri.startswith("http://") or uri.startswith("https://")):
-		return uri
+	def get_tuple(self):
+		"""
+		Returns a tuple with (Scheme, Domain, Port)
+		"""
+		temp_domain = self.calc_domain()
+		if not temp_domain:
+			raise ValueError("We have a pretty big problem.")
 
-	if not host_name:
-		request_host_name = get_host_name_from_request()
+		# Determine the proper Scheme
+		if temp_domain.startswith("http://"):
+			self.scheme = 'http://'
+			self.domain = temp_domain[7:]
+		elif temp_domain.startswith("https://"):
+			self.scheme = 'https://'
+			self.domain = temp_domain[8:]
+		else:
+			self.scheme = 'http://'
+			self.domain = temp_domain
 
-		if request_host_name:
-			host_name = request_host_name
+		return (self.scheme, self.domain)
 
-		elif frappe.local.site:
+	def get_string():
+		"""
+		Returns the server's URL string.
+		Example 'http://my.domain.com:8000'
+		"""
+		url_tuple = URLCalc().get_tuple()
+		url_as_string = url_tuple[0] +  url_tuple[1]
+		if len(url_tuple) == 3:
+			url_as_string += ':' + url_tuple[2]
+		return url_as_string
+
+	@staticmethod
+	def calc_domain():
+		"""
+		DATAHENGE LLC: VERY IMPORTANT FUNCTION
+		* This function 'calculates' Scheme + Domain + Port, and returns a 2-value Tuple
+		* Using this because standard Frappe logic is full of assumptions and fallback routines.
+		"""
+		# Scenario 1:  frappe.local.conf.host_name
+		if frappe.local.conf.host_name:
+			return frappe.local.conf.host_name
+
+		# Scenario 2:  frappe.local.conf.hostname
+		if frappe.local.conf.hostname:
+			return frappe.local.conf.hostname
+
+		# Scenario 3:  get_host_name_from_request()
+		if get_host_name_from_request():
+			return get_host_name_from_request()
+
+		# Scenario 4:  get_host_name_from_request()
+		system_settings_host_name = frappe.db.get_single_value("System Settings", "url_scheme_domain_port")
+		if system_settings_host_name:
+			return system_settings_host_name
+
+		# Scenario 5:
+		if frappe.local.site:
 			protocol = 'http://'
 
 			if frappe.local.conf.ssl_certificate:
@@ -738,28 +788,36 @@ def get_url(uri=None, full_address=False):
 				if domain and frappe.local.site.endswith(domain) and frappe.local.conf.wildcard.get('ssl_certificate'):
 					protocol = 'https://'
 
-			host_name = protocol + frappe.local.site
+			return protocol + frappe.local.site
 
-		else:
-			host_name = frappe.db.get_value("Website Settings", "Website Settings",
-				"subdomain")
+		# Scenario 6:
+		host_name = frappe.db.get_value("Website Settings", "Website Settings", "subdomain")
+		if host_name:
+			return host_name
+		
+		# Scenario 7:
+			return "http://localhost"
 
-			if not host_name:
-				host_name = "http://localhost"
 
-	if host_name and not (host_name.startswith("http://") or host_name.startswith("https://")):
-		host_name = "http://" + host_name
+def get_url(uri=None, full_address=False):
+	"""get app url from request"""
+
+	if uri and (uri.startswith("http://") or uri.startswith("https://")):
+		# URI is in fact a URL; return immediately.
+		return uri
 
 	if not uri and full_address:
 		uri = frappe.get_request_header("REQUEST_URI", "")
 
 	port = frappe.conf.http_port or frappe.conf.webserver_port
 
-	if not (frappe.conf.restart_supervisor_on_update or frappe.conf.restart_systemd_on_update) and host_name and not url_contains_port(host_name) and port:
-		host_name = host_name + ':' + str(port)
+	scheme_domain_port = URLCalc.get_string()
 
-	url = urljoin(host_name, uri) if uri else host_name
+	if not (frappe.conf.restart_supervisor_on_update or frappe.conf.restart_systemd_on_update) \
+		   and not url_contains_port(scheme_domain_port) and port:
+		scheme_domain_port = scheme_domain_port + ':' + str(port)
 
+	url = urljoin(scheme_domain_port, uri) if uri else scheme_domain_port
 	return url
 
 def get_host_name_from_request():
@@ -771,7 +829,8 @@ def url_contains_port(url):
 	parts = url.split(':')
 	return len(parts) > 2
 
-def get_host_name():
+def DEL_get_host_name():
+	# Datahenge: As far as I can tell, not referenced anywhere.
 	return get_url().rsplit("//", 1)[-1]
 
 def get_link_to_form(doctype, name, label=None):
@@ -959,8 +1018,11 @@ def scrub_urls(html):
 	return html
 
 def expand_relative_urls(html):
-	# expand relative urls
-	url = get_url()
+	"""
+	Examines HTML and expands any relative URLs into absolute.
+	Very important in PDF rendering.
+	"""
+	url = get_url()  # This function finds the appropriate Base URL
 	if url.endswith("/"): url = url[:-1]
 
 	def _expand_relative_urls(match):

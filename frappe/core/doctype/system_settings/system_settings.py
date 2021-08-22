@@ -2,6 +2,9 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+
+from urllib.parse import urlparse  # Datahenge
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -39,6 +42,16 @@ class SystemSettings(Document):
 		if (self.force_user_to_reset_password and
 			not cint(frappe.db.get_single_value("System Settings", "force_user_to_reset_password"))):
 			frappe.flags.update_last_reset_password_date = True
+
+		# Datahenge: Validate the new, custom field:
+		if not self.url_scheme_domain_port:
+			msg = "Warning: No value for System Setting  = 'URL Scheme + Domain + Port'."
+			msg += "\nThis is an important setting, and should be populated."
+			frappe.msgprint(msg)
+		else:
+			pieces = urlparse(self.url_scheme_domain_port)
+			if pieces[0] not in [ 'http', 'https']:
+				raise ValueError("Invalid scheme for URL.")
 
 	def on_update(self):
 		for df in self.meta.get("fields"):

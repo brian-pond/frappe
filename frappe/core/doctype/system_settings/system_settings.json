@@ -61,7 +61,9 @@
   "chat",
   "enable_chat",
   "use_socketio_to_upload_file",
-  "dns_server"
+  "sb_datahenge",
+  "dns_server",
+  "url_scheme_domain_port"
  ],
  "fields": [
   {
@@ -375,6 +377,7 @@
    "label": "Hide footer in auto email reports"
   },
   {
+   "collapsible": 1,
    "fieldname": "chat",
    "fieldtype": "Section Break",
    "label": "Chat"
@@ -427,11 +430,25 @@
    "fieldname": "dns_server",
    "fieldtype": "Data",
    "label": "DNS Server"
+  },
+  {
+   "collapsible": 1,
+   "description": "This section contains custom fields for ERPNext.",
+   "developer_notes": "Necessary to save these here, rather in Apps, because they're referenced by core components of Frappe and ERPNext.",
+   "fieldname": "sb_datahenge",
+   "fieldtype": "Section Break",
+   "label": "Datahenge"
+  },
+  {
+   "description": "The first 3 components of the Site's URL.  This field will be references first, before complicated (and potentially broken) standard Frappe code.\n<b>Example</b>https://testerp.spectrumfruits.com",
+   "fieldname": "url_scheme_domain_port",
+   "fieldtype": "Data",
+   "label": "URL Scheme + Domain + Port"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2021-04-07 22:05:41.285065",
+ "modified": "2021-08-21 15:06:57.677711",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

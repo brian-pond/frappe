@@ -323,6 +323,9 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, indicator=None,
 
 	if as_table and type(msg) in (list, tuple):
 		out.msg = '<table border="1px" style="border-collapse: collapse" cellpadding="2px">' + ''.join(['<tr>'+''.join(['<td>%s</td>' % c for c in r])+'</tr>' for r in msg]) + '</table>'
+	else:
+		# Datahenge : Replace line breaks with HTML breaks.
+		out.message = "<br />".join(out.message.split("\n"))
 
 	if flags.print_messages and out.msg:
 		print("Message: " + repr(out.msg).encode("utf-8"))
@@ -1679,16 +1682,30 @@ def validate_and_sanitize_search_inputs(fn):
 	return func(fn)
 
 # Datahenge
-def whatis(message, backend=True, frontend=True):
+def whatis(message, variable_name=None, backend=True, frontend=True):
 	"""
 	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
 	"""
 	import inspect
 	caller_function = inspect.stack()[2][3]
 	message_type = str(type(message)).replace('<', '').replace('>', '')
-	msg = f"---> DEBUG\n  * Value: {message}\n  * Type: {message_type}\n  * Caller: {caller_function}\n"
+	msg = f"---> DEBUG\n"
+	if variable_name:
+		msg += f"  * Argument: {variable_name}\n"
+	msg += f"  * Value: {message}\n  * Type: {message_type}\n  * Caller: {caller_function}\n"
 	if backend:
 		print(msg)
 	if frontend:
 		msg = msg.replace('\n', '<br>')
 		msgprint(msg)
+
+def whois_caller():
+	"""
+	Print the calling function to terminal.  Useful for debugging.
+	"""
+	import inspect
+	try:
+		caller_function = inspect.stack()[2][3]
+		msg = f"CALLER: {caller_function}"
+	except:
+		print("CALLER: None (possible invoked directly by JavaScript)")

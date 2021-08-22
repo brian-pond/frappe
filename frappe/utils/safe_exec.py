@@ -231,7 +231,7 @@ VALID_UTILS = (
 "get_url",
 "get_host_name_from_request",
 "url_contains_port",
-"get_host_name",
+# "get_host_name",
 "get_link_to_form",
 "get_link_to_report",
 "get_absolute_url",

@@ -612,6 +612,8 @@ frappe.chat.profile.create = (fields, fn) => {
 	if ( typeof fields === "string" )
 		fields = frappe._.as_array(fields)
 
+	return /* Datahenge: Chat is deprecated in v13.  Also, this was throwing errors because it's not checking for duplicates. */
+
 	return new Promise(resolve => {
 		frappe.call("frappe.chat.doctype.chat_profile.chat_profile.create",
 			{ user: frappe.session.user, exists_ok: true, fields: fields },
