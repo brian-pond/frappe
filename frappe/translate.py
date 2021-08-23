@@ -493,15 +493,22 @@ def get_messages_from_file(path):
 
 	:param path: path of the code file
 	"""
-	apps_path = get_bench_dir()
-	if os.path.exists(path):
-		with open(path, 'r') as sourcefile:
-			data = [(os.path.relpath(path, apps_path),
-					message) for message in  extract_messages_from_code(sourcefile.read(), path.endswith(".py"))]
-			return data
-	else:
-		# print "Translate: {0} missing".format(os.path.abspath(path))
+	try:
+		apps_path = get_bench_dir()
+		if os.path.exists(path):
+			with open(path, 'r') as sourcefile:
+				data = [(os.path.relpath(path, apps_path),
+						message) for message in  extract_messages_from_code(sourcefile.read(), path.endswith(".py"))]
+				return data
+		else:
+			# print "Translate: {0} missing".format(os.path.abspath(path))
+			return []
+	except UnicodeDecodeError as ex:
+		msg = f"Unicode Decode Error:  Caught in translate.get_messages_from_file() for path '{path}'.  Ignoring for now."
+		frappe.msgprint(msg)
+		print(msg)
 		return []
+
 
 def extract_messages_from_code(code, is_py=False):
 	"""Extracts translatable srings from a code file

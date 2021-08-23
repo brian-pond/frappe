@@ -1055,8 +1055,15 @@ def read_file(path, raise_not_found=False):
 		path = path.encode("utf-8")
 
 	if os.path.exists(path):
-		with open(path, "r") as f:
-			return as_unicode(f.read())
+		try:
+			with open(path, "r") as f:
+				return as_unicode(f.read())
+		except UnicodeDecodeError as ex:
+			msg = f"Unicode Decode Error:  Caught in frappe.read_file() for path '{path}'.  Ignoring for now."
+			frappe.msgprint(msg)
+			print(msg)
+			return None
+
 	elif raise_not_found:
 		raise IOError("{} Not Found".format(path))
 	else:
