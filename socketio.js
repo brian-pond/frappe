@@ -46,6 +46,7 @@ io.on('connection', function (socket) {
 	socket.files = {};
 
 	// frappe.chat
+	/*
 	socket.on("frappe.chat.room:subscribe", function (rooms) {
 		if (!Array.isArray(rooms)) {
 			rooms = [rooms];
@@ -59,7 +60,9 @@ io.on('connection', function (socket) {
 			socket.join(room);
 		}
 	});
+	*/
 
+	/*
 	socket.on("frappe.chat.message:typing", function (data) {
 		const user = data.user;
 		const room = get_chat_room(socket, data.room);
@@ -72,7 +75,9 @@ io.on('connection', function (socket) {
 		});
 	});
 	// end frappe.chat
+	*/
 
+	/*
 	let retries = 0;
 	let join_chat_room = () => {
 		request.get(get_url(socket, '/api/method/frappe.realtime.get_user_info'))
@@ -96,6 +101,7 @@ io.on('connection', function (socket) {
 	};
 
 	join_chat_room();
+	*/
 
 	socket.on('disconnect', function () {
 		delete socket.files;

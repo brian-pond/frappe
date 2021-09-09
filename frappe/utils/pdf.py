@@ -35,15 +35,15 @@ def get_pdf(html, options=None, output=None):
 	if debug_mode:
 		results = search_html_for_string(html, "link type")
 		for result in results:
-			print(f"get_pdf() has these HTML links before 'scrub_urls': {result[1]}")
+			print(f"\nFunction get_pdf() has these HTML links before 'scrub_urls':\n{result[1]}")
 
 	# 1. Given a relative path (such as to CSS), this will append the domain.
-	html = scrub_urls(html)
+	html = scrub_urls(html, debug=debug_mode)
 
 	if debug_mode:
 		results = search_html_for_string(html, "link type")
 		for result in results:
-			print(f"get_pdf() has these HTML links after 'scrub_urls': {result[1]}")
+			print(f"\nFunction get_pdf() has these HTML links after 'scrub_urls'\n:{result[1]}")
 
 	# 2. Prepare options.  This strips some of the leading HTML.
 	html, options = prepare_options(html, options)

@@ -726,11 +726,11 @@ class URLCalc():
 		self.domain= None
 		self.port = None
 
-	def get_tuple(self):
+	def get_tuple(self, debug=False):
 		"""
 		Returns a tuple with (Scheme, Domain, Port)
 		"""
-		temp_domain = self.calc_domain()
+		temp_domain = self.calc_scheme_and_domain_string(debug=debug)
 		if not temp_domain:
 			raise ValueError("We have a pretty big problem.")
 
@@ -747,42 +747,50 @@ class URLCalc():
 
 		return (self.scheme, self.domain)
 
-	def get_string():
+	def get_string(debug=False):
 		"""
 		Returns the server's URL string.
 		Example 'http://my.domain.com:8000'
 		"""
-		url_tuple = URLCalc().get_tuple()
+		url_tuple = URLCalc().get_tuple(debug=debug)
 		url_as_string = url_tuple[0] +  url_tuple[1]
 		if len(url_tuple) == 3:
 			url_as_string += ':' + url_tuple[2]
 		return url_as_string
 
 	@staticmethod
-	def calc_domain():
+	def calc_scheme_and_domain_string(debug=False):
 		"""
 		DATAHENGE LLC: VERY IMPORTANT FUNCTION
 		* This function 'calculates' Scheme + Domain + Port, and returns a 2-value Tuple
 		* Using this because standard Frappe logic is full of assumptions and fallback routines.
 		"""
-		# Scenario 1:  frappe.local.conf.host_name
+		# Scenario 1A:  frappe.local.conf.host_name
 		if frappe.local.conf.host_name:
+			if debug:
+				print("Scenario 1A:  frappe.local.conf.host_name")
 			return frappe.local.conf.host_name
 
-		# Scenario 2:  frappe.local.conf.hostname
+		# Scenario 1B:  frappe.local.conf.hostname
 		if frappe.local.conf.hostname:
+			if debug:
+				print("Scenario 1B:  frappe.local.conf.hostname")
 			return frappe.local.conf.hostname
 
-		# Scenario 3:  get_host_name_from_request()
+		# Scenario 2:  get_host_name_from_request()
 		if get_host_name_from_request():
+			if debug:
+				print("Scenario 2:  get_host_name_from_request()")
 			return get_host_name_from_request()
 
-		# Scenario 4:  get_host_name_from_request()
+		# Scenario 3:  system_settings_host_name
 		system_settings_host_name = frappe.db.get_single_value("System Settings", "url_scheme_domain_port")
 		if system_settings_host_name:
+			if debug:
+				print("Scenario 3:  system_settings_host_name")
 			return system_settings_host_name
 
-		# Scenario 5:
+		# Scenario 4  frappe.local.site
 		if frappe.local.site:
 			protocol = 'http://'
 
@@ -794,18 +802,24 @@ class URLCalc():
 				if domain and frappe.local.site.endswith(domain) and frappe.local.conf.wildcard.get('ssl_certificate'):
 					protocol = 'https://'
 
+			if debug:
+				print("Scenario 4:  frappe.local.site")
 			return protocol + frappe.local.site
 
-		# Scenario 6:
+		# Scenario 5:
 		host_name = frappe.db.get_value("Website Settings", "Website Settings", "subdomain")
 		if host_name:
+			if debug:
+				print("Scenario 5: Website Settings")
 			return host_name
 		
-		# Scenario 7:
+		# Scenario 6:
+			if debug:
+				print("Scenario 6: http://localhost")
 			return "http://localhost"
 
 
-def get_url(uri=None, full_address=False):
+def get_url(uri=None, full_address=False, debug=False):
 	"""get app url from request"""
 
 	if uri and (uri.startswith("http://") or uri.startswith("https://")):
@@ -817,7 +831,7 @@ def get_url(uri=None, full_address=False):
 
 	port = frappe.conf.http_port or frappe.conf.webserver_port
 
-	scheme_domain_port = URLCalc.get_string()
+	scheme_domain_port = URLCalc.get_string(debug=debug)
 
 	if not (frappe.conf.restart_supervisor_on_update or frappe.conf.restart_systemd_on_update) \
 		   and not url_contains_port(scheme_domain_port) and port:
@@ -1017,18 +1031,18 @@ def sanitize_column(column_name):
 	elif regex.match(column_name):
 		_raise_exception()
 
-def scrub_urls(html):
-	html = expand_relative_urls(html)
+def scrub_urls(html, debug=False):
+	html = expand_relative_urls(html, debug=debug)
 	# encoding should be responsibility of the composer
 	# html = quote_urls(html)
 	return html
 
-def expand_relative_urls(html):
+def expand_relative_urls(html, debug=False):
 	"""
 	Examines HTML and expands any relative URLs into absolute.
 	Very important in PDF rendering.
 	"""
-	url = get_url()  # This function finds the appropriate Base URL
+	url = get_url(debug=debug)  # This function finds the appropriate Base URL
 	if url.endswith("/"): url = url[:-1]
 
 	def _expand_relative_urls(match):
