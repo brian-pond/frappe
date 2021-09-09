@@ -211,6 +211,9 @@ def get_site_config(sites_path=None, site_path=None):
 	sites_path = sites_path or getattr(local, "sites_path", None)
 	site_path = site_path or getattr(local, "site_path", None)
 
+	print(f"sites_path = '{sites_path}'")
+	print(f"site_path = '{site_path}'")
+
 	if sites_path:
 		common_site_config = os.path.join(sites_path, "common_site_config.json")
 		if os.path.exists(common_site_config):
@@ -221,7 +224,8 @@ def get_site_config(sites_path=None, site_path=None):
 		if os.path.exists(site_config):
 			config.update(get_file_json(site_config))
 		elif local.site and not local.flags.new_site:
-			print("Site {0} does not exist".format(local.site))
+			print("ERROR: Path 'site_config' = '{site_config}' does not exist.")
+			print("ERROR: Site {0} does not exist".format(local.site))
 			sys.exit(1)
 
 	return _dict(config)
