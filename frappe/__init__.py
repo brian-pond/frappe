@@ -208,8 +208,14 @@ def get_site_config(sites_path=None, site_path=None):
 	`site_config` is a set of site wide settings like database name, password, email etc."""
 	config = {}
 
+	if site_path and site_path.contains('159.65.233.6'):
+		print("ERROR: Argument 'site_path' is an IP address!")
+
 	sites_path = sites_path or getattr(local, "sites_path", None)
-	site_path = site_path or getattr(local, "site_path", None)
+	if not site_path:
+		site_path = getattr(local, "site_path", None)
+		if site_path.contains('159.65.233.6'):
+			print("ERROR: Variable 'site_path' became an IP address because of call to getattr(local, 'site_path')"")
 
 	print(f"sites_path = '{sites_path}'")
 	print(f"site_path = '{site_path}'")
@@ -221,10 +227,11 @@ def get_site_config(sites_path=None, site_path=None):
 
 	if site_path:
 		site_config = os.path.join(site_path, "site_config.json")
+		
 		if os.path.exists(site_config):
 			config.update(get_file_json(site_config))
 		elif local.site and not local.flags.new_site:
-			print("ERROR: Path 'site_config' = '{site_config}' does not exist.")
+			print(f"ERROR: Path 'site_config' = '{site_config}' does not exist.")
 			print("ERROR: Site {0} does not exist".format(local.site))
 			sys.exit(1)
 

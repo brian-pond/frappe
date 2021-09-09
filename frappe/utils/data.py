@@ -833,6 +833,12 @@ def get_url(uri=None, full_address=False, debug=False):
 
 	scheme_domain_port = URLCalc.get_string(debug=debug)
 
+	# The key 'restart_supervisor_on_update' essentially equates to "We are running in Production Mode."
+	# This is incredibly not-obvious, and has probably cost people countless hours of debugging.
+	#
+	# When not set, ERPNext assumes the Site's Port number must be part of the URL, and appends it.
+	# This can shatter PDF generation, which requires a valid HTTPS:// path to the CSS and JS assets.
+
 	if not (frappe.conf.restart_supervisor_on_update or frappe.conf.restart_systemd_on_update) \
 		   and not url_contains_port(scheme_domain_port) and port:
 		scheme_domain_port = scheme_domain_port + ':' + str(port)
