@@ -768,7 +768,7 @@ class URLCalc():
 		# Scenario 1A:  frappe.local.conf.host_name
 		if frappe.local.conf.host_name:
 			if debug:
-				print(f"Scenario 1A:  frappe.local.conf.host_name: '{frappe.local.conf.host_name}'"")
+				print(f"Scenario 1A:  frappe.local.conf.host_name: '{frappe.local.conf.host_name}'")
 			return frappe.local.conf.host_name
 
 		# Scenario 1B:  frappe.local.conf.hostname
