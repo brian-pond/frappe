@@ -16,6 +16,8 @@ from   frappe.chat.util import (
 
 session = frappe.session
 
+# Datahenge: Hopefully most of this code isn't called anymore (JS was modified not to)
+
 class ChatProfile(Document):
 	def on_update(self):
 		if not self.is_new():

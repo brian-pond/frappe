@@ -715,6 +715,12 @@ def filter_strip_join(some_list, sep):
 	return (cstr(sep)).join((cstr(a).strip() for a in filter(None, some_list)))
 
 class URLCalc():
+	"""
+	The purpose of this class is to correctly return the URL of the Frappe website,
+	regardless of the directory names on the Linux server.
+
+	Created by Datahenge LLC for Spectrum Fruits.
+	"""
 	def __init__(self):
 		self.scheme = None
 		self.domain= None
