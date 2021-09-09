@@ -768,13 +768,13 @@ class URLCalc():
 		# Scenario 1A:  frappe.local.conf.host_name
 		if frappe.local.conf.host_name:
 			if debug:
-				print("Scenario 1A:  frappe.local.conf.host_name")
+				print(f"Scenario 1A:  frappe.local.conf.host_name: '{frappe.local.conf.host_name}'"")
 			return frappe.local.conf.host_name
 
 		# Scenario 1B:  frappe.local.conf.hostname
 		if frappe.local.conf.hostname:
 			if debug:
-				print("Scenario 1B:  frappe.local.conf.hostname")
+				print(f"Scenario 1B:  frappe.local.conf.hostname : '{frappe.local.conf.hostname}'")
 			return frappe.local.conf.hostname
 
 		# Scenario 2:  get_host_name_from_request()
