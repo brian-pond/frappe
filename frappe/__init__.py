@@ -215,7 +215,7 @@ def get_site_config(sites_path=None, site_path=None):
 	if not site_path:
 		site_path = getattr(local, "site_path", None)
 		if site_path.contains('159.65.233.6'):
-			print("ERROR: Variable 'site_path' became an IP address because of call to getattr(local, 'site_path')"")
+			print("ERROR: Variable 'site_path' became an IP address because of call to getattr(local, 'site_path')")
 
 	print(f"sites_path = '{sites_path}'")
 	print(f"site_path = '{site_path}'")
