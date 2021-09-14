@@ -247,7 +247,7 @@
    "default": "0",
    "fieldname": "allow_on_submit",
    "fieldtype": "Check",
-   "label": "Allow on Submit",
+   "label": "Allow editing when Submitted",
    "oldfieldname": "allow_on_submit",
    "oldfieldtype": "Check"
   },
@@ -358,7 +358,7 @@
  ],
  "idx": 1,
  "istable": 1,
- "modified": "2020-03-17 21:31:35.714416",
+ "modified": "2020-09-10 21:31:35.714416",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form Field",
