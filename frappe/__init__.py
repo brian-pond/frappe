@@ -217,8 +217,10 @@ def get_site_config(sites_path=None, site_path=None):
 		if '159.65.233.6' in site_path:
 			print("ERROR: Variable 'site_path' became an IP address because of call to getattr(local, 'site_path')")
 
-	print(f"sites_path = '{sites_path}'")
-	print(f"site_path = '{site_path}'")
+	# Datahenge: Useful for debugging.  It's crazy how this isn't cached...
+	# TODO: Cannot think of a reason this isn't cached...
+	# print(f"sites_path = '{sites_path}'")
+	# print(f"site_path = '{site_path}'")
 
 	if sites_path:
 		common_site_config = os.path.join(sites_path, "common_site_config.json")
