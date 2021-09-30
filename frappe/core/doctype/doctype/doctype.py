@@ -255,6 +255,9 @@ class DocType(Document):
 						df.unique = 1
 						break
 
+		# Datahenge: Disabling the check for duplicate Naming Series between DocTypes.
+		return
+
 		if autoname and (not autoname.startswith('field:')) \
 			and (not autoname.startswith('eval:')) \
 			and (not autoname.lower() in ('prompt', 'hash')) \

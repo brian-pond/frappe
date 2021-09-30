@@ -122,7 +122,7 @@ def get_permitted_and_not_permitted_links(doctype):
 	allowed_doctypes = frappe.permissions.get_doctypes_with_read()
 
 	for df in meta.get_link_fields():
-		if df.options not in ("Customer", "Supplier", "Company", "Sales Partner"):
+		if df.options not in ("Customer", "Supplier", "Company", "Sales Partner", "Employee"):  # Spectrum Fruits
 			continue
 
 		if df.options in allowed_doctypes:
