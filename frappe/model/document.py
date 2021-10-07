@@ -761,6 +761,7 @@ class Document(BaseDocument):
 			cancelled_links.extend(result[1])
 
 		if invalid_links:
+			print(f"Invalid Links: {invalid_links}")
 			msg = ", ".join((each[2] for each in invalid_links))
 			frappe.throw(_("Could not find {0}").format(msg),
 				frappe.LinkValidationError)

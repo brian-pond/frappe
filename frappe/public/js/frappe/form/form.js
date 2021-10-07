@@ -1395,7 +1395,15 @@ frappe.ui.form.Form = class FrappeForm {
 					if(df.fieldtype==='Link' && df.options===me.doctype) {
 						new_doc[df.fieldname] = me.doc.name;
 					} else if (['Link', 'Dynamic Link'].includes(df.fieldtype) && me.doc[df.fieldname]) {
-						new_doc[df.fieldname] = me.doc[df.fieldname];
+						// Datahenge: If source field is 'Amended From', copying the value to a different DocType doesn't
+						// make sense, and will throw an error.  So don't do that.
+						if ((df.fieldname == 'amended_from') && (doctype != me.doc.doctype)) {
+							{}  // do nothing
+						}
+						else {
+							new_doc[df.fieldname] = me.doc[df.fieldname];
+						}
+						// Datahenge End
 					}
 				});
 
