@@ -6,6 +6,8 @@ import frappe
 from frappe.desk.notifications import clear_notifications
 from frappe.cache_manager import clear_defaults_cache, common_default_keys
 
+from datetime import datetime
+
 # Note: DefaultValue records are identified by parenttype
 # __default, __global or 'User Permission'
 
@@ -226,3 +228,15 @@ def _clear_cache(parent):
 	else:
 		clear_notifications(user=parent)
 		frappe.clear_cache(user=parent)
+
+
+@frappe.whitelist()
+def js_month_start_date():
+	# JavaScript dates must be 'mm-dd-yyyy'
+	month_start = datetime.today().replace(day=1)
+	ret = month_start.strftime("%m-%d-%Y")
+	return ret
+
+
+def get_default_bank_account():
+	return frappe.get_cached_value('Company',  company,  "default_bank_account").name
