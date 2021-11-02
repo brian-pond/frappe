@@ -305,7 +305,9 @@ class Document(BaseDocument):
 		self.set_name_in_children()
 
 		self.validate_higher_perm_levels()
-		self._validate_links()
+		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.
+		self._validate_links()  # note: this call also validates the Links of child documents.
+
 		self.run_before_save_methods()
 
 		if self._action != "cancel":
@@ -1261,6 +1263,16 @@ class Document(BaseDocument):
 
 		users = set([assignment.owner for assignment in assignments])
 		return users
+
+	def _prevalidate_links(self, **kwargs):  # pylint: disable=unused-argument
+		"""
+		Datahenge: An opportunity to execute some code, just prior to Link validation.
+		# This is useful is situations where you know Links might be a problem.
+		# And you want a change to do some pre-cleaning first.
+		"""
+		for doc in self.get_all_children():
+			doc.run_method("_prevalidate_links", parent_doc=self)
+
 
 def execute_action(doctype, name, action, **kwargs):
 	'''Execute an action on a document (called by background worker)'''
