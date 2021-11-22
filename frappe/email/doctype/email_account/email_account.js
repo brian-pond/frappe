@@ -114,20 +114,30 @@ frappe.ui.form.on("Email Account", {
 
         // Spectrum Fruits: Begin
         frm.add_custom_button(__('Send Test Email'), function() {
-			// frappe.msgprint(frm.doc.email_id);
-			frappe.prompt(
+
+			const fields = [
 				{
 					label: 'Destination Email',
 					fieldname: 'email_address',
 					fieldtype: 'Data'
 				},
-				(values) => {
-					console.log("Sending test email to " + values.email_address);
+				{
+					fieldtype: 'Check',
+					label: __('Use Worker Queue'),
+					fieldname: 'use_queue',
+					default: 0
+				}
+			];
+
+			frappe.prompt(fields, (dialog_values) => {
+					console.log("Sending test email to " + dialog_values.email_address);
 					// Call a Document function on email_account.py
-					frm.call('send_email', { target_email_address: values.email_address})
+					frm.call('send_email', 
+						{ target_email_address: dialog_values.email_address,
+						  use_queue: dialog_values.use_queue })
 					.then(r => {
 						if (r.message) {
-							console.log("Response was: " +r.message);
+							console.log("Response was: " + r.message);
 						}
 					})
 				}

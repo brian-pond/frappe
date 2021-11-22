@@ -336,16 +336,19 @@ class Document(BaseDocument):
 		#loop through attachments
 		for attach_item in get_attachments(self.doctype, self.amended_from):
 
-			#save attachments to new doc
-			_file = frappe.get_doc({
-				"doctype": "File",
-				"file_url": attach_item.file_url,
-				"file_name": attach_item.file_name,
-				"attached_to_name": self.name,
-				"attached_to_doctype": self.doctype,
-				"folder": "Home/Attachments"})
-			_file.save()
-
+			# Spectrum Fruits: Soft error; do not prevent Document from processing.
+			try:
+				#save attachments to new doc
+				_file = frappe.get_doc({
+					"doctype": "File",
+					"file_url": attach_item.file_url,
+					"file_name": attach_item.file_name,
+					"attached_to_name": self.name,
+					"attached_to_doctype": self.doctype,
+					"folder": "Home/Attachments"})
+				_file.save()
+			except FileNotFoundError:
+				frappe.msgprint(f"Warning Only: Could not find file attachment ({attach_item.file_name}), but safely continuing without it.")
 
 	def update_children(self):
 		'''update child tables'''

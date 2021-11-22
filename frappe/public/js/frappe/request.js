@@ -188,11 +188,11 @@ frappe.request.call = function(opts) {
 			}
 		},
 		504: function(xhr) {
-			frappe.msgprint(__("Request Timed Out"))
+			frappe.msgprint(__("Request Timed Out (504)"))
 			opts.error_callback && opts.error_callback();
 		},
 		502: function(xhr) {
-			frappe.msgprint(__("Internal Server Error"));
+			frappe.msgprint(__("Bad Gateway (502)"));
 		}
 	};
 

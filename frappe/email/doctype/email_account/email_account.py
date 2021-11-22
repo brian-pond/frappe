@@ -672,20 +672,26 @@ class EmailAccount(Document):
 				frappe.throw(_("Automatic Linking can be activated only for one Email Account."))
 
 
-	def send_email(self, target_email_address):
-		""" Send a test email, to verify an Email Account is correctly configured. """
+	def send_email(self, target_email_address, use_queue=False):
+		"""
+		Send a test email, to verify an Email Account is correctly configured.
+		"""
 		if not isinstance(target_email_address, str):
 			raise TypeError(f"Expected argument '{target_email_address}' to be of type String.")
 
 		email_args = {
 			"recipients": target_email_address,
-			"sender": None,
-			"subject": "ERPNext Email Account Test",
+			"sender": self.email_id,
+			"subject": "ERPNext: Test of Email Account",
 			"message": f"This is a test of ERPNext Account named '{self.name}'",
 			"now": True,
 			"attachments": None
 		}
-		enqueue(method=frappe.sendmail, queue='short', timeout=300, is_async=True, **email_args)
+
+		if use_queue:
+			enqueue(method=frappe.sendmail, queue='short', timeout=300, is_async=True, **email_args)
+		else:
+			frappe.sendmail(**email_args)
 
 
 @frappe.whitelist()

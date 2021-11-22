@@ -18,10 +18,33 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 import frappe
 from frappe import _
 from frappe.utils import scrub_urls
-from sf import search_html_for_string
 
 PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError",
 	"UnknownContentError", "RemoteHostClosedError"]
+
+
+def clean_line(line):
+	"""
+	Remove newlines and tabs.
+	"""
+	line = re.sub(r"[\n\t]*", "", line)
+	return line
+
+
+def search_html_for_string(html, string_to_search):
+	"""
+	Search for the given string in file and return a tuple (line number, line)
+	"""
+	list_of_results = []  # returning a List of Tuple
+	lines = html.splitlines()
+	# print(f"Total Number of Lines in HTML: {len(html.splitlines())}")
+
+	for idx, line in enumerate(lines):
+		if string_to_search in line:
+			# If yes, then add the line number & line as a tuple in the list
+			ret = (idx, clean_line(line))
+			list_of_results.append(ret)
+	return list_of_results
 
 
 def get_pdf(html, options=None, output=None):

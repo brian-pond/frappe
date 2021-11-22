@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function
+import pathlib
 import click
 import frappe
 import os
@@ -62,8 +63,14 @@ def get_sites(site_arg):
 	return []
 
 def get_app_commands(app):
-	if os.path.exists(os.path.join('..', 'apps', app, app, 'commands.py'))\
-		or os.path.exists(os.path.join('..', 'apps', app, app, 'commands', '__init__.py')):
+	"""
+	Add new Bench commands based on this app.
+	"""
+	path_to_bench=pathlib.Path().cwd().parent.absolute()  # current working directory is 'Sites' when this is called
+	path_to_app = path_to_bench / 'apps' / app / app
+	if (path_to_app / 'commands.py').exists() or \
+	   (path_to_app / 'commands' / '__init__.py').exists():
+
 		try:
 			app_command_module = importlib.import_module(app + '.commands')
 		except Exception:
