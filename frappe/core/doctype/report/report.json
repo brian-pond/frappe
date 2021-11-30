@@ -48,11 +48,12 @@
    "label": "Reference Report"
   },
   {
+   "description": "Yes = results saved to disk as part of App Module.",
    "fieldname": "is_standard",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Save as File",
+   "label": "Is Standard",
    "options": "No\nYes",
    "reqd": 1
   },
@@ -150,7 +151,7 @@
   }
  ],
  "idx": 1,
- "modified": "2019-10-09 15:43:08.577610",
+ "modified": "2021-11-28 12:08:49.775692",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Report",

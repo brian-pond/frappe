@@ -176,6 +176,21 @@ frappe.set_route = function() {
 		setTimeout(() => {
 			frappe.after_ajax && frappe.after_ajax(() => {
 				resolve();
+				// Datahenge: Begin
+				// Allowing a new, 4th argument to function set_route()
+				//     { 'reload_target_doc': true }
+				// Code below detects if this argument was passed.  If true, forces an immediate refresh of the target window's document.
+				// This avoids showing stale data to the end user.
+				// Without this modification, I had to follow 'set_route()' with another call 'window.location.reload();'
+				// But it wasn't nearly as seamless.
+				if ( params.length===4 && $.isPlainObject(params[3]) ) {
+					if ( Object.keys(params[3]).includes('reload_target_doc') ) {
+						if ( params[3]['reload_target_doc'] === true ) {
+							window.cur_frm.reload_doc();
+						}
+					}						
+				}
+				// Datahenge: End
 			});
 		}, 100);
 	});
