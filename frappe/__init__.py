@@ -495,6 +495,13 @@ def sendmail(recipients=[], sender="", subject="No Subject", message="No Message
 		now = True
 
 	from frappe.email import queue
+
+	# Datahenge: Let's prefix the Environment, so it's not confusing to recipients what System sent this.
+	environment = db.get_single_value("System Settings", "system_environment")
+	if environment:
+		subject = f"({environment}) {subject}"
+	# Datahenge: End
+
 	queue.send(recipients=recipients, sender=sender,
 		subject=subject, message=message, text_content=text_content,
 		reference_doctype = doctype or reference_doctype, reference_name = name or reference_name,

@@ -63,7 +63,9 @@
   "use_socketio_to_upload_file",
   "sb_datahenge",
   "dns_server",
-  "url_scheme_domain_port"
+  "url_scheme_domain_port",
+  "cb_dh1",
+  "system_environment"
  ],
  "fields": [
   {
@@ -444,11 +446,23 @@
    "fieldname": "url_scheme_domain_port",
    "fieldtype": "Data",
    "label": "URL Scheme + Domain + Port"
+  },
+  {
+   "description": "Indicates whether this instance is for Development, Testing, or live Production use.",
+   "developer_notes": "Used in frappe.sendmail, for appending the enviornment's name to the Subject and Body, for easy identification.",
+   "fieldname": "system_environment",
+   "fieldtype": "Select",
+   "label": "System Environment",
+   "options": "\nDEV\nTEST\nSTAGING\nPROD"
+  },
+  {
+   "fieldname": "cb_dh1",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2021-08-21 15:06:57.677711",
+ "modified": "2021-12-01 19:13:14.292155",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",
