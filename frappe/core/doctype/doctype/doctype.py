@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import re, copy, os, shutil
 import json
+import pathlib  # Datahenge
 from frappe.cache_manager import clear_user_cache, clear_controller_cache
 
 # imports - third party imports
@@ -422,7 +423,14 @@ class DocType(Document):
 		# move files
 		new_path = get_doc_path(self.module, 'doctype', new)
 		old_path = get_doc_path(self.module, 'doctype', old)
-		shutil.move(old_path, new_path)
+
+		# Datahenge: This extra validation helps resolve issues that felt like race conditions.
+		new_path = pathlib.Path(new_path)
+		old_path = pathlib.Path(old_path)
+		if (old_path.exists()) and (not new_path.exists()):
+			print(f"Moving directory '{old_path}' to '{new_path}'")
+			shutil.move(old_path, new_path)
+		# EOM
 
 		# rename files
 		for fname in os.listdir(new_path):
@@ -780,6 +788,10 @@ def validate_fields(meta):
 	def check_illegal_mandatory(docname, d):
 		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd:
 			frappe.throw(_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype), IllegalMandatoryError)
+		# Datahenge: Log for "Required In Database"
+		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd_in_database:
+			frappe.throw(_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype), IllegalMandatoryError)
+
 
 	def check_link_table_options(docname, d):
 		if frappe.flags.in_patch: return
@@ -848,7 +860,7 @@ def validate_fields(meta):
 			d.search_index = 0
 
 		if getattr(d, "unique", False):
-			if d.fieldtype not in ("Data", "Link", "Read Only"):
+			if d.fieldtype not in ("Data", "Link", "Read Only", "Date"):  # Datahenge: Allow for unique Dates too.
 				frappe.throw(_("{0}: Fieldtype {1} for {2} cannot be unique").format(docname, d.fieldtype, d.label), NonUniqueError)
 
 			if not d.get("__islocal") and frappe.db.has_column(d.parent, d.fieldname):
@@ -1217,6 +1229,11 @@ def make_module_and_roles(doc, perm_fieldname="permissions"):
 				r = frappe.get_doc(dict(doctype= "Role", role_name=role, desk_access=1))
 				r.flags.ignore_mandatory = r.flags.ignore_permissions = True
 				r.insert()
+	# FTP: This helps when you rename Modules, and not everything is clenaed up.
+	except KeyError as e:
+		print(f"Key error for doc '{doc}', module '{doc.module}', app '{m.app_name}'")
+		raise e
+	# EOM
 	except frappe.DoesNotExistError as e:
 		pass
 	except frappe.db.ProgrammingError as e:

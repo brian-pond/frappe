@@ -55,7 +55,8 @@ def execute_cmd(cmd, from_async=False):
 	try:
 		method = get_attr(cmd)
 	except Exception as e:
-		frappe.throw(_('Invalid Method'))
+		# Datahenge: Better error messaging
+		frappe.throw(_('Invalid Method: {0}').format(e))
 
 	if from_async:
 		method = method.queue
@@ -228,7 +229,10 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 	is_whitelisted(fn)
 	is_valid_http_method(fn)
 
-	fnargs = inspect.getfullargspec(method_obj).args
+	try:
+		fnargs = inspect.getfullargspec(method_obj)[0]  # should be fixed in future v13
+	except ValueError:
+		fnargs = inspect.getfullargspec(method_obj).args
 
 	if not fnargs or (len(fnargs)==1 and fnargs[0]=="self"):
 		response = doc.run_method(method)

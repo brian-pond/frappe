@@ -175,12 +175,8 @@ def rebuild_node(doctype, parent, left, parent_field):
 
 	# we've got the left value, and now that we've processed
 	# the children of this node we also know the right value
-	try:
-		frappe.db.sql("""UPDATE `tab{0}` SET lft=%s, rgt=%s, modified=%s
-			WHERE name=%s""".format(doctype), (left,right,n,parent))
-	except Exception as ex:
-		print(f"Error while updating table tab{doctype}")
-		raise ex
+	frappe.db.sql("""UPDATE `tab{0}` SET lft=%s, rgt=%s, modified=%s
+		WHERE name=%s""".format(doctype), (left,right,n,parent))
 
 	#return the right value of this node + 1
 	return right+1

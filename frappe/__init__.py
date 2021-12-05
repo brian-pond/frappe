@@ -10,8 +10,12 @@ be used to build database driven apps.
 
 Read the documentation: https://frappeframework.com/docs
 """
-import os, warnings
 
+# pylint: disable=assigning-non-slot,invalid-name,redefined-outer-name, wrong-import-position
+
+import os
+import warnings
+from enum import Enum  # Datahenge: Attempt at a more-flexible print function
 _dev_server = os.environ.get('DEV_SERVER', False)
 
 if _dev_server:
@@ -337,7 +341,7 @@ def log(msg):
 	debug_log.append(as_unicode(msg))
 
 def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, indicator=None,
-             alert=False, primary_action=None, is_minimizable=None, wide=None, level=None):
+             alert=False, primary_action=None, is_minimizable=None, wide=None, level=None, to_console=False):
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
 	response JSON and shown in a pop-up / modal.
@@ -347,11 +351,15 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 	:param raise_exception: [optional] Raise given exception and show message.
 	:param as_table: [optional] If `msg` is a list of lists, render as HTML table.
 	:param as_list: [optional] If `msg` is a list, render as un-ordered list.
+	:param indicator: ???
+	:param alert: ???
 	:param primary_action: [optional] Bind a primary server/client side action.
 	:param is_minimizable: [optional] Allow users to minimize the modal
 	:param wide: [optional] Show wide modal
-	:param indicator: (Add Documentation Here)
-	:param alert: (Add Documentation Here)
+
+	# Datahenge LLC:
+	:param level: [optional] Indicates whether message is INFO, WARNING, ERROR.
+	:param to_console: [optional] Indicates the message should also be 'print()' to console
 	"""
 	from frappe.utils import strip_html_tags
 
@@ -389,11 +397,16 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 
 	if as_table and type(msg) in (list, tuple):
 		out.as_table = 1
+	else:
+		# Datahenge: Replace newlines with <br>, since we're displaying on a web page.
+		if isinstance(out.message, str):
+			out.message = out.message.replace("\n", "<br>")
 
 	if as_list and type(msg) in (list, tuple) and len(msg) > 1:
 		out.as_list = 1
 
-	if flags.print_messages and out.message:
+	# Datahenge: If the 'to_console' argument is set, this is an alternative to locals.flags
+	if (to_console or flags.print_messages) and out.message:
 		print(f"Message: {strip_html_tags(out.message)}")
 
 	if title:
@@ -607,7 +620,8 @@ def is_whitelisted(method):
 
 	is_guest = session['user'] == 'Guest'
 	if method not in whitelisted or is_guest and method not in guest_methods:
-		throw(_("Not permitted"), PermissionError)
+		# Datahenge: Improving on Frappe's very-terse error message.
+		throw(_("Call to function not permitted (function is not safelisted, or allowed for Guest)"), PermissionError)
 
 	if is_guest and method not in xss_safe_methods:
 		# strictly sanitize form_dict
@@ -1192,10 +1206,13 @@ def get_newargs(fn, kwargs):
 	if hasattr(fn, 'fnargs'):
 		fnargs = fn.fnargs
 	else:
-		fnargs = inspect.getfullargspec(fn).args
-		varargs = inspect.getfullargspec(fn).varargs
-		varkw = inspect.getfullargspec(fn).varkw
-		defaults = inspect.getfullargspec(fn).defaults
+		try:
+			fnargs, varargs, varkw, defaults = inspect.getfullargspec(fn)  # should be fixed in future v13
+		except ValueError:
+			fnargs = inspect.getfullargspec(fn).args
+			varargs = inspect.getfullargspec(fn).varargs
+			varkw = inspect.getfullargspec(fn).varkw
+			defaults = inspect.getfullargspec(fn).defaults
 
 	newargs = {}
 	for a in kwargs:
@@ -1803,6 +1820,9 @@ def safe_encode(param, encoding='utf-8'):
 
 
 def safe_decode(param, encoding='utf-8'):
+	# Datahenge: Automatically handle Exceptions as strings.
+	if isinstance(param, Exception):
+		param = str(param)
 	try:
 		param = param.decode(encoding)
 	except Exception:
@@ -1828,27 +1848,111 @@ def mock(type, size=1, locale='en'):
 
 def validate_and_sanitize_search_inputs(fn):
 	from frappe.desk.search import validate_and_sanitize_search_inputs as func
-	return func(fn)
+	return func(fn)  # pylint: disable=no-value-for-parameter
 
-# --------
+# -------------------------
 # Datahenge
-# I tried guerilla patching this in FTP's hooks.py.
-# The result was inconsistent.  For example, I could not call 'automation.py' code via
-# `bench execute`, because the Bench wasn't aware of the patched Frappe module.
-# I believe that Guerilla Patching isn't worth the effort and headaches.
-# So I'm adding my function directly to the appropriate Frappe/ERPNext modules.
-# --------
+# -------------------------
+
+# I tried guerilla patching 'whatis()' in hooks.py.
+# The result was inconsistent.  For example, I could not run automation.py code
+# using `bench execute`, because the Bench wasn't aware of the patched Frappe module.
+# This guerilla patching simply isn't worth the effort.  Hard-coding the function here, for now.
+
+def print_caller():
+	"""
+	A function for printing the Caller at any point in Python code.
+	"""
+
+	# Because this function itself was called, we must fetch the results of the caller's caller.
+	indirect_caller = inspect.stack()[2]
+	indirect_caller_path = indirect_caller[1]
+	indirect_caller_line = indirect_caller[2]
+	msg =  f"\n  * Caller Path: {indirect_caller_path}"
+	msg += f"\n  * Caller Line: {indirect_caller_line}\n"
+	print(msg)
+
 
 def whatis(message, backend=True, frontend=True):
 	"""
 	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
 	"""
-	import inspect
-	caller_function = inspect.stack()[2][3]
+	inspected_stack = inspect.stack()
+
+	direct_caller = inspected_stack[1]
+	direct_caller_linenum = direct_caller[2]
+
+	parent_caller = inspected_stack[2]
+	parent_caller_function = parent_caller[3]
+	parent_caller_path = parent_caller[1]
+	parent_caller_line = parent_caller[2]
+
 	message_type = str(type(message)).replace('<', '').replace('>', '')
-	msg = f"---> DEBUG\n  * Value: {message}\n  * Type: {message_type}\n  * Caller: {caller_function}\n"
+	msg = f"---> DEBUG (frappe.whatis)\n"
+	msg += f"* Initiated on Line: {direct_caller_linenum}"
+	msg += f"\n  * Value: {message}\n  * Type: {message_type}"
+	msg += f"\n  * Caller: {parent_caller_function}"
+	msg += f"\n  * Caller Path: {parent_caller_path}\n  * Caller Line: {parent_caller_line}\n"
 	if backend:
 		print(msg)
 	if frontend:
 		msg = msg.replace('\n', '<br>')
 		msgprint(msg)
+
+
+# Datahenge: A lovely little decorator, so I can see what's going on with functions.
+def debug_decorator(func):
+	'''Log the date and time of a function'''
+	from datetime import datetime
+
+	def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
+		print(f'{"-"*30}')
+		print(f'Function: {func.__name__}\nRun on: {datetime.today().strftime("%Y-%m-%d %H:%M:%S")}')
+		stack_inspection = inspect.stack()
+		if len(stack_inspection) >= 1:
+			caller = stack_inspection[1][3]
+		else:
+			caller = None
+		if len(stack_inspection) >= 2:
+			callers_caller = stack_inspection[2][3]
+		else:
+			callers_caller = None
+		print(f"Caller: '{caller}'' via '{callers_caller}'")
+		func(*args, **kwargs)
+		print(f'{"-"*30}')
+	return wrapper
+
+
+# Datahenge: Attempt at a more-flexible print function
+class YPrintLevel(Enum):
+	Console = 1
+	Web = 2
+	All = 3
+
+
+def yprint(message, print_level=YPrintLevel.Console, with_conditions=False, conditions=None):
+	"""
+	Datahenge: a smarter print() function.  Avoids sprinkling IF-ELSE statements in ERPNext code.
+	"""
+
+	if not message:
+		return
+	if not print_level:
+		return
+
+	if isinstance(print_level, str):
+		print_level =YPrintLevel[print_level]  # convert from String to Enum (JavaScript code may be passing this argument)
+
+	if (with_conditions is True) and not conditions:
+		# Datahenge: Would like to accomplish this with a single variable, but concerned about None and "truthiness"
+		return
+
+	if print_level in (YPrintLevel.Console, YPrintLevel.All):
+		print(message)  # print to console
+	if print_level in (YPrintLevel.Web, YPrintLevel.All):
+		msgprint(message)  # print to web browser pop-up
+
+
+def clear_console():
+	os.system('clear')
+	print()  # extra line helps keep statements aligned

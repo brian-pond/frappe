@@ -70,9 +70,9 @@ class Database(object):
 	def connect(self):
 		"""Connects to a database as set in `site_config.json`."""
 		self.cur_db_name = self.user
-		self._conn = self.get_connection()
-		self._cursor = self._conn.cursor()
-		frappe.local.rollback_observers = []
+		self._conn = self.get_connection()  # pylint: disable=assignment-from-no-return
+		self._cursor = self._conn.cursor()  
+		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 
 	def use(self, db_name):
 		"""`USE` db_name."""
@@ -112,6 +112,10 @@ class Database(object):
 				{"name": "a%", "owner":"test@example.com"})
 
 		"""
+
+		# TODO: Why so many, many SQL queries for a simple Daily Order PUT?
+		# print(f"\n{query}\n")
+
 		if re.search(r'ifnull\(', query, flags=re.IGNORECASE):
 			# replaces ifnull in query with coalesce
 			query = re.sub(r'ifnull\(', 'coalesce(', query, flags=re.IGNORECASE)
@@ -125,14 +129,25 @@ class Database(object):
 		self.clear_db_table_cache(query)
 
 		# autocommit
-		if auto_commit: self.commit()
+		if auto_commit:
+			self.commit()
 
 		# execute
 		try:
+			# Datahenge: Display every Query that meets a condition.  Useful for discovering What Is Going On?
+			# import traceback
+			# if query.lower().startswith('delete'):
+			#	debug = True
+			#	explain = True
+			#	print("BEGIN TRACE------------------------------------------------------")
+			#	traceback.print_stack()
 			if debug:
 				time_start = time()
 
 			self.log_query(query, values, debug, explain)
+
+			#if query.lower().startswith('delete'):
+			#	print("END TRACE--------------------------------------------------------")
 
 			if values!=():
 				if isinstance(values, dict):
@@ -195,6 +210,11 @@ class Database(object):
 		if frappe.conf.get('allow_tests') and frappe.cache().get_value('flag_print_sql'):
 			print(self.mogrify(query, values))
 
+		# Datahenge: Warn about invalid combination:
+		if explain and (not debug):
+			import warnings
+			warnings.warn("Calling this function with 'explain', but without 'debug', will not explain the SQL query.", UserWarning)
+
 		# debug
 		if debug:
 			if explain and query.strip().lower().startswith('select'):
@@ -253,7 +273,7 @@ class Database(object):
 		could cause the system to hang."""
 		if self.transaction_writes and \
 			query and query.strip().split()[0].lower() in ['start', 'alter', 'drop', 'create', "begin", "truncate"]:
-			raise Exception('This statement can cause implicit commit')
+			raise Exception(f"This statement can cause implicit commit:\n{query}")
 
 		if query and query.strip().lower() in ('commit', 'rollback'):
 			self.transaction_writes = 0
@@ -537,7 +557,7 @@ class Database(object):
 	def get_list(*args, **kwargs):
 		return frappe.get_list(*args, **kwargs)
 
-	def get_single_value(self, doctype, fieldname, cache=False):
+	def get_single_value(self, doctype, fieldname):  # DH - Removing unused cache argument.
 		"""Get property of Single DocType. Cache locally by default
 
 		:param doctype: DocType of the single object whose value is requested
@@ -559,19 +579,27 @@ class Database(object):
 			`tabSingles` where `doctype`=%s and `field`=%s""", (doctype, fieldname))
 		val = val[0][0] if val else None
 
-		df = frappe.get_meta(doctype).get_field(fieldname)
-
-		if not df:
+		docfield_metadata = frappe.get_meta(doctype).get_field(fieldname)
+		if not docfield_metadata:
 			frappe.throw(_('Invalid field name: {0}').format(frappe.bold(fieldname)), self.InvalidColumnName)
 
-		val = cast_fieldtype(df.fieldtype, val)
+		# Datahenge:  This is another Holy Shit moment:  The datatype for None dates was CHANGING into Today's Date!
+		val = cast_fieldtype(docfield_metadata.fieldtype, val)
 
+		# TODO:  Datahenge:  If the SQL result is a DateTime, would be great if we applied a datetime.date format
+		#        immediately to what's in the cache.
 		self.value_cache[doctype][fieldname] = val
 
 		return val
 
+	@frappe.debug_decorator
 	def get_singles_value(self, *args, **kwargs):
 		"""Alias for get_single_value"""
+		# Datahenge: No purpose having an alias, and it's rarely used.
+		import warnings
+		message = "Function 'get_singles_value' is deprecated, using 'get_single_value' instead."
+		frappe.throw(message, exc=None)
+		warnings.warn(message, DeprecationWarning)
 		return self.get_single_value(*args, **kwargs)
 
 	def _get_values_from_table(self, fields, filters, doctype, as_dict, debug, order_by=None, update=None, for_update=False):
@@ -750,7 +778,7 @@ class Database(object):
 
 		self.sql("commit")
 
-		frappe.local.rollback_observers = []
+		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 		self.flush_realtime_log()
 		enqueue_jobs_after_commit()
 		flush_local_link_count()
@@ -763,7 +791,7 @@ class Database(object):
 		for args in frappe.local.realtime_log:
 			frappe.realtime.emit_via_redis(*args)
 
-		frappe.local.realtime_log = []
+		frappe.local.realtime_log = []  # pylint: disable=assigning-non-slot
 
 	def rollback(self):
 		"""`ROLLBACK` current transaction."""

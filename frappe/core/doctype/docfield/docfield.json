@@ -17,6 +17,7 @@
   "hide_days",
   "hide_seconds",
   "reqd",
+  "reqd_in_database",
   "search_index",
   "in_list_view",
   "in_standard_filter",
@@ -62,7 +63,8 @@
   "column_break_22",
   "description",
   "oldfieldname",
-  "oldfieldtype"
+  "oldfieldtype",
+  "ignore_link_validation"
  ],
  "fields": [
   {
@@ -481,13 +483,27 @@
    "fieldname": "non_negative",
    "fieldtype": "Check",
    "label": "Non Negative"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!in_list([\"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
+   "fieldname": "reqd_in_database",
+   "fieldtype": "Check",
+   "label": "Mandatory only in DB"
+  },
+  {
+   "default": "0",
+   "description": "When marked, a DocField of type Link will accept any value, regardless of whether it's a valid Link.",
+   "fieldname": "ignore_link_validation",
+   "fieldtype": "Check",
+   "label": "Ignore Link Validation"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-10-29 06:09:26.454990",
+ "modified": "2021-10-11 20:09:52.648983",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

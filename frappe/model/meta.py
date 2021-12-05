@@ -163,7 +163,8 @@ class Meta(Document):
 		'''Returns list of fields with `in_global_search` set and `name` if set'''
 		fields = self.get("fields", {"in_global_search": 1, "fieldtype": ["not in", no_value_fields]})
 		if getattr(self, 'show_name_in_global_search', None):
-			fields.append(frappe._dict(fieldtype='Data', fieldname='name', label='Name'))
+			# Datahenge: Try displaying "ID" instead of the poorly-named "Name"
+			fields.append(frappe._dict(fieldtype='Data', fieldname='name', label='ID'))
 
 		return fields
 
@@ -433,7 +434,8 @@ class Meta(Document):
 
 		if self.name in user_permission_doctypes:
 			fields.append(frappe._dict({
-				"label":"Name",
+				# Datahenge: Display ID instead of the poorly-named "Name"
+				"label":"ID",
 				"fieldname":"name",
 				"options": self.name
 			}))

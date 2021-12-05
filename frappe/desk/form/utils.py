@@ -15,13 +15,13 @@ from six import string_types
 def remove_attach():
 	"""remove attachment"""
 	fid = frappe.form_dict.get('fid')
-	file_name = frappe.form_dict.get('file_name')
+	# Datahenge: Unused code
+	# file_name = frappe.form_dict.get('file_name')
 	frappe.delete_doc('File', fid)
 
 @frappe.whitelist()
 def validate_link():
 	"""validate link when updated by user"""
-	import frappe
 	import frappe.utils
 
 	value, options, fetch = frappe.form_dict.get('value'), frappe.form_dict.get('options'), frappe.form_dict.get('fetch')
@@ -30,6 +30,11 @@ def validate_link():
 	if not options or options=='null' or options=='undefined':
 		frappe.response['message'] = 'Ok'
 		return
+
+	# Datahenge:
+	# 	'value' is the value we're searching for.
+	#   'options' is the name of the DocType.
+	#   Who decided these variable names were okay?!
 
 	valid_value = frappe.db.get_all(options, filters=dict(name=value), as_list=1, limit=1)
 

@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 from six import iteritems, string_types
+import json
 
 import frappe
 import datetime
@@ -160,6 +161,17 @@ class BaseDocument(object):
 			self.extend(key, value)
 		else:
 			self.__dict__[key] = value
+
+	# Datahenge: Safely assign Values, without accidentally creating new Keys.
+	def safeset(self, key, value, as_value=False):
+		if not hasattr(self, key):
+			raise AttributeError(f"Cannot assign value to unknown attribute '{key}' in class {type(self).__name__}")
+		if isinstance(value, list) and not as_value:
+			self.__dict__[key] = []
+			self.extend(key, value)
+		else:
+			self.__dict__[key] = value
+	# Datahenge: End
 
 	def delete_key(self, key):
 		if key in self.__dict__:
@@ -430,7 +442,7 @@ class BaseDocument(object):
 
 			label = self.get_label_from_fieldname(fieldname)
 
-			frappe.msgprint(_("{0} must be unique").format(label or fieldname))
+			frappe.msgprint(_("SQL constraint. {0} must be unique").format(label or fieldname))
 
 		# this is used to preserve traceback
 		raise frappe.UniqueValidationError(self.doctype, self.name, e)
@@ -511,6 +523,11 @@ class BaseDocument(object):
 			if self.get(df.fieldname) in (None, []) or not strip_html(cstr(self.get(df.fieldname))).strip():
 				missing.append((df.fieldname, get_msg(df)))
 
+		# Datahenge: Include fields marked as Mandatory only in the Database.  JS code and UI does not care.
+		for df in self.meta.get("fields", {"reqd_in_database": ('=', 1)}):
+			if self.get(df.fieldname) in (None, []) or not strip_html(cstr(self.get(df.fieldname))).strip():
+				missing.append((df.fieldname, get_msg(df)))
+
 		# check for missing parent and parenttype
 		if self.meta.istable:
 			for fieldname in ("parent", "parenttype"):
@@ -534,6 +551,10 @@ class BaseDocument(object):
 				+ self.meta.get("fields", {"fieldtype": ('=', "Dynamic Link")})):
 			docname = self.get(df.fieldname)
 
+			if bool(df.ignore_link_validation):  # Datahenge: Do not validate this link's referential integrity.
+				# print(f"Ignoring link {df.fieldname} in DocType {df.doctype}")
+				continue
+
 			if docname:
 				if df.fieldtype=="Link":
 					doctype = df.options
@@ -546,7 +567,7 @@ class BaseDocument(object):
 
 				# MySQL is case insensitive. Preserve case of the original docname in the Link Field.
 
-				# get a map of values ot fetch along with this link query
+				# get a map of values to fetch along with this link query
 				# that are mapped as link_fieldname.source_fieldname in Options of
 				# Readonly or Data or Text type fields
 
@@ -566,8 +587,13 @@ class BaseDocument(object):
 							for _df in fields_to_fetch]
 
 						# don't cache if fetching other values too
-						values = frappe.db.get_value(doctype, docname,
-							values_to_fetch, as_dict=True)
+						values = frappe.db.get_value(doctype, docname, values_to_fetch, as_dict=True)
+
+						# Datahenge:  This seems like a pretty HUGE hole in the framework.
+						if not values:
+							# print(f"Datahenge: Cannot find DocType '{doctype}' with name = '{docname}'")
+							invalid_links.append((df.fieldname, docname, get_msg(df, docname)))
+						# Datahenge: End
 
 				if frappe.get_meta(doctype).issingle:
 					values.name = doctype
@@ -964,6 +990,16 @@ class BaseDocument(object):
 		if self.doctype != "DocType":
 			for df in self.meta.get("fields", {"fieldtype": ('=', "Text Editor")}):
 				extract_images_from_doc(self, df.fieldname)
+
+	def pretty_print(self):
+		"""
+		Datahenge: A prettier version of as_json()
+		"""
+		from frappe.utils.response import json_handler
+		ret_dict = self.as_dict(convert_dates_to_str=True)
+		ret_json = json.dumps(ret_dict, indent=4, sort_keys=False, default=json_handler, separators=(',', ': '))
+		print(f"\n----------------\n{self.doctype} : {self.name}\n----------------\n{ret_json}")
+
 
 def _filter(data, filters, limit=None):
 	"""pass filters as:

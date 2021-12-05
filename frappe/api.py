@@ -13,6 +13,9 @@ from frappe import _
 from frappe.utils.response import build_response
 from frappe.utils.data import sbool
 
+from frappe.model.document import Document as DocumentType
+from six import iteritems
+# Datahenge: See line 98.
 
 def handle():
 	"""
@@ -88,6 +91,12 @@ def handle():
 					if "flags" in data:
 						del data["flags"]
 
+					# Datahenge: Need to check if the new values are allowable for a PUT.
+					# For example, assume a DocField is 'READ ONLY', but a new value is passed in the PUT.
+					# Instead of silently rejecting and returning a 200, we need to return an HTTP 403.
+					if not can_update_dh(doc, new_data=data):
+						return build_response("json")
+
 					# Not checking permissions here because it's checked in doc.save
 					doc.update(data)
 
@@ -95,8 +104,27 @@ def handle():
 						"data": doc.save().as_dict()
 					})
 
-					if doc.parenttype and doc.parent:
-						frappe.get_doc(doc.parenttype, doc.parent).save()
+					# -------------------------------
+					# Datahenge and Farm To People.
+					# -------------------------------
+					# The next few lines of code are a BIG DEAL.
+					# What happens is when a Child DocType is saved, the ENTIRE parent DocType is save()
+					# This can result in a HUGE ripple effect of unwanted code execution and validation
+					#
+					# Consider a Web Subscription with 20 Lines.  One line is touched by a PUT.  This results
+					# in a save() to the Parent.  That save() executes before_validate(), validate(), before_save(),
+					# a SQL UPDATE to the table, on_update() and on_change().
+					#
+					# Not only that.  But VERY LIKELY the parent calls validation() on EVERY child item.
+					# Even though none of them were ever modified.
+					#
+					# So.  I'm going to comment-out the next few lines of Code.
+					# And force each Child DocType to decide (on its own)
+					# what Parent code to call during a PUT, if any.
+
+					#if doc.parenttype and doc.parent:
+					# 	frappe.get_doc(doc.parenttype, doc.parent).save()
+					# -------------------------------
 
 					frappe.db.commit()
 
@@ -268,3 +296,44 @@ def validate_api_key_secret(api_key, api_secret, frappe_authorization_source=Non
 def validate_auth_via_hooks():
 	for auth_hook in frappe.get_hooks('auth_hooks', []):
 		frappe.get_attr(auth_hook)()
+
+
+def can_update_dh(doc, new_data):
+	"""
+	Datahenge: Logic to be called during a PUT, to prevent updating of Read Only fields.
+	"""
+
+	# Arguments:
+		# doc: 			Document attempting to modify.
+		# new_data		a Frappe Dictionary of new values.
+
+	if not isinstance(doc, DocumentType):
+		raise TypeError("Argument 'doc' is not an instance of Document.")
+
+	meta = frappe.get_meta(doc.doctype, cached=False)
+	docfield_meta = meta.get("fields")  # a List of DocField
+
+	payload_contains_changes = False  # if nothing is changing, don't bother with the PUT
+
+	for key, new_value in iteritems(new_data):
+		current_value = doc.get(key)
+		if new_value != current_value:
+			payload_contains_changes = True
+			# print(f"Attempting to change value of {key} from '{current_value}' to '{new_value}'")
+			try:
+				docfield = next(field for field in docfield_meta if field.fieldname == key)
+			except StopIteration as ex:
+				raise ValueError(f"No such field '{key}' exists in document {doc.doctype}.") from ex
+
+			# If trying a PUT on a read-only field, throw an error.
+			if docfield.fieldtype == 'Read Only':
+				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'Read Only' column '{key}' via API PUT.")
+			if bool(docfield.read_only) is True:
+				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'read_only' column '{key}' via API PUT.")
+
+	# TODO: Not 100% confident this is safe, when it comes to complex PUT payloads
+	#if not payload_contains_changes:
+	#	print("FYI, payload of PUT contains no changes to data.")
+	#	return False
+
+	return True

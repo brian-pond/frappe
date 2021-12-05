@@ -944,7 +944,7 @@ frappe.ui.form.Form = class FrappeForm {
 
 	check_doctype_conflict(docname) {
 		if(this.doctype=='DocType' && docname=='DocType') {
-			frappe.msgprint(__('Allowing DocType, DocType. Be careful!'));
+			frappe.msgprint(__('You are editing the Core DocType; please use caution!'));
 		} else if(this.doctype=='DocType') {
 			if (frappe.views.formview[docname] || frappe.pages['List/'+docname]) {
 				window.location.reload();
@@ -1558,10 +1558,16 @@ frappe.ui.form.Form = class FrappeForm {
 					if(df.fieldtype==='Link' && df.options===me.doctype) {
 						new_doc[df.fieldname] = me.doc.name;
 					} else if (['Link', 'Dynamic Link'].includes(df.fieldtype) && me.doc[df.fieldname]) {
+						// Datahenge Begin
+						// If working 'Amended From', copying the value to a different DocType doesn't
+						// make sense, and will throw an error.  So don't do that.
+						if ((df.fieldname == 'amended_from') && (doctype != me.doc.doctype)) {
+							continue;
+						}							
 						new_doc[df.fieldname] = me.doc[df.fieldname];
+						// Datahenge End
 					}
 				});
-
 				frappe.ui.form.make_quick_entry(doctype, null, null, new_doc);
 				// frappe.set_route('Form', doctype, new_doc.name);
 			});

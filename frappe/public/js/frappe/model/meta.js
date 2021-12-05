@@ -109,7 +109,8 @@ $.extend(frappe.meta, {
 		var fields = $.map(frappe.meta.get_docfields(doctype, name), function(df) {
 			return (df.fieldtype==="Link" && df.ignore_user_permissions!==1) ? df : null;
 		});
-		fields = fields.concat({label: "Name", fieldname: name, options: doctype});
+		// DH: Use "ID" instead of the poorly-named "Name"
+		fields = fields.concat({label: "ID", fieldname: name, options: doctype});
 		return fields;
 	},
 
