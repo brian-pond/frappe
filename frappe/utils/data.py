@@ -812,7 +812,7 @@ class URLCalc():
 			if debug:
 				print("Scenario 5: Website Settings")
 			return host_name
-		
+
 		# Scenario 6:
 			if debug:
 				print("Scenario 6: http://localhost")

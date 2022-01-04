@@ -600,7 +600,19 @@ class FilterArea {
 				onchange: () => this.refresh_list_view()
 			}
 		];
-
+		
+		/* console.log("Brian list_view meta", this.list_view.meta);
+		fields.append(
+			// Datahenge
+			{
+				fieldtype: 'Data',
+				label: 'DocStatus',
+				condition: '=',
+				fieldname: 'docstatus',
+				onchange: () => this.refresh_list_view()
+			}
+		)
+		*/
 		if(this.list_view.custom_filter_configs) {
 			this.list_view.custom_filter_configs.forEach(config => {
 				config.onchange = () => this.refresh_list_view();
