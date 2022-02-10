@@ -338,7 +338,8 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, indicator=None,
 		out.msg = '<table border="1px" style="border-collapse: collapse" cellpadding="2px">' + ''.join(['<tr>'+''.join(['<td>%s</td>' % c for c in r])+'</tr>' for r in msg]) + '</table>'
 	else:
 		# Datahenge : Replace line breaks with HTML breaks.
-		out.message = "<br />".join(out.message.split("\n"))
+		if out.msg and isinstance(out.msg, str):
+			out.msg = "<br />".join(out.msg.split("\n"))
 
 	if flags.print_messages and out.msg:
 		print("Message: " + repr(out.msg).encode("utf-8"))
