@@ -23,6 +23,7 @@
   "translatable",
   "collapsible",
   "collapsible_depends_on",
+  "expanded_by_default",
   "column_break_6",
   "options",
   "default",
@@ -428,11 +429,17 @@
    "fieldname": "developer_notes",
    "fieldtype": "Small Text",
    "label": "Developer Notes"
+  },
+  {
+   "default": "0",
+   "fieldname": "expanded_by_default",
+   "fieldtype": "Check",
+   "label": "Expanded by Default"
   }
  ],
  "idx": 1,
  "istable": 1,
- "modified": "2021-10-15 15:41:38.273827",
+ "modified": "2022-02-13 18:16:50.718608",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

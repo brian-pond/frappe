@@ -281,29 +281,37 @@ frappe.ui.form.Layout = Class.extend({
 		this.refresh_fields(fields);
 	},
 
+	should_collapse: function(section, df) {
+		/**
+		Datahenge: Some better logic for whether Form sections are collapsed, or not.
+		*/
+		if (!df.collapsible) {
+			return false;
+		}
+
+		if (section.has_missing_mandatory()) {
+			return false;
+		}
+
+		if (df.fieldname === '_form_dashboard') {
+			return localStorage.getItem('collapseFormDashboard')==='yes' ? true : false;
+		}
+
+		if (df.collapsible_depends_on) {
+			return !this.evaluate_depends_on_value(df.collapsible_depends_on);
+		}
+
+		return !df.expanded_by_default;
+	},
+
 	refresh_section_collapse: function() {
 		if(!this.doc) return;
 
 		for(var i=0; i<this.sections.length; i++) {
 			var section = this.sections[i];
 			var df = section.df;
-			if(df && df.collapsible) {
-				var collapse = true;
-
-				if(df.collapsible_depends_on) {
-					collapse = !this.evaluate_depends_on_value(df.collapsible_depends_on);
-				}
-
-				if (collapse && section.has_missing_mandatory()) {
-					collapse = false;
-				}
-
-				if(df.fieldname === '_form_dashboard') {
-					collapse = localStorage.getItem('collapseFormDashboard')==='yes' ? true : false;
-				}
-
-				section.collapse(collapse);
-			}
+			if(!df) continue;
+			section.collapse( this.should_collapse(section, df) );
 		}
 	},
 
