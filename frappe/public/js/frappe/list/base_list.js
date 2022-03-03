@@ -601,7 +601,7 @@ class FilterArea {
 			}
 		];
 		
-		/* console.log("Brian list_view meta", this.list_view.meta);
+		/* console.log("Datahenge list_view meta", this.list_view.meta);
 		fields.append(
 			// Datahenge
 			{

@@ -305,7 +305,7 @@ class Document(BaseDocument):
 		self.set_name_in_children()
 
 		self.validate_higher_perm_levels()
-		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.
+		self._prevalidate_links()	# Datahenge: Need to introduce a way of running Document-based code, prior to Link validation.
 		self._validate_links()  # note: this call also validates the Links of child documents.
 
 		self.run_before_save_methods()
