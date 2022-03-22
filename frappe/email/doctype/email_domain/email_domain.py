@@ -100,6 +100,7 @@ class EmailDomain(Document):
 # Datahenge
 @frappe.whitelist()
 def validate_domain(email_domain_name):
+
 	"""Validate email id and check POP3/IMAP and SMTP connections is enabled."""
 
 	doc = frappe.get_doc("Email Domain",email_domain_name)
@@ -135,9 +136,8 @@ def validate_domain(email_domain_name):
 				test = poplib.POP3_SSL(doc.email_server, port=get_port(doc))
 			else:
 				test = poplib.POP3(doc.email_server, port=get_port(doc))
-	except Exception:
-		frappe.throw(_("Incoming email account configuration is not valid."))
-		return None
+	except Exception as ex:
+		frappe.throw(_(f"Incoming email account configuration is not valid.  {ex}"))
 	finally:
 		try:
 			if doc.use_imap:
@@ -158,4 +158,4 @@ def validate_domain(email_domain_name):
 		frappe.throw(_("Outgoing email account configuration is not valid."))
 		return None
 
-	frappe.msgprint(_("\u2713 Email domain '{0}' is valid.".format(email_domain_name)), indicator='green')
+	frappe.msgprint(_("\u2713 Email Domain '{0}' is valid.".format(email_domain_name)), indicator='green')

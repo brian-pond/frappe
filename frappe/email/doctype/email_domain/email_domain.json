@@ -13,6 +13,7 @@
   "email_server",
   "use_imap",
   "use_ssl",
+  "cb1",
   "incoming_port",
   "attachment_limit",
   "append_to",
@@ -20,6 +21,7 @@
   "smtp_server",
   "use_tls",
   "use_ssl_for_outgoing",
+  "cb2",
   "append_emails_to_sent_folder",
   "smtp_port"
  ],
@@ -121,11 +123,19 @@
    "fieldname": "use_ssl_for_outgoing",
    "fieldtype": "Check",
    "label": "Use SSL for Outgoing"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "icon-inbox",
  "links": [],
- "modified": "2019-12-18 15:57:34.445308",
+ "modified": "2021-12-05 17:41:39.257553",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Domain",

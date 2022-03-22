@@ -8,7 +8,7 @@ frappe.ui.form.on("Email Domain", {
 
 		// Datahenge
 		frm.add_custom_button(__("Validate Email Settings"), () => {
-			validate_domain(cur_frm, cur_frm.doc);
+			validate_email_domain(cur_frm, cur_frm.doc);
 		});
 		// EOM
 
@@ -35,14 +35,16 @@ frappe.ui.form.on("Email Domain", {
 	}
 })
 
-function validate_domain (caller_frm, doc) {
+function validate_email_domain (caller_frm, doc) {
 	// Validate the email domain's settings:
+	frappe.show_alert({message: "Please standby while validation is performed...", indicator:'yellow'});
 	frappe.call({
 		method: 'frappe.email.doctype.email_domain.email_domain.validate_domain',
 		args: { 'email_domain_name': doc.name },
 		callback: function(r) {
             if (r.message) {
-				frappe.msgprint(__(r.message));
+				frappe.show_alert({message: r.message, indicator:'yellow'});
+				// frappe.msgprint(__(r.message));
 				caller_frm.reload_doc();
 			}
 		}

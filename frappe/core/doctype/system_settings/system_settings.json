@@ -67,7 +67,10 @@
   "enable_prepared_report_auto_deletion",
   "prepared_report_expiry_period",
   "chat",
-  "enable_chat"
+  "enable_chat",
+  "sb_datahenge",
+  "small_text_65",
+  "enable_pdf_debugging"
  ],
  "fields": [
   {
@@ -469,12 +472,33 @@
    "fieldname": "strip_exif_metadata_from_uploaded_images",
    "fieldtype": "Check",
    "label": "Strip EXIF tags from uploaded images"
+  },
+  {
+   "default": "0",
+   "description": "Converting reports to PDF is easier said than done; enabling this checkbox provides additional feedback.",
+   "fieldname": "enable_pdf_debugging",
+   "fieldtype": "Check",
+   "label": "Enable PDF Debugging"
+  },
+  {
+   "fieldname": "sb_datahenge",
+   "fieldtype": "Section Break",
+   "label": "Datahenge Custom"
+  },
+  {
+   "default": "In `common_site_config.json`, the key `restart_supervisor_on_update` is interpreted by Frappe as \"PRODUCTION MODE ENABLE\".  This is incredibly not-obvious, and will burn you on PDF rendering if you are not careful.",
+   "description": "In `common_site_config.json`, the key `restart_supervisor_on_update` is interpreted by Frappe as \"PRODUCTION MODE ENABLE\".  This is incredibly not-obvious, and will burn you on PDF rendering if you are not careful.",
+   "fieldname": "small_text_65",
+   "fieldtype": "Read Only",
+   "label": "Warning",
+   "length": 200,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2021-03-30 11:47:47.330437",
+ "modified": "2021-12-05 20:56:20.688445",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

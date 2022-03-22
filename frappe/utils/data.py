@@ -1073,7 +1073,7 @@ def filter_strip_join(some_list, sep):
 	"""given a list, filter None values, strip spaces and join"""
 	return (cstr(sep)).join((cstr(a).strip() for a in filter(None, some_list)))
 
-def get_url(uri=None, full_address=False):
+def DEL_get_url(uri=None, full_address=False):
 	"""get app url from request"""
 	host_name = frappe.local.conf.host_name or frappe.local.conf.hostname
 
@@ -1120,6 +1120,40 @@ def get_url(uri=None, full_address=False):
 	url = urljoin(host_name, uri) if uri else host_name
 
 	return url
+
+def get_url(uri=None, full_address=False, debug=False):
+	"""
+	Datahenge: This is my refactored version of the original 'get_url'
+	"""
+	if uri and (uri.startswith("http://") or uri.startswith("https://")):
+		return uri  # URI is in fact a URL; return immediately.
+
+	if not uri and full_address:
+		uri = frappe.get_request_header("REQUEST_URI", "")
+
+	port = frappe.conf.http_port or frappe.conf.webserver_port
+	if debug:
+		print(f"Function 'get_url' has assigned port={port}")
+	
+	scheme_domain_port = URLCalc.get_string(debug=debug)
+	if debug:
+		print(f"Function 'get_url' has assigned scheme_domain_port={scheme_domain_port}")
+
+	# NOTE: In 'common_site_config.json', the key 'restart_supervisor_on_update' is interpreted by
+	# 		Frappe as "WE ARE IN PRODUCTION MODE!"
+	#
+	# This is incredibly not-obvious, foolish, and has likely cost people countless hours of debugging.
+	#
+	# When not set, ERPNext assumes the Site's Port number must be part of the URL, and appends it.
+	# This can shatter PDF generation, which requires a valid HTTPS:// path to the CSS and JS assets.
+
+	if not (frappe.conf.restart_supervisor_on_update or frappe.conf.restart_systemd_on_update) \
+		   and not url_contains_port(scheme_domain_port) and port:
+		scheme_domain_port = scheme_domain_port + ':' + str(port)
+
+	url = urljoin(scheme_domain_port, uri) if uri else scheme_domain_port
+	return url
+
 
 def get_host_name_from_request():
 	if hasattr(frappe.local, "request") and frappe.local.request and frappe.local.request.host:
@@ -1331,15 +1365,24 @@ def sanitize_column(column_name):
 	elif regex.match(column_name):
 		_raise_exception()
 
-def scrub_urls(html):
-	html = expand_relative_urls(html)
+
+
+def scrub_urls(html, debug=False):
+	"""
+	Datahenge: 	A function that only calls 1 other function.
+				This is a pointless intermediary, and could be removed later.
+	"""
+	html = expand_relative_urls(html, debug=debug)
 	# encoding should be responsibility of the composer
 	# html = quote_urls(html)
 	return html
 
-def expand_relative_urls(html):
-	# expand relative urls
-	url = get_url()
+def expand_relative_urls(html, debug=False):
+	"""
+	Examines HTML and expands any relative URLs into absolute.
+	Very important in PDF rendering.
+	"""
+	url = get_url(debug=debug)  # This function finds the appropriate Base URL
 	if url.endswith("/"): url = url[:-1]
 
 	def _expand_relative_urls(match):
@@ -1530,3 +1573,112 @@ class UnicodeWithAttrs(text_type):
 	def __init__(self, text):
 		self.toc_html = text.toc_html
 		self.metadata = text.metadata
+
+
+# --------
+# Datahenge LLC
+# --------
+
+class URLCalc():
+	"""
+	The purpose of this class is to correctly return the URL of the Frappe website,
+	regardless of the Site directory names on the Linux server.
+
+	Created by Datahenge LLC
+	"""
+	def __init__(self):
+		self.scheme = None
+		self.domain= None
+		self.port = None
+
+	def get_tuple(self, debug=False):
+		"""
+		Returns a tuple with (Scheme, Domain, Port)
+		"""
+		temp_domain = self.calc_scheme_and_domain_string(debug=debug)
+		if not temp_domain:
+			raise ValueError("We have a pretty big problem.")
+
+		# Determine the proper Scheme
+		if temp_domain.startswith("http://"):
+			self.scheme = 'http://'
+			self.domain = temp_domain[7:]
+		elif temp_domain.startswith("https://"):
+			self.scheme = 'https://'
+			self.domain = temp_domain[8:]
+		else:
+			self.scheme = 'http://'
+			self.domain = temp_domain
+
+		return (self.scheme, self.domain)
+
+	def get_string(debug=False):
+		"""
+		Returns the server's URL string.
+		Example 'http://my.domain.com:8000'
+		"""
+		url_tuple = URLCalc().get_tuple(debug=debug)
+		url_as_string = url_tuple[0] +  url_tuple[1]
+		if len(url_tuple) == 3:
+			url_as_string += ':' + url_tuple[2]
+		return url_as_string
+
+	@staticmethod
+	def calc_scheme_and_domain_string(debug=False):
+		"""
+		DATAHENGE LLC: VERY IMPORTANT FUNCTION
+		* This function 'calculates' Scheme + Domain + Port, and returns a 2-value Tuple
+		* Using this because standard Frappe logic is full of assumptions and fallback routines.
+		"""
+		# Scenario 1A:  frappe.local.conf.host_name
+		if frappe.local.conf.host_name:
+			if debug:
+				print(f"Scenario 1A:  frappe.local.conf.host_name: '{frappe.local.conf.host_name}'")
+			return frappe.local.conf.host_name
+
+		# Scenario 1B:  frappe.local.conf.hostname
+		if frappe.local.conf.hostname:
+			if debug:
+				print(f"Scenario 1B:  frappe.local.conf.hostname : '{frappe.local.conf.hostname}'")
+			return frappe.local.conf.hostname
+
+		# Scenario 2:  get_host_name_from_request()
+		if get_host_name_from_request():
+			if debug:
+				print("Scenario 2:  get_host_name_from_request()")
+			return get_host_name_from_request()
+
+		# Scenario 3:  system_settings_host_name
+		system_settings_host_name = frappe.db.get_single_value("System Settings", "url_scheme_domain_port")
+		if system_settings_host_name:
+			if debug:
+				print("Scenario 3:  system_settings_host_name")
+			return system_settings_host_name
+
+		# Scenario 4  frappe.local.site
+		if frappe.local.site:
+			protocol = 'http://'
+
+			if frappe.local.conf.ssl_certificate:
+				protocol = 'https://'
+
+			elif frappe.local.conf.wildcard:
+				domain = frappe.local.conf.wildcard.get('domain')
+				if domain and frappe.local.site.endswith(domain) and frappe.local.conf.wildcard.get('ssl_certificate'):
+					protocol = 'https://'
+
+			if debug:
+				print("Scenario 4:  frappe.local.site")
+			return protocol + frappe.local.site
+
+		# Scenario 5:
+		host_name = frappe.db.get_value("Website Settings", "Website Settings", "subdomain")
+		if host_name:
+			if debug:
+				print("Scenario 5: Website Settings")
+			return host_name
+
+		# Scenario 6:
+			if debug:
+				print("Scenario 6: http://localhost")
+			return "http://localhost"

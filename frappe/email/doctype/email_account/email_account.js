@@ -141,7 +141,9 @@ frappe.ui.form.on("Email Account", {
 
 	email_id:function(frm) {
 		//pull domain and if no matching domain go create one
-		frm.events.update_domain(frm);
+		// Datahenge: This just spams the screen.  Allow the user to finish typing their email address.
+		//            Then select their domain.
+		// frm.events.update_domain(frm);
 	},
 
 	update_domain: function(frm){
