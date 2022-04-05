@@ -58,8 +58,14 @@ class DocTags:
 		return (frappe.db.get_value(self.dt, dn, '_user_tags', ignore=1) or '').strip()
 
 	def add(self, dn, tag):
-		"""add a new user tag"""
-		tl = self.get_tags(dn).split(',')
+		"""
+		Add a new user tag
+
+		arguments:
+			dn = Document name
+			tag = The new Tag being linked to the document.
+		"""
+		tl = self.get_tags(dn).split(',')  # Fetch any Tag Links that already exist?
 		if not tag in tl:
 			tl.append(tag)
 			if not frappe.db.exists("Tag", tag):
@@ -87,6 +93,7 @@ class DocTags:
 			frappe.db.sql("update `tab%s` set _user_tags=%s where name=%s" % \
 				(self.dt,'%s','%s'), (tags , dn))
 			doc= frappe.get_doc(self.dt, dn)
+
 			update_tags(doc, tags)
 		except Exception as e:
 			if frappe.db.is_column_missing(e):
@@ -120,8 +127,10 @@ def update_tags(doc, tags):
 		:param doc: Document to be added to global tags
 	"""
 
+	# NOTE: This 'new_tags' would be more aptly named 'all tags', since it should include pre-existing tags too.
 	new_tags = list(set([tag.strip() for tag in tags.split(",") if tag]))
 
+	# If the Tag is not already linked, then link it.
 	for tag in new_tags:
 		if not frappe.db.exists("Tag Link", {"parenttype": doc.doctype, "parent": doc.name, "tag": tag}):
 			frappe.get_doc({
@@ -134,22 +143,22 @@ def update_tags(doc, tags):
 				"tag": tag
 			}).insert(ignore_permissions=True)
 
+	# Find all existing Tags in the database:
 	existing_tags = [tag.tag for tag in frappe.get_list("Tag Link", filters={
 			"document_type": doc.doctype,
 			"document_name": doc.name
 		}, fields=["tag"])]
 
-	deleted_tags = get_deleted_tags(new_tags, existing_tags)
-
+	deleted_tags = get_deleted_tags(new_tags, existing_tags)  # difference between 'new' and 'existing'
 	if deleted_tags:
 		for tag in deleted_tags:
 			delete_tag_for_document(doc.doctype, doc.name, tag)
 
 def get_deleted_tags(new_tags, existing_tags):
-
 	return list(set(existing_tags) - set(new_tags))
 
 def delete_tag_for_document(dt, dn, tag):
+	frappe.msgprint(f"Unlinked tag {tag} from this document.")
 	frappe.db.sql("""DELETE FROM `tabTag Link` WHERE `document_type`=%s AND `document_name`=%s AND tag=%s""", (dt, dn, tag))
 
 @frappe.whitelist()
