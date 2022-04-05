@@ -30,6 +30,7 @@ ipython==5.8.0
 jinja2==2.10.3
 ldap3==2.7
 markdown2==2.3.9
+markupsafe==2.0.1
 maxminddb-geolite2==2018.703
 ndg-httpsclient==0.5.1
 num2words==0.5.5
