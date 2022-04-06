@@ -158,7 +158,7 @@ def get_deleted_tags(new_tags, existing_tags):
 	return list(set(existing_tags) - set(new_tags))
 
 def delete_tag_for_document(dt, dn, tag):
-	frappe.msgprint(f"Unlinked tag {tag} from this document.")
+	# frappe.msgprint(f"Unlinked tag {tag} from this document.")
 	frappe.db.sql("""DELETE FROM `tabTag Link` WHERE `document_type`=%s AND `document_name`=%s AND tag=%s""", (dt, dn, tag))
 
 @frappe.whitelist()
