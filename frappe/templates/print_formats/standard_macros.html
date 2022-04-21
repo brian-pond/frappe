@@ -5,8 +5,11 @@
 		<div>{{ frappe.render_template(df.options, {"doc": doc}) or "" }}</div>
 	{%- elif df.fieldtype in ("Text", "Text Editor", "Code", "Long Text") -%}
 		{{ render_text_field(df, doc) }}
-	{%- elif df.fieldtype in ("Image", "Attach Image", "Attach")
-		and (guess_mimetype(doc[df.fieldname])[0] or "").startswith("image/")  -%}
+	{%- elif df.fieldtype in ("Image", "Attach Image")
+		and (
+			(guess_mimetype(doc[df.fieldname])[0] or "").startswith("image/")
+			or doc[df.fieldname].startswith("http")
+		) -%}
 		{{ render_image(df, doc) }}
 	{%- elif df.fieldtype=="Geolocation" -%}
 		{{ render_geolocation(df, doc) }}
@@ -125,23 +128,25 @@ data-fieldname="{{ df.fieldname }}" data-fieldtype="{{ df.fieldtype }}"
         {% include doc.print_templates[df.fieldname] %}
 	{% elif df.fieldtype=="Check" %}
 		<i class="{{ 'fa fa-check' if doc[df.fieldname] }}"></i>
-	{% elif df.fieldtype=="Image" %}
+	{% elif df.fieldtype in ("Image", "Attach Image") and frappe.utils.is_image(doc[doc.meta.get_field(df.fieldname).options]) %}
 		<img src="{{ doc[doc.meta.get_field(df.fieldname).options] }}"
+			class="img-responsive"
+			{%- if df.print_width %} style="width: {{ get_width(df) }};"{% endif %}>
+	{% elif df.fieldtype=="Attach Image" %}
+		<img src="{{ doc[df.fieldname] }}"
 			class="img-responsive"
 			{%- if df.print_width %} style="width: {{ get_width(df) }};"{% endif %}>
 	{% elif df.fieldtype=="Signature" %}
 		<img src="{{ doc[df.fieldname] }}" class="signature-img img-responsive"
 			{%- if df.print_width %} style="width: {{ get_width(df) }};"{% endif %}>
-	{% elif df.fieldtype in ("Attach", "Attach Image") and doc[df.fieldname]
-		and frappe.utils.is_image(doc[df.fieldname]) %}
+	{% elif df.fieldtype in ("Attach", "Attach Image") and frappe.utils.is_image(doc[df.fieldname]) %}
 		<img src="{{ doc[df.fieldname] }}" class="img-responsive"
 			{%- if df.print_width %} style="width: {{ get_width(df) }};"{% endif %}>
 	{% elif df.fieldtype=="HTML" %}
 		{{ frappe.render_template(df.options, {"doc":doc}) }}
-	{% elif df.fieldtype=="Currency" %}
-		{{ doc.get_formatted(df.fieldname, doc, translated=df.translatable) }}
 	{% else %}
-		{{ doc.get_formatted(df.fieldname, parent_doc or doc, translated=df.translatable) }}
+		{%- set parent = parent_doc or doc -%}
+		{{ doc.get_formatted(df.fieldname, parent, translated=df.translatable, absolute_value=parent.absolute_value) }}
 	{% endif %}
 {%- endmacro %}
 
@@ -158,12 +163,12 @@ data-fieldname="{{ df.fieldname }}" data-fieldtype="{{ df.fieldtype }}"
 	{%- endif -%}
 {% endmacro %}
 
-{%- macro add_header(page_num, max_pages, doc, letter_head, no_letterhead, footer, print_settings=None) -%}
+{%- macro add_header(page_num, max_pages, doc, letter_head, no_letterhead, footer, print_settings=None, print_heading_template=None) -%}
 	{% if letter_head and not no_letterhead %}
 		<div class="letter-head">{{ letter_head }}</div>
 	{% endif %}
-    {% if doc.print_heading_template %}
-        {{ frappe.render_template(doc.print_heading_template, {"doc":doc}) }}
+    {% if print_heading_template %}
+        {{ frappe.render_template(print_heading_template, {"doc":doc}) }}
     {% else %}
     <div class="print-heading">
 		<h2>{{ doc.select_print_heading or (doc.print_heading if doc.print_heading != None

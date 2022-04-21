@@ -198,8 +198,8 @@ frappe.ui.form.Form = class FrappeForm {
 				field && ["Link", "Dynamic Link"].includes(field.df.fieldtype) && field.validate && field.validate(value);
 
 				me.layout.refresh_dependency();
-				let object = me.script_manager.trigger(fieldname, doc.doctype, doc.name);
-				return object;
+				me.layout.refresh_sections();
+				return me.script_manager.trigger(fieldname, doc.doctype, doc.name);
 			}
 		});
 
@@ -214,7 +214,7 @@ frappe.ui.form.Form = class FrappeForm {
 				if(doc.parent===me.docname && doc.parentfield===df.fieldname) {
 					me.dirty();
 					me.fields_dict[df.fieldname].grid.set_value(fieldname, value, doc);
-					me.script_manager.trigger(fieldname, doc.doctype, doc.name);
+					return me.script_manager.trigger(fieldname, doc.doctype, doc.name);
 				}
 			});
 		});
@@ -237,14 +237,10 @@ frappe.ui.form.Form = class FrappeForm {
 					throw "attach error";
 				}
 
-				if(me.attachments.max_reached()) {
-					frappe.msgprint(__("Maximum Attachment Limit for this record reached."));
-					throw "attach error";
-				}
-
 				new frappe.ui.FileUploader({
 					doctype: me.doctype,
 					docname: me.docname,
+					frm: me,
 					files: dataTransfer.files,
 					folder: 'Home/Attachments',
 					on_success(file_doc) {
@@ -517,13 +513,8 @@ frappe.ui.form.Form = class FrappeForm {
 		let me = this;
 		return new Promise((resolve, reject) => {
 			btn && $(btn).prop("disabled", true);
-			$(document.activeElement).blur();
-
 			frappe.ui.form.close_grid_form();
-			// let any pending js process finish
-			setTimeout(function() {
-				me.validate_and_save(save_action, callback, btn, on_error, resolve, reject);
-			}, 100);
+			me.validate_and_save(save_action, callback, btn, on_error, resolve, reject);
 		}).then(() => {
 			me.show_success_action();
 		}).catch((e) => {
@@ -912,7 +903,7 @@ frappe.ui.form.Form = class FrappeForm {
 
 		if(!this.doc.__islocal) {
 			frappe.model.remove_from_locals(this.doctype, this.docname);
-			frappe.model.with_doc(this.doctype, this.docname, () => {
+			return frappe.model.with_doc(this.doctype, this.docname, () => {
 				this.refresh();
 			});
 		}
@@ -922,6 +913,7 @@ frappe.ui.form.Form = class FrappeForm {
 		if(this.fields_dict[fname] && this.fields_dict[fname].refresh) {
 			this.fields_dict[fname].refresh();
 			this.layout.refresh_dependency();
+			this.layout.refresh_sections();
 		}
 	}
 

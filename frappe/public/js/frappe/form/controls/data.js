@@ -1,6 +1,7 @@
 frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	html_element: "input",
 	input_type: "text",
+	trigger_change_on_input_event: true,
 	make_input: function() {
 		if(this.$input) return;
 
@@ -19,11 +20,21 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		this.input = this.$input.get(0);
 		this.has_input = true;
 		this.bind_change_event();
-		this.bind_focusout();
 		this.setup_autoname_check();
-
-		// somehow this event does not bubble up to document
-		// after v7, if you can debug, remove this
+	},
+	bind_change_event: function() {
+		const change_handler = e => {
+			if (this.change) this.change(e);
+			else {
+				let value = this.get_input_value();
+				this.parse_validate_and_set_in_model(value, e);
+			}
+		};
+		this.$input.on("change", change_handler);
+		if (this.trigger_change_on_input_event) {
+			// debounce to avoid repeated validations on value change
+			this.$input.on("input", frappe.utils.debounce(change_handler, 500));
+		}
 	},
 	setup_autoname_check: function() {
 		if (!this.df.parent) return;
@@ -87,37 +98,18 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		return val==null ? "" : val;
 	},
 	validate: function(v) {
+		if (!v) {
+			return '';
+		}
 		if(this.df.is_filter) {
 			return v;
 		}
 		if(this.df.options == 'Phone') {
-			if(v+''=='') {
-				return '';
-			}
-			var v1 = '';
-			// phone may start with + and must only have numbers later, '-' and ' ' are stripped
-			v = v.replace(/ /g, '').replace(/-/g, '').replace(/\(/g, '').replace(/\)/g, '');
-
-			// allow initial +,0,00
-			if(v && v.substr(0,1)=='+') {
-				v1 = '+'; v = v.substr(1);
-			}
-			if(v && v.substr(0,2)=='00') {
-				v1 += '00'; v = v.substr(2);
-			}
-			if(v && v.substr(0,1)=='0') {
-				v1 += '0'; v = v.substr(1);
-			}
-			v1 += cint(v) + '';
-			return v1;
+			this.df.invalid = !validate_phone(v);
+			return v;
 		} else if(this.df.options == 'Email') {
-			if(v+''=='') {
-				return '';
-			}
-
 			var email_list = frappe.utils.split_emails(v);
 			if (!email_list) {
-				// invalid email
 				return '';
 			} else {
 				let email_invalid = false;
@@ -129,7 +121,6 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 				this.df.invalid = email_invalid;
 				return v;
 			}
-
 		} else {
 			return v;
 		}

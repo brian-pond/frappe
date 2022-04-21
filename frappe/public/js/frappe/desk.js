@@ -171,15 +171,17 @@ frappe.Application = Class.extend({
 
 	email_password_prompt: function(email_account,user,i) {
 		var me = this;
-		var d = new frappe.ui.Dialog({
-			title: __('Email Account setup please enter your password for: '+email_account[i]["email_id"]),
+		let d = new frappe.ui.Dialog({
+			title: __('Password missing in Email Account'),
 			fields: [
-				{	'fieldname': 'password',
+				{
+					'fieldname': 'password',
 					'fieldtype': 'Password',
-					'label': 'Email Account Password',
+					'label': __('Please enter the password for: <b>{0}</b>', [email_account[i]["email_id"]]),
 					'reqd': 1
 				},
 				{
+					"fieldname": "submit",
 					"fieldtype": "Button",
 					"label": __("Submit")
 				}
@@ -440,14 +442,19 @@ frappe.Application = Class.extend({
 	},
 
 	trigger_primary_action: function() {
-		if(window.cur_dialog && cur_dialog.display) {
-			// trigger primary
-			cur_dialog.get_primary_btn().trigger("click");
-		} else if(cur_frm && cur_frm.page.btn_primary.is(':visible')) {
-			cur_frm.page.btn_primary.trigger('click');
-		} else if(frappe.container.page.save_action) {
-			frappe.container.page.save_action();
-		}
+		// to trigger change event on active input before triggering primary action
+		$(document.activeElement).blur();
+		// wait for possible JS validations triggered after blur (it might change primary button)
+		setTimeout(() => {
+			if (window.cur_dialog && cur_dialog.display) {
+				// trigger primary
+				cur_dialog.get_primary_btn().trigger("click");
+			} else if (cur_frm && cur_frm.page.btn_primary.is(':visible')) {
+				cur_frm.page.btn_primary.trigger('click');
+			} else if (frappe.container.page.save_action) {
+				frappe.container.page.save_action();
+			}
+		}, 100);
 	},
 
 	set_rtl: function() {

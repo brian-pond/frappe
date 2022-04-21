@@ -187,7 +187,14 @@ class Database(object):
 				frappe.errprint('Syntax error in query:')
 				frappe.errprint(query)
 
-			if ignore_ddl and (self.is_missing_column(e) or self.is_missing_table(e) or self.cant_drop_field_or_key(e)):
+			elif self.is_deadlocked(e):
+				raise frappe.QueryDeadlockError(e)
+
+			elif self.is_timedout(e):
+				raise frappe.QueryTimeoutError(e)
+
+
+			if ignore_ddl and (self.is_missing_column(e) or self.is_table_missing(e) or self.cant_drop_field_or_key(e)):
 				pass
 			else:
 				print(f"--------\nDatabase Exception:\n{e}\n")
@@ -548,7 +555,7 @@ class Database(object):
 		"""
 
 		if not doctype in self.value_cache:
-			self.value_cache = self.value_cache[doctype] = {}
+			self.value_cache[doctype] = {}
 
 		if fieldname in self.value_cache[doctype]:
 			return self.value_cache[doctype][fieldname]
@@ -643,19 +650,19 @@ class Database(object):
 			to_update.update({field: val})
 
 		if dn and dt!=dn:
-			# with table
-			conditions, values = self.build_conditions(dn)
-
-			values.update(to_update)
-
 			set_values = []
 			for key in to_update:
 				set_values.append('`{0}`=%({0})s'.format(key))
 
-			self.sql("""update `tab{0}`
-				set {1} where {2}""".format(dt, ', '.join(set_values), conditions),
-				values, debug=debug)
+			for name in self.get_values(dt, dn, 'name', debug=debug):
+				values = dict(name=name[0])
+				values.update(to_update)
 
+				self.sql("""update `tab{0}`
+					set {1} where name=%(name)s""".format(dt, ', '.join(set_values)),
+					values, debug=debug)
+
+				frappe.clear_document_cache(dt, values['name'])
 		else:
 			# for singles
 			keys = list(to_update)
@@ -668,10 +675,11 @@ class Database(object):
 				self.sql('''insert into `tabSingles` (doctype, field, value) values (%s, %s, %s)''',
 					(dt, key, value), debug=debug)
 
+			frappe.clear_document_cache(dt, dn)
+
 		if dt in self.value_cache:
 			del self.value_cache[dt]
 
-		frappe.clear_document_cache(dt, dn)
 
 	@staticmethod
 	def set(doc, field, val):
@@ -928,7 +936,7 @@ class Database(object):
 			return []
 
 	def is_missing_table_or_column(self, e):
-		return self.is_missing_column(e) or self.is_missing_table(e)
+		return self.is_missing_column(e) or self.is_table_missing(e)
 
 	def multisql(self, sql_dict, values=(), **kwargs):
 		current_dialect = frappe.db.db_type or 'mariadb'

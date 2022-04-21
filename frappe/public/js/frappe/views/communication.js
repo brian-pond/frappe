@@ -43,26 +43,6 @@ frappe.views.CommunicationComposer = Class.extend({
 			}
 		});
 
-		$(document).on("upload_complete", function(event, attachment) {
-			if(me.dialog.display) {
-				var wrapper = $(me.dialog.fields_dict.select_attachments.wrapper);
-
-				// find already checked items
-				var checked_items = wrapper.find('[data-file-name]:checked').map(function() {
-					return $(this).attr("data-file-name");
-				});
-
-				// reset attachment list
-				me.render_attach();
-
-				// check latest added
-				checked_items.push(attachment.name);
-
-				$.each(checked_items, function(i, filename) {
-					wrapper.find('[data-file-name="'+ filename +'"]').prop("checked", true);
-				});
-			}
-		})
 		this.prepare();
 		this.dialog.show();
 	},
@@ -192,6 +172,7 @@ frappe.views.CommunicationComposer = Class.extend({
 
 		this.dialog.fields_dict["email_template"].df.onchange = () => {
 			var email_template = me.dialog.fields_dict.email_template.get_value();
+			if (!email_template) return;
 
 			var prepend_reply = function(reply) {
 				if(me.reply_added===email_template) {
@@ -374,77 +355,86 @@ frappe.views.CommunicationComposer = Class.extend({
 			folder: 'Home/Attachments',
 			on_success: attachment => {
 				this.attachments.push(attachment);
-				this.render_attach();
+				this.render_attachment_rows(attachment);
 			}
 		};
 
-		if(this.frm) {
+		if (this.frm) {
 			args = {
 				doctype: this.frm.doctype,
 				docname: this.frm.docname,
 				folder: 'Home/Attachments',
 				on_success: attachment => {
 					this.frm.attachments.attachment_uploaded(attachment);
-					this.render_attach();
+					this.render_attachment_rows(attachment);
 				}
-			}
+			};
 		}
 
-		$("<h6 class='text-muted add-attachment' style='margin-top: 12px; cursor:pointer;'>"
-			+__("Select Attachments")+"</h6><div class='attach-list'></div>\
-			<p class='add-more-attachments'>\
-			<a class='text-muted small'><i class='octicon octicon-plus' style='font-size: 12px'></i> "
-			+__("Add Attachment")+"</a></p>").appendTo(attach.empty())
+		$(`
+			<h6 class='text-muted add-attachment' style='margin-top: 12px; cursor:pointer;'>
+				${__("Select Attachments")}
+			</h6>
+			<div class='attach-list'></div>
+			<p class='add-more-attachments'>
+				<a class='text-muted small'>
+					<i class='octicon octicon-plus' style='font-size: 12px'></i>
+					${__("Add Attachment")}
+				</a>
+			</p>
+		`).appendTo(attach.empty());
+
 		attach
 			.find(".add-more-attachments a")
-			.on('click',() => new frappe.ui.FileUploader(args));
-		this.render_attach();
+			.on('click', () => new frappe.ui.FileUploader(args));
+		this.render_attachment_rows();
 	},
-	render_attach:function(){
-		var fields = this.dialog.fields_dict;
-		var attach = $(fields.select_attachments.wrapper).find(".attach-list").empty();
 
-		var files = [];
-		if (this.attachments && this.attachments.length) {
-			files = files.concat(this.attachments);
-		}
-		if (cur_frm) {
-			files = files.concat(cur_frm.get_files());
-		}
+	render_attachment_rows: function(attachment) {
+		const select_attachments = this.dialog.fields_dict.select_attachments;
+		const attachment_rows = $(select_attachments.wrapper).find(".attach-list");
+		if (attachment) {
+			attachment_rows.append(this.get_attachment_row(attachment, true));
+		} else {
+			let files = [];
+			if (this.attachments && this.attachments.length) {
+				files = files.concat(this.attachments);
+			}
+			if (this.frm) {
+				files = files.concat(this.frm.get_files());
+			}
 
-		if(files.length) {
-			$.each(files, function(i, f) {
-				if (!f.file_name) return;
-				f.file_url = frappe.urllib.get_full_url(f.file_url);
-
-				$(repl('<p class="checkbox">'
-					+	'<label><span><input type="checkbox" data-file-name="%(name)s"></input></span>'
-					+		'<span class="small">%(file_name)s</span>'
-					+	' <a href="%(file_url)s" target="_blank" class="text-muted small">'
-					+		'<i class="fa fa-share" style="vertical-align: middle; margin-left: 3px;"></i>'
-					+ '</label></p>', f))
-					.appendTo(attach)
-			});
-		}
-		this.select_attachments();
-	},
-	select_attachments:function(){
-		let me = this;
-		if(me.dialog.display) {
-			let wrapper = $(me.dialog.fields_dict.select_attachments.wrapper);
-
-			let unchecked_items = wrapper.find('[data-file-name]:not(:checked)').map(function() {
-				return $(this).attr("data-file-name");
-			});
-
-			$.each(unchecked_items, function(i, filename) {
-				wrapper.find('[data-file-name="'+ filename +'"]').prop("checked", true);
-			});
+			if (files.length) {
+				$.each(files, (i, f) => {
+					if (!f.file_name) return;
+					if (!attachment_rows.find(`[data-file-name="${f.name}"]`).length) {
+						f.file_url = frappe.urllib.get_full_url(f.file_url);
+						attachment_rows.append(this.get_attachment_row(f));
+					}
+				});
+			}
 		}
 	},
+
+	get_attachment_row(attachment, checked) {
+		return $(`<p class="checkbox">
+			<label>
+				<span>
+					<input
+						type="checkbox"
+						data-file-name="${attachment.name}"
+						${checked ? 'checked': ''}>
+					</input>
+				</span>
+				<span class="small">${attachment.file_name}</span>
+				<a href="${attachment.file_url}" target="_blank" class="text-muted small">
+				<i class="fa fa-share" style="vertical-align: middle; margin-left: 3px;"></i>
+			</label>
+		</p>`);
+	},
+
 	setup_email: function() {
 		// email
-		var me = this;
 		var fields = this.dialog.fields_dict;
 
 		if(this.attach_document_print) {
@@ -623,9 +613,20 @@ frappe.views.CommunicationComposer = Class.extend({
 		}
 	},
 
-	setup_earlier_reply: function() {
+	get_default_outgoing_email_account_signature: function() {
+		return frappe.db.get_value('Email Account', { 'default_outgoing': 1, 'add_signature': 1 }, 'signature');
+	},
+
+	setup_earlier_reply: async function() {
 		let fields = this.dialog.fields_dict;
 		let signature = frappe.boot.user.email_signature || "";
+
+		if (!signature) {
+			const res = await this.get_default_outgoing_email_account_signature();
+			if (res.message.signature) {
+				signature = "<!-- signature-included -->" + res.message.signature;
+			}
+		}
 
 		if(!frappe.utils.is_html(signature)) {
 			signature = signature.replace(/\n/g, "<br>");
@@ -640,10 +641,16 @@ frappe.views.CommunicationComposer = Class.extend({
 				this.message = localStorage.getItem(doctype + docname) || '';
 			}
 		}
+		
+		const SALUTATION_END_COMMENT = "<!-- salutation-ends -->";
+		this.message = this.message || '';
 
-		if(this.real_name) {
-			this.message = '<p>'+__('Dear') +' '
-				+ this.real_name + ",</p><!-- salutation-ends --><br>" + (this.message || "");
+		if (this.real_name && !this.message.includes(SALUTATION_END_COMMENT)) {
+			this.message = `
+				<p>${__('Dear {0},', [this.real_name], 'Salutation in new email')},</p>
+				${SALUTATION_END_COMMENT}<br>
+				${this.message}
+			`;
 		}
 
 		if(this.message && signature && this.message.includes(signature)) {
@@ -656,8 +663,7 @@ frappe.views.CommunicationComposer = Class.extend({
 		if (this.is_a_reply === 'undefined') {
 			this.is_a_reply = true;
 		}
-
-		if (this.is_a_reply) {
+		if (this.is_a_reply || this.forward) {
 			let last_email = this.last_email;
 
 			if (!last_email) {
@@ -678,11 +684,14 @@ frappe.views.CommunicationComposer = Class.extend({
 				last_email_content += '<div>' + __('Message clipped') + '</div>' + last_email_content;
 				last_email_content = last_email_content.slice(0, 20 * 1024);
 			}
-
+			const fwd = this.forward ? "<b>Forwarded Message</b><br>" : "";
 			let communication_date = last_email.communication_date || last_email.creation;
 			content = `
 				<div><br></div>
-				${reply}
+				${this.message || ''}
+				${frappe.separator_element}
+				${fwd}
+				${signature || ''}
 				${frappe.separator_element}
 				<p>${__("On {0}, {1} wrote:", [frappe.datetime.global_date_format(communication_date) , last_email.sender])}</p>
 				<blockquote>
@@ -707,4 +716,3 @@ frappe.views.CommunicationComposer = Class.extend({
 		return text.replace(/\n{3,}/g, '\n\n');
 	}
 });
-

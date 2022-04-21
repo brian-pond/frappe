@@ -114,7 +114,7 @@ frappe.ui.form.Control = Class.extend({
 				if (!this.doc.__islocal) {
 					new frappe.views.TranslationManager({
 						'df': this.df,
-						'source_name': value,
+						'source_name': this.value,
 						'target_language': this.doc.language,
 						'doc': this.doc
 					});
@@ -142,9 +142,13 @@ frappe.ui.form.Control = Class.extend({
 	},
 	validate_and_set_in_model: function(value, e) {
 		var me = this;
-		if(this.inside_change_event) {
+		let force_value_set = (this.doc && this.doc.__run_link_triggers);
+		let is_value_same = (this.get_model_value() === value);
+
+		if (this.inside_change_event || (!force_value_set && is_value_same)) {
 			return Promise.resolve();
 		}
+
 		this.inside_change_event = true;
 		var set = function(value) {
 			me.inside_change_event = false;
@@ -155,8 +159,11 @@ frappe.ui.form.Control = Class.extend({
 
 					if(me.df.change || me.df.onchange) {
 						// onchange event specified in df
-						return (me.df.change || me.df.onchange).apply(me, [e]);
+						let set = (me.df.change || me.df.onchange).apply(me, [e]);
+						me.set_invalid && me.set_invalid();
+						return set;
 					}
+					me.set_invalid && me.set_invalid();
 				}
 			]);
 		};

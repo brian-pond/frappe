@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
 from __future__ import unicode_literals, print_function
@@ -12,63 +12,106 @@ from six import iteritems, text_type, string_types, PY2
 	Translation tools for frappe
 """
 
-import frappe, os, re, io, codecs, json
-from frappe.model.utils import render_include, InvalidIncludePath
-from frappe.utils import strip, strip_html_tags, is_html
-from jinja2 import TemplateError
-import itertools, operator
+import io
+import itertools
+import json
+import operator
+import os
+import re
+from csv import reader
+
+import frappe
+from frappe.model.utils import InvalidIncludePath, render_include
+from frappe.utils import is_html, strip, strip_html_tags
+
 
 def guess_language(lang_list=None):
-	"""Set `frappe.local.lang` from HTTP headers at beginning of request"""
-	lang_codes = frappe.request.accept_languages.values()
-	if not lang_codes:
+	"""Set `frappe.local.lang` from HTTP headers at beginning of request
+
+	Order of priority for setting language:
+	1. Form Dict => _lang
+	2. Cookie => preferred_language (Non authorized user)
+	3. Request Header => Accept-Language (Non authorized user)
+	4. User document => language
+	5. System Settings => language
+	"""
+	is_logged_in = frappe.session.user != "Guest"
+
+	# fetch language from form_dict
+	if frappe.form_dict._lang:
+		language = get_lang_code(
+			frappe.form_dict._lang or get_parent_language(frappe.form_dict._lang)
+		)
+		if language:
+			return language
+
+	# use language set in User or System Settings if user is logged in
+	if is_logged_in:
 		return frappe.local.lang
 
-	guess = None
-	if not lang_list:
-		lang_list = get_all_languages() or []
+	lang_set = set(lang_list or get_all_languages() or [])
 
-	for l in lang_codes:
-		code = l.strip()
-		if not isinstance(code, text_type):
-			code = text_type(code, 'utf-8')
-		if code in lang_list or code == "en":
-			guess = code
-			break
+	# fetch language from cookie
+	preferred_language_cookie = frappe.request.cookies.get('preferred_language')
 
-		# check if parent language (pt) is setup, if variant (pt-BR)
-		if "-" in code:
-			code = code.split("-")[0]
-			if code in lang_list:
-				guess = code
-				break
+	if preferred_language_cookie:
+		if preferred_language_cookie in lang_set:
+			return preferred_language_cookie
 
-	return guess or frappe.local.lang
+		parent_language = get_parent_language(language)
+		if parent_language in lang_set:
+			return parent_language
+
+	# fetch language from request headers
+	accept_language = list(frappe.request.accept_languages.values())
+
+	for language in accept_language:
+		if language in lang_set:
+			return language
+
+		parent_language = get_parent_language(language)
+		if parent_language in lang_set:
+			return parent_language
+
+	# fallback to language set in User or System Settings
+	return frappe.local.lang
+
+
+def get_parent_language(lang):
+	"""If the passed language is a variant, return its parent
+
+	Eg:
+		1. zh-TW -> zh
+		2. sr-BA -> sr
+	"""
+	is_language_variant = "-" in lang
+	if is_language_variant:
+		return lang[:lang.index("-")]
+
 
 def get_user_lang(user=None):
 	"""Set frappe.local.lang from user preferences on session beginning or resumption"""
-	if not user:
-		user = frappe.session.user
-
-	# via cache
+	user = user or frappe.session.user
 	lang = frappe.cache().hget("lang", user)
 
 	if not lang:
-
-		# if defined in user profile
-		lang = frappe.db.get_value("User", user, "language")
-		if not lang:
-			lang = frappe.db.get_default("lang")
-
-		if not lang:
-			lang = frappe.local.lang or 'en'
+		# User.language => Session Defaults => frappe.local.lang => 'en'
+		lang = (
+			frappe.db.get_value("User", user, "language")
+			or frappe.db.get_default("lang")
+			or frappe.local.lang
+			or "en"
+		)
 
 		frappe.cache().hset("lang", user, lang)
 
 	return lang
 
 def get_lang_code(lang):
-	return frappe.db.get_value('Language', {'language_name': lang}) or lang
+	return (
+		frappe.db.get_value("Language", {"name": lang})
+		or frappe.db.get_value("Language", {"language_name": lang})
+	)
 
 def set_default_language(lang):
 	"""Set Global default language"""
@@ -117,7 +160,7 @@ def get_dict(fortype, name=None):
 			messages += frappe.db.sql("select 'Role:', name from tabRole")
 			messages += frappe.db.sql("select 'Module:', name from `tabModule Def`")
 
-		message_dict = make_dict_from_messages(messages)
+		message_dict = make_dict_from_messages(messages, load_user_translation=False)
 		message_dict.update(get_dict_from_hooks(fortype, name))
 		# remove untranslated
 		message_dict = {k:v for k, v in iteritems(message_dict) if k!=v}
@@ -125,8 +168,8 @@ def get_dict(fortype, name=None):
 		cache.hset("translation_assets", frappe.local.lang, translation_assets, shared=True)
 
 	translation_map = translation_assets[asset_key]
-	if fortype == "boot":
-		translation_map.update(get_user_translations(frappe.local.lang))
+
+	translation_map.update(get_user_translations(frappe.local.lang))
 
 	return translation_map
 
@@ -152,14 +195,17 @@ def add_lang_dict(code):
 	code += "\n\n$.extend(frappe._messages, %s)" % json.dumps(make_dict_from_messages(messages))
 	return code
 
-def make_dict_from_messages(messages, full_dict=None):
+def make_dict_from_messages(messages, full_dict=None, load_user_translation=True):
 	"""Returns translated messages as a dict in Language specified in `frappe.local.lang`
 
 	:param messages: List of untranslated messages
 	"""
 	out = {}
 	if full_dict==None:
-		full_dict = get_full_dict(frappe.local.lang)
+		if load_user_translation:
+			full_dict = get_full_dict(frappe.local.lang)
+		else:
+			full_dict = load_lang(frappe.local.lang)
 
 	for m in messages:
 		if m[1] in full_dict:
@@ -192,11 +238,9 @@ def get_full_dict(lang):
 	try:
 		# get user specific transaltion data
 		user_translations = get_user_translations(lang)
-	except Exception:
-		user_translations = None
-
-	if user_translations:
 		frappe.local.lang_full_dict.update(user_translations)
+	except Exception:
+		pass
 
 	return frappe.local.lang_full_dict
 
@@ -515,6 +559,7 @@ def extract_messages_from_code(code, is_py=False):
 
 	:param code: code from which translatable files are to be extracted
 	:param is_py: include messages in triple quotes e.g. `_('''message''')`"""
+	from jinja2 import TemplateError
 	try:
 		code = frappe.as_unicode(render_include(code))
 	except (TemplateError, ImportError, InvalidIncludePath, IOError):
@@ -555,6 +600,7 @@ def read_csv_file(path):
 	from csv import reader
 
 	if PY2:
+		import codecs
 		with codecs.open(path, 'r', 'utf-8') as msgfile:
 			data = msgfile.read()
 
@@ -577,13 +623,13 @@ def write_csv_file(path, app_messages, lang_dict):
 	"""
 	app_messages.sort(key = lambda x: x[1])
 	from csv import writer
-	with open(path, 'wb') as msgfile:
+	with open(path, 'w', newline='') as msgfile:
 		w = writer(msgfile, lineterminator='\n')
 		for p, m in app_messages:
 			t = lang_dict.get(m, '')
 			# strip whitespaces
 			t = re.sub('{\s?([0-9]+)\s?}', "{\g<1>}", t)
-			w.writerow([p.encode('utf-8') if p else '', m.encode('utf-8'), t.encode('utf-8')])
+			w.writerow([p if p else '', m, t])
 
 def get_untranslated(lang, untranslated_file, get_all=False):
 	"""Returns all untranslated strings for a language and writes in a file
@@ -608,7 +654,7 @@ def get_untranslated(lang, untranslated_file, get_all=False):
 
 	if get_all:
 		print(str(len(messages)) + " messages")
-		with open(untranslated_file, "w") as f:
+		with open(untranslated_file, "wb") as f:
 			for m in messages:
 				# replace \n with ||| so that internal linebreaks don't get split
 				f.write((escape_newlines(m[1]) + os.linesep).encode("utf-8"))
@@ -621,7 +667,7 @@ def get_untranslated(lang, untranslated_file, get_all=False):
 
 		if untranslated:
 			print(str(len(untranslated)) + " missing translations of " + str(len(messages)))
-			with open(untranslated_file, "w") as f:
+			with open(untranslated_file, "wb") as f:
 				for m in untranslated:
 					# replace \n with ||| so that internal linebreaks don't get split
 					f.write((escape_newlines(m) + os.linesep).encode("utf-8"))
@@ -727,7 +773,10 @@ def update_translations_for_source(source=None, translation_dict=None):
 		return
 
 	translation_dict = json.loads(translation_dict)
-
+	
+	if is_html(source):
+		source = strip_html_tags(source)
+	
 	# for existing records
 	translation_records = frappe.db.get_values('Translation', { 'source_name': source }, ['name', 'language'],  as_dict=1)
 	for d in translation_records:

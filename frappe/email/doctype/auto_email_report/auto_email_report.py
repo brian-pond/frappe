@@ -15,8 +15,6 @@ from frappe.utils import (format_time, get_link_to_form, get_url_to_report,
 from frappe.utils.csvutils import to_csv
 from frappe.utils.xlsxutils import make_xlsx
 
-max_reports_per_user = frappe.local.conf.max_reports_per_user or 3
-
 
 class AutoEmailReport(Document):
 	def autoname(self):
@@ -26,6 +24,7 @@ class AutoEmailReport(Document):
 		self.validate_report_count()
 		self.validate_emails()
 		self.validate_report_format()
+		self.validate_mandatory_fields()
 
 	def validate_emails(self):
 		'''Cleanup list of emails'''
@@ -43,6 +42,8 @@ class AutoEmailReport(Document):
 	def validate_report_count(self):
 		'''check that there are only 3 enabled reports per user'''
 		count = frappe.db.sql('select count(*) from `tabAuto Email Report` where user=%s and enabled=1', self.user)[0][0]
+		max_reports_per_user = frappe.local.conf.max_reports_per_user or 3
+
 		if count > max_reports_per_user + (-1 if self.flags.in_insert else 0):
 			frappe.throw(_('Only {0} emailed reports are allowed per user').format(max_reports_per_user))
 
@@ -52,6 +53,21 @@ class AutoEmailReport(Document):
 		if self.format not in valid_report_formats:
 			frappe.throw(_("%s is not a valid report format. Report format should \
 				one of the following %s"%(frappe.bold(self.format), frappe.bold(", ".join(valid_report_formats)))))
+
+	def validate_mandatory_fields(self):
+		# Check if all Mandatory Report Filters are filled by the User
+		filters = frappe.parse_json(self.filters) if self.filters else {}
+		filter_meta = frappe.parse_json(self.filter_meta) if self.filter_meta else {}
+		throw_list = []
+		for meta in filter_meta:
+			if meta.get("reqd") and not filters.get(meta["fieldname"]):
+				throw_list.append(meta['label'])
+		if throw_list:
+			frappe.throw(
+				title= _('Missing Filters Required'),
+				msg= _('Following Report Filters have missing values:') +
+					'<br><br><ul><li>' + ' <li>'.join(throw_list) + '</ul>',
+			)
 
 	def get_report_content(self):
 		'''Returns file in for the report in given format'''
@@ -78,7 +94,7 @@ class AutoEmailReport(Document):
 
 		if self.format == 'HTML':
 			columns, data = make_links(columns, data)
-
+			columns = update_field_types(columns)
 			return self.get_html_table(columns, data)
 
 		elif self.format == 'XLSX':
@@ -227,11 +243,23 @@ def send_monthly():
 def make_links(columns, data):
 	for row in data:
 		for col in columns:
-			if col.fieldtype == "Link" and col.options != "Currency":
-				if col.options and row.get(col.fieldname):
+			if not row.get(col.fieldname):
+				continue
+			
+			if col.fieldtype == "Link":
+				if col.options and col.options != "Currency":
 					row[col.fieldname] = get_link_to_form(col.options, row[col.fieldname])
 			elif col.fieldtype == "Dynamic Link":
-				if col.options and row.get(col.fieldname) and row.get(col.options):
+				if col.options and row.get(col.options):
 					row[col.fieldname] = get_link_to_form(row[col.options], row[col.fieldname])
+			elif col.fieldtype == "Currency":
+				row[col.fieldname] = frappe.format_value(row[col.fieldname], col)
 
 	return columns, data
+
+def update_field_types(columns):
+	for col in columns:
+		if col.fieldtype in  ("Link", "Dynamic Link", "Currency")  and col.options != "Currency":
+			col.fieldtype = "Data"
+			col.options = ""
+	return columns

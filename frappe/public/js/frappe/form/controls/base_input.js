@@ -126,25 +126,6 @@ frappe.ui.form.ControlInput = frappe.ui.form.Control.extend({
 		let display_value = frappe.format(value, this.df, { no_icon: true, inline: true }, doc);
 		this.disp_area && $(this.disp_area).html(display_value);
 	},
-
-	bind_change_event: function() {
-		var me = this;
-		this.$input && this.$input.on("change", this.change || function(e) {
-			me.parse_validate_and_set_in_model(me.get_input_value(), e);
-		});
-	},
-	bind_focusout: function() {
-		// on touchscreen devices, scroll to top
-		// so that static navbar and page head don't overlap the input
-		if (frappe.dom.is_touchscreen()) {
-			var me = this;
-			this.$input && this.$input.on("focusout", function() {
-				if (frappe.dom.is_touchscreen()) {
-					frappe.utils.scroll_to(me.$wrapper);
-				}
-			});
-		}
-	},
 	set_label: function(label) {
 		if(label) this.df.label = label;
 
@@ -178,6 +159,16 @@ frappe.ui.form.ControlInput = frappe.ui.form.Control.extend({
 	},
 	set_mandatory: function(value) {
 		this.$wrapper.toggleClass("has-error", (this.df.reqd && is_null(value)) ? true : false);
+	},
+	set_invalid: function () {
+		let invalid = !!this.df.invalid;
+		if (this.grid) {
+			this.$wrapper.parents('.grid-static-col').toggleClass('invalid', invalid);
+			this.$input.toggleClass('invalid', invalid);
+			this.grid_row.columns[this.df.fieldname].is_invalid = invalid;
+		} else {
+			this.$wrapper.toggleClass('has-error', invalid);
+		}
 	},
 	set_bold: function() {
 		if(this.$input) {

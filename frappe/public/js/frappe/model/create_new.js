@@ -292,7 +292,7 @@ $.extend(frappe.model, {
 			opts.source_name = opts.frm.doc.name;
 
 		// Allow opening a mapped doc without a source document name
-		} else if (!opts.frm) {
+		} else if (!opts.frm && !opts.source_name) {
 			opts.source_name = null;
 		}
 
@@ -306,6 +306,7 @@ $.extend(frappe.model, {
 				selected_children: opts.frm ? opts.frm.get_selected() : null
 			},
 			freeze: true,
+			freeze_message: opts.freeze_message || '',
 			callback: function(r) {
 				if(!r.exc) {
 					frappe.model.sync(r.message);

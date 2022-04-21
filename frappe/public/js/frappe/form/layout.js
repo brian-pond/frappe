@@ -113,7 +113,7 @@ frappe.ui.form.Layout = Class.extend({
 			label: __('Dashboard'),
 			cssClass: 'form-dashboard',
 			collapsible: 1,
-			//hidden: 1
+			// hidden: 1
 		});
 	},
 
@@ -404,7 +404,8 @@ frappe.ui.form.Layout = Class.extend({
 					// next row
 					grid_row.grid.grid_rows[grid_row.doc.idx].toggle_view(true);
 				}
-			} else {
+			} else if (!shift) {
+				// End of tab navigation
 				$(this.primary_button).focus();
 			}
 		}

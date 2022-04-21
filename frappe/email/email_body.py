@@ -18,8 +18,8 @@ if PY3:
 
 def get_email(recipients, sender='', msg='', subject='[No Subject]',
 	text_content = None, footer=None, print_html=None, formatted=None, attachments=None,
-	content=None, reply_to=None, cc=[], bcc=[], email_account=None, expose_recipients=None,
-	inline_images=[], header=None):
+	content=None, reply_to=None, cc=None, bcc=None, email_account=None, expose_recipients=None,
+	inline_images=None, header=None):
 	""" Prepare an email with the following format:
 		- multipart/mixed
 			- multipart/alternative
@@ -29,6 +29,14 @@ def get_email(recipients, sender='', msg='', subject='[No Subject]',
 					- inline image
 				- attachment
 	"""
+
+	if cc is None:
+		cc = []
+	if bcc is None:
+		bcc = []
+	if inline_images is None:
+		inline_images = []
+
 	content = content or msg
 	emailobj = EMail(sender, recipients, subject, reply_to=reply_to, cc=cc, bcc=bcc, email_account=email_account, expose_recipients=expose_recipients)
 
@@ -270,10 +278,14 @@ def get_formatted_html(subject, message, footer=None, print_html=None,
 	if not email_account:
 		email_account = get_outgoing_email_account(False, sender=sender)
 
+	signature = None
+	if "<!-- signature-included -->" not in message:
+		signature = get_signature(email_account)
+
 	rendered_email = frappe.get_template("templates/emails/standard.html").render({
 		"header": get_header(header),
 		"content": message,
-		"signature": get_signature(email_account),
+		"signature": signature,
 		"footer": get_footer(email_account, footer),
 		"title": subject,
 		"print_html": print_html,

@@ -60,10 +60,6 @@ class EmailServer:
 			frappe.msgprint(_('Invalid Mail Server. Please rectify and try again.'))
 			raise
 
-		except Exception as e:
-			frappe.msgprint(_('Cannot connect: {0}').format(str(e)))
-			raise
-
 	def connect_pop(self):
 		#this method return pop connection
 		try:
@@ -332,7 +328,7 @@ class EmailServer:
 
 		return error_msg
 
-	def update_flag(self, uid_list={}):
+	def update_flag(self, uid_list=None):
 		""" set all uids mails the flag as seen  """
 
 		if not uid_list:

@@ -117,14 +117,16 @@ export default class GridRowForm {
 		});
 	}
 	toggle_add_delete_button_display($parent) {
-		$parent.find(".row-actions")
+		$parent.find(".row-actions, .grid-append-row")
 			.toggle(this.row.grid.is_editable());
 	}
 	refresh_field(fieldname) {
-		if(this.fields_dict[fieldname]) {
-			this.fields_dict[fieldname].refresh();
-			this.layout && this.layout.refresh_dependency();
-		}
+		const field = this.fields_dict[fieldname];
+		if (!field) return;
+
+		field.docname = this.row.doc.name;
+		field.refresh();
+		this.layout && this.layout.refresh_dependency();
 	}
 	set_focus() {
 		// wait for animation and then focus on the first row

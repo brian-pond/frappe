@@ -7,6 +7,7 @@
 import Awesomplete from 'awesomplete';
 
 frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
+	trigger_change_on_input_event: false,
 	make_input: function() {
 		var me = this;
 		// line-height: 1 is for Mozilla 51, shows extra padding otherwise
@@ -49,6 +50,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 		this.translate_values = true;
 		this.setup_buttons();
 		this.setup_awesomeplete();
+		this.bind_change_event();
 	},
 	get_options: function() {
 		return this.df.options;
@@ -189,10 +191,11 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 						if(frappe.model.can_create(doctype)) {
 							// new item
 							r.results.push({
-								label: "<span class='text-primary link-option'>"
+								html: "<span class='text-primary link-option'>"
 									+ "<i class='fa fa-plus' style='margin-right: 5px;'></i> "
 									+ __("Create a new {0}", [__(me.get_options())])
 									+ "</span>",
+								label: __("Create a new {0}", [__(me.get_options())]),
 								value: "create_new__link_option",
 								action: me.new_doc
 							});
@@ -202,10 +205,11 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 						if (locals && locals['DocType']) {
 							// not applicable in web forms
 							r.results.push({
-								label: "<span class='text-primary link-option'>"
+								html: "<span class='text-primary link-option'>"
 									+ "<i class='fa fa-search' style='margin-right: 5px;'></i> "
 									+ __("Advanced Search")
 									+ "</span>",
+								label: __("Advanced Search"),
 								value: "advanced_search__link_option",
 								action: me.open_advanced_search
 							});

@@ -16,21 +16,49 @@ def update_document_title(doctype, docname, title_field=None, old_title=None, ne
 	"""
 		Update title from header in form view
 	"""
-	if docname and new_name and not docname == new_name:
+
+	for key, val in [("docname", docname), ("new_title", new_title), ("new_name", new_name)]:
+		if not isinstance(val, (str, type(None))):
+			frappe.throw("{0}={1} must be of type str or None".format(key, val))
+
+	doc = frappe.get_doc(doctype, docname)
+	doc.check_permission(permtype="write")
+
+	title_field = doc.meta.get_title_field()
+
+	title_updated = new_title and (title_field != "name") and (new_title != doc.get(title_field))
+	name_updated = new_name and (new_name != doc.name)
+
+	if name_updated:
 		docname = rename_doc(doctype=doctype, old=docname, new=new_name, merge=merge)
 
-	if old_title and new_title and not old_title == new_title:
-		frappe.db.set_value(doctype, docname, title_field, new_title)
-		frappe.msgprint(_('Saved'), alert=True, indicator='green')
+	if title_updated:
+		try:
+			frappe.db.set_value(doctype, docname, title_field, new_title)
+			frappe.msgprint(_('Saved'), alert=True, indicator='green')
+		except Exception as e:
+			if frappe.db.is_duplicate_entry(e):
+				frappe.throw(
+					_("{0} {1} already exists").format(doctype, frappe.bold(docname)),
+					title=_("Duplicate Name"),
+					exc=frappe.DuplicateEntryError
+				)
+			raise
 
 	return docname
 
-@frappe.whitelist()
-def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=False, ignore_if_exists=False):
-	"""
-		Renames a doc(dt, old) to doc(dt, new) and
-		updates all linked fields of type "Link"
-	"""
+def rename_doc(
+	doctype,
+	old,
+	new,
+	force=False,
+	merge=False,
+	ignore_permissions=False,
+	ignore_if_exists=False,
+	show_alert=True,
+	rebuild_search=True
+):
+	"""Rename a doc(dt, old) to doc(dt, new) and update all linked fields of type "Link"."""
 	if not frappe.db.exists(doctype, old):
 		return
 
@@ -43,7 +71,6 @@ def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=F
 
 	force = cint(force)
 	merge = cint(merge)
-
 	meta = frappe.get_meta(doctype)
 
 	# call before_rename
@@ -68,6 +95,7 @@ def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=F
 
 	if doctype=='DocType':
 		rename_doctype(doctype, old, new, force)
+		update_customizations(old, new)
 
 	update_attachments(doctype, old, new)
 
@@ -97,8 +125,11 @@ def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=F
 		frappe.delete_doc(doctype, old)
 
 	frappe.clear_cache()
-	frappe.enqueue('frappe.utils.global_search.rebuild_for_doctype', doctype=doctype)
-	frappe.msgprint(_('Document renamed from {0} to {1}').format(bold(old), bold(new)), alert=True, indicator='green')
+	if rebuild_search:
+		frappe.enqueue('frappe.utils.global_search.rebuild_for_doctype', doctype=doctype)
+
+	if show_alert:
+		frappe.msgprint(_('Document renamed from {0} to {1}').format(bold(old), bold(new)), alert=True, indicator='green')
 
 	return new
 
@@ -135,6 +166,8 @@ def update_user_settings(old, new, link_fields):
 		else:
 			continue
 
+def update_customizations(old, new):
+	frappe.db.set_value("Custom DocPerm", {"parent": old}, "parent", new, update_modified=False)
 
 def update_attachments(doctype, old, new):
 	try:
@@ -225,8 +258,17 @@ def update_link_field_values(link_fields, old, new, doctype):
 				# or no longer exists
 				pass
 		else:
-			# because the table hasn't been renamed yet!
-			parent = field['parent'] if field['parent']!=new else old
+			parent = field['parent']
+
+			# Handles the case where one of the link fields belongs to
+			# the DocType being renamed.
+			# Here this field could have the current DocType as its value too.
+
+			# In this case while updating link field value, the field's parent
+			# or the current DocType table name hasn't been renamed yet,
+			# so consider it's old name.
+			if parent == new and doctype == "DocType":
+				parent = old
 
 			frappe.db.sql("""
 				update `tab{table_name}` set `{fieldname}`=%s
@@ -282,8 +324,7 @@ def get_link_fields(doctype):
 
 def update_options_for_fieldtype(fieldtype, old, new):
 	if frappe.conf.developer_mode:
-		for name in frappe.db.sql_list("""select parent from
-			tabDocField where options=%s""", old):
+		for name in frappe.db.sql_list("""select parent from tabDocField where options=%s""", old):
 			doctype = frappe.get_doc("DocType", name)
 			save = False
 			for f in doctype.fields:
@@ -390,19 +431,19 @@ def update_parenttype_values(old, new):
 	fields = [d['fieldname'] for d in child_doctypes]
 
 	property_setter_child_doctypes = frappe.db.sql("""\
-		select value as options from `tabProperty Setter`
-		where doc_type=%s and property='options' and
-		field_name in ("%s")""" % ('%s', '", "'.join(fields)),
-		(new,))
+		select
+			value as options
+		from `tabProperty Setter`
+		where
+			doc_type=%s
+			and property='options'
+			and field_name in ('%s')""" % ('%s', '", "'.join(fields)), (new,))
 
+	child_doctypes = list(d['options'] for d in child_doctypes)
 	child_doctypes += property_setter_child_doctypes
-	child_doctypes = (d['options'] for d in child_doctypes)
 
 	for doctype in child_doctypes:
-		frappe.db.sql("""\
-			update `tab%s` set parenttype=%s
-			where parenttype=%s""" % (doctype, '%s', '%s'),
-		(new, old))
+		frappe.db.sql("update `tab{doctype}` set parenttype=%s where parenttype=%s".format(doctype=doctype), (new, old))
 
 def rename_dynamic_links(doctype, old, new):
 	for df in get_dynamic_link_map().get(doctype, []):
@@ -438,7 +479,7 @@ def bulk_rename(doctype, rows=None, via_console = False):
 		# if row has some content
 		if len(row) > 1 and row[0] and row[1]:
 			try:
-				if rename_doc(doctype, row[0], row[1]):
+				if rename_doc(doctype, row[0], row[1], rebuild_search=False):
 					msg = _("Successful: {0} to {1}").format(row[0], row[1])
 					frappe.db.commit()
 				else:
@@ -486,7 +527,6 @@ def get_fetch_fields(doctype, linked_to, ignore_doctypes=None):
 	"""
 		doctype = Master DocType in which the changes are being made
 		linked_to = DocType name of the field thats being updated in Master
-
 		This function fetches list of all DocType where both doctype and linked_to is found
 		as link fields.
 		Forms a list of dict in the form -

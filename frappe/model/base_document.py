@@ -60,9 +60,12 @@ def get_controller(doctype):
 	return _classes[doctype]
 
 class BaseDocument(object):
-	ignore_in_getter = ("doctype", "_meta", "meta", "_table_fields", "_valid_columns")
+	ignore_in_setter = ("doctype", "_meta", "meta", "_table_fields", "_valid_columns")
 
 	def __init__(self, d):
+		if d.get("doctype"):
+			self.doctype = d["doctype"]
+
 		self.update(d)
 		self.dont_update_if_missing = []
 
@@ -91,14 +94,18 @@ class BaseDocument(object):
 		return self
 
 	def update_if_missing(self, d):
+		"""Set default values for fields without existing values"""
 		if isinstance(d, BaseDocument):
 			d = d.get_valid_dict()
 
-		if "doctype" in d:
-			self.set("doctype", d.get("doctype"))
 		for key, value in iteritems(d):
-			# dont_update_if_missing is a list of fieldnames, for which, you don't want to set default value
-			if (self.get(key) is None) and (value is not None) and (key not in self.dont_update_if_missing):
+			if (
+				value is not None
+				and self.get(key) is None
+				# dont_update_if_missing is a list of fieldnames
+				# for which you don't want to set default value
+				and key not in self.dont_update_if_missing
+			):
 				self.set(key, value)
 
 	def get_db_value(self, key):
@@ -118,10 +125,17 @@ class BaseDocument(object):
 			else:
 				value = self.__dict__.get(key, default)
 
-			if value is None and key not in self.ignore_in_getter \
-				and key in (d.fieldname for d in self.meta.get_table_fields()):
-				self.set(key, [])
-				value = self.__dict__.get(key)
+			if value is None and key in (
+				d.fieldname for d in self.meta.get_table_fields()
+			):
+				value = []
+				self.set(key, value)
+
+			if limit and isinstance(value, (list, tuple)) and len(value) > limit:
+				value = value[:limit]
+
+			if limit and isinstance(value, (list, tuple)) and len(value) > limit:
+				value = value[:limit]
 
 			return value
 		else:
@@ -131,6 +145,9 @@ class BaseDocument(object):
 		return self.get(key, filters=filters, limit=1)[0]
 
 	def set(self, key, value, as_value=False):
+		if key in self.ignore_in_setter:
+			return
+
 		if isinstance(value, list) and not as_value:
 			self.__dict__[key] = []
 			self.extend(key, value)
@@ -181,10 +198,9 @@ class BaseDocument(object):
 		if not self.doctype:
 			return value
 		if not isinstance(value, BaseDocument):
-			if "doctype" not in value or value['doctype'] is None:
-				value["doctype"] = self.get_table_field_doctype(key)
-				if not value["doctype"]:
-					raise AttributeError(key)
+			value["doctype"] = self.get_table_field_doctype(key)
+			if not value["doctype"]:
+				raise AttributeError(key)
 
 			value = get_controller(value["doctype"])(value)
 			value.init_valid_columns()
@@ -234,7 +250,12 @@ class BaseDocument(object):
 				if isinstance(d[fieldname], list) and df.fieldtype not in table_fields:
 					frappe.throw(_('Value for {0} cannot be a list').format(_(df.label)))
 
-			if convert_dates_to_str and isinstance(d[fieldname], (datetime.datetime, datetime.time, datetime.timedelta)):
+			if convert_dates_to_str and isinstance(d[fieldname], (
+				datetime.datetime,
+				datetime.date,
+				datetime.time,
+				datetime.timedelta
+			)):
 				d[fieldname] = str(d[fieldname])
 
 			if d[fieldname] == None and ignore_nulls:
@@ -747,16 +768,21 @@ class BaseDocument(object):
 			from frappe.model.meta import get_default_df
 			df = get_default_df(fieldname)
 
+		if df and not currency:
+			currency = self.get(df.get("options"))
+			if not frappe.db.exists('Currency', currency, cache=True):
+				currency = None
+
 		val = self.get(fieldname)
 
 		if translated:
 			val = _(val)
 
-		if absolute_value and isinstance(val, (int, float)):
-			val = abs(self.get(fieldname))
-
 		if not doc:
 			doc = getattr(self, "parent_doc", None) or self
+
+		if (absolute_value or doc.get('absolute_value')) and isinstance(val, (int, float)):
+			val = abs(self.get(fieldname))
 
 		return format_value(val, df=df, doc=doc, currency=currency)
 
@@ -866,15 +892,12 @@ def _filter(data, filters, limit=None):
 			_filters[f] = fval
 
 	for d in data:
-		add = True
 		for f, fval in iteritems(_filters):
 			if not frappe.compare(getattr(d, f, None), fval[0], fval[1]):
-				add = False
 				break
-
-		if add:
+		else:
 			out.append(d)
-			if limit and (len(out)-1)==limit:
+			if limit and len(out) >= limit:
 				break
 
 	return out

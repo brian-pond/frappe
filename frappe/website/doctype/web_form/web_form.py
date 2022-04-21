@@ -14,6 +14,7 @@ from frappe.modules.utils import export_module_json, get_doc_module
 from six.moves.urllib.parse import urlencode
 from frappe.integrations.utils import get_payment_gateway_controller
 from six import iteritems
+from frappe.permissions import has_web_form_permission
 
 
 class WebForm(WebsiteGenerator):
@@ -211,6 +212,11 @@ def get_context(context):
 			amount = self.amount
 			if self.amount_based_on_field:
 				amount = doc.get(self.amount_field)
+
+			from decimal import Decimal
+			if amount is None or Decimal(amount) <= 0:
+				return frappe.utils.get_url(self.success_url or self.route)
+				
 			payment_details = {
 				"amount": amount,
 				"title": title,
@@ -460,31 +466,6 @@ def delete_multiple(web_form_name, docnames):
 
 	if restricted_docnames:
 		raise frappe.PermissionError("You do not have permisssion to delete " + ", ".join(restricted_docnames))
-
-
-def has_web_form_permission(doctype, name, ptype='read'):
-	if frappe.session.user=="Guest":
-		return False
-
-	# owner matches
-	elif frappe.db.get_value(doctype, name, "owner")==frappe.session.user:
-		return True
-
-	elif frappe.has_website_permission(name, ptype=ptype, doctype=doctype):
-		return True
-
-	elif check_webform_perm(doctype, name):
-		return True
-
-	else:
-		return False
-
-
-def check_webform_perm(doctype, name):
-	doc = frappe.get_doc(doctype, name)
-	if hasattr(doc, "has_webform_permission"):
-		if doc.has_webform_permission():
-			return True
 
 @frappe.whitelist(allow_guest=True)
 def get_web_form_filters(web_form_name):
