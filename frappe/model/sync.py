@@ -6,7 +6,6 @@ from __future__ import unicode_literals, print_function
 	Sync's doctype and docfields from txt files to database
 	perms will get synced only if none exist
 """
-
 import pathlib
 import frappe
 import os

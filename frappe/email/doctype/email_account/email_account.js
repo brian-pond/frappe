@@ -222,5 +222,4 @@ frappe.ui.form.on("Email Account", {
 			});
 		}
 	}
-
 });

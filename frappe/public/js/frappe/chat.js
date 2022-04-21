@@ -6,9 +6,12 @@
 
 import Fuse   from 'fuse.js'
 import hyper  from '../lib/hyper.min'
+
 import './socketio_client'
+
 import './ui/dialog'
 import './ui/capture'
+
 import './utils/user'
 
 /* eslint semi: "never" */

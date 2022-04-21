@@ -233,7 +233,6 @@ def get_site_config(sites_path=None, site_path=None):
 
 	if site_path:
 		site_config = os.path.join(site_path, "site_config.json")
-
 		if os.path.exists(site_config):
 			config.update(get_file_json(site_config))
 		elif local.site and not local.flags.new_site:
@@ -906,7 +905,6 @@ def get_module_path(module, *joins):
 
 	:param module: Module name.
 	:param *joins: Join additional path elements using `os.path.join`."""
-
 	module = scrub(module)
 	try:
 		return get_pymodule_path(local.module_app[module] + "." + module, *joins)
@@ -1032,7 +1030,6 @@ def get_hooks(hook=None, default=None, app_name=None):
 
 	if app_name:
 		hooks = _dict(load_app_hooks(app_name))
-		
 	else:
 		if no_cache:
 			hooks = _dict(load_app_hooks())

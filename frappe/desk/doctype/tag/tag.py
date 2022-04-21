@@ -93,7 +93,6 @@ class DocTags:
 			frappe.db.sql("update `tab%s` set _user_tags=%s where name=%s" % \
 				(self.dt,'%s','%s'), (tags , dn))
 			doc= frappe.get_doc(self.dt, dn)
-
 			update_tags(doc, tags)
 		except Exception as e:
 			if frappe.db.is_column_missing(e):
@@ -155,10 +154,10 @@ def update_tags(doc, tags):
 			delete_tag_for_document(doc.doctype, doc.name, tag)
 
 def get_deleted_tags(new_tags, existing_tags):
+
 	return list(set(existing_tags) - set(new_tags))
 
 def delete_tag_for_document(dt, dn, tag):
-	# frappe.msgprint(f"Unlinked tag {tag} from this document.")
 	frappe.db.sql("""DELETE FROM `tabTag Link` WHERE `document_type`=%s AND `document_name`=%s AND tag=%s""", (dt, dn, tag))
 
 @frappe.whitelist()

@@ -60,7 +60,6 @@
   "prepared_report_expiry_period",
   "chat",
   "enable_chat",
-  "use_socketio_to_upload_file",
   "sb_datahenge",
   "dns_server",
   "url_scheme_domain_port",

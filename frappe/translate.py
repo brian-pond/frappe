@@ -553,7 +553,6 @@ def get_messages_from_file(path):
 		print(msg)
 		return []
 
-
 def extract_messages_from_code(code, is_py=False):
 	"""Extracts translatable srings from a code file
 
