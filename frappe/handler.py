@@ -79,7 +79,7 @@ def is_whitelisted(method):
 
 	else:
 		if not method in frappe.whitelisted:
-			frappe.msgprint(_("Not permitted (Python function not safelisted)"))
+			frappe.msgprint(_(f"Not permitted (Python function '{method}' not safelisted)"))
 			raise frappe.PermissionError('Not Allowed, {0}'.format(method))
 
 def is_valid_http_method(method):
