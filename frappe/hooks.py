@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from . import __version__ as app_version
 
+# pylint: disable=invalid-name
 
 app_name = "frappe"
 app_title = "Frappe Framework"
@@ -140,9 +141,9 @@ doc_events = {
 		"on_update_after_submit": [
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions"
 		],
-		"on_change": [
-			"frappe.social.doctype.energy_point_rule.energy_point_rule.process_energy_points"
-		]
+		#"on_change": [
+		#	"frappe.social.doctype.energy_point_rule.energy_point_rule.process_energy_points"
+		#]
 	},
 	"Event": {
 		"after_insert": "frappe.integrations.doctype.google_calendar.google_calendar.insert_event_in_google_calendar",

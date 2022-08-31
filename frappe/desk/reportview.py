@@ -278,6 +278,11 @@ def get_sidebar_stats(stats, doctype, filters=None):
 @frappe.read_only()
 def get_stats(stats, doctype, filters=None):
 	"""get tag info"""
+
+	# Datahenge
+	frappe.msgprint("Brian had disabled 'get_stats()' due to performance concerns.")
+	return
+
 	import json
 
 	if filters is None:
