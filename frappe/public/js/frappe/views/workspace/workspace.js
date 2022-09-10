@@ -80,8 +80,13 @@ frappe.views.Workspace = class Workspace {
 
 	make_sidebar() {
 		this.sidebar_categories.forEach(category => {
+			frappe.msgprint(category);
+			console.log(category);
 			if (this.workspaces[category]) {
 				this.build_sidebar_section(category, this.workspaces[category]);
+			}
+			else {
+				frappe.msgprint("Foo bar?");
 			}
 		});
 	}

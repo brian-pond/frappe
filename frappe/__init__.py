@@ -1086,6 +1086,9 @@ def get_hooks(hook=None, default=None, app_name=None):
 	:param app_name: Filter by app."""
 	def load_app_hooks(app_name=None):
 		hooks = {}
+		installed_apps = get_installed_apps(sort=True)
+		# print(f"Installed Apps: {installed_apps}")
+		# print(f"Loading app hooks for app_name = '{app_name}'")
 		for app in [app_name] if app_name else get_installed_apps(sort=True):
 			app = "frappe" if app=="webnotes" else app
 			try:
@@ -1865,3 +1868,42 @@ def mock(type, size=1, locale='en'):
 def validate_and_sanitize_search_inputs(fn):
 	from frappe.desk.search import validate_and_sanitize_search_inputs as func
 	return func(fn)
+
+# Datahenge
+def whatis(message, backend=True, frontend=True):
+	"""
+	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
+	"""
+	inspected_stack = inspect.stack()
+
+	direct_caller = inspected_stack[1]
+	direct_caller_linenum = direct_caller[2]
+
+	parent_caller = inspected_stack[2]
+	parent_caller_function = parent_caller[3]
+	parent_caller_path = parent_caller[1]
+	parent_caller_line = parent_caller[2]
+
+	message_type = str(type(message)).replace('<', '').replace('>', '')
+	msg = f"---> DEBUG (frappe.whatis)\n"
+	msg += f"* Initiated on Line: {direct_caller_linenum}"
+	msg += f"\n  * Value: {message}\n  * Type: {message_type}"
+	msg += f"\n  * Caller: {parent_caller_function}"
+	msg += f"\n  * Caller Path: {parent_caller_path}\n  * Caller Line: {parent_caller_line}\n"
+	if backend:
+		print(msg)
+	if frontend:
+		msg = msg.replace('\n', '<br>')
+		msgprint(msg)
+
+
+def whois_caller():
+	"""
+	Print the calling function to terminal.  Useful for debugging.
+	"""
+	import inspect
+	try:
+		caller_function = inspect.stack()[2][3]
+		msg = f"CALLER: {caller_function}"
+	except:
+		print("CALLER: None (possible invoked directly by JavaScript)")
