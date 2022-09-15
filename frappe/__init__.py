@@ -14,11 +14,6 @@ Read the documentation: https://frappeframework.com/docs
 # pylint: disable=assigning-non-slot,invalid-name,redefined-outer-name, wrong-import-position
 
 from enum import Enum  # Datahenge: Attempt at a more-flexible print function
-_dev_server = os.environ.get('DEV_SERVER', False)
-
-if _dev_server:
-	warnings.simplefilter('always', DeprecationWarning)
-	warnings.simplefilter('always', PendingDeprecationWarning)
 
 import importlib
 import inspect
@@ -46,6 +41,12 @@ from .utils.jinja import (
 	render_template,
 )
 from .utils.lazy_loader import lazy_import
+
+_dev_server = os.environ.get('DEV_SERVER', False)
+
+if _dev_server:
+	warnings.simplefilter('always', DeprecationWarning)
+	warnings.simplefilter('always', PendingDeprecationWarning)
 
 # Lazy imports
 faker = lazy_import("faker")
@@ -416,8 +417,8 @@ def msgprint(
 	is_minimizable=None,
 	wide=None,
 	level=None,  # Datahenge
-	to_console=False)  # Datahenge
-):
+	to_console=False  # Datahenge
+	):
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
 	response JSON and shown in a pop-up / modal.
