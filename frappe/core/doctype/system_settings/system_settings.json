@@ -488,6 +488,8 @@
    "label": "Warning",
    "length": 200,
    "read_only": 1
+  },
+  {
    "collapsible": 1,
    "fieldname": "system_updates_section",
    "fieldtype": "Section Break",
