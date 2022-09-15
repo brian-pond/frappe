@@ -677,12 +677,7 @@
    "link_fieldname": "user"
   }
  ],
-<<<<<<< HEAD
- "max_attachments": 5,
- "modified": "2021-06-22 10:19:55.987351",
-=======
  "modified": "2022-03-09 01:47:56.745069",
->>>>>>> temp
  "modified_by": "Administrator",
  "module": "Core",
  "name": "User",

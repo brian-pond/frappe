@@ -32,12 +32,8 @@ class Workspace(Document):
 			return
 
 		if frappe.conf.developer_mode and self.is_standard:
-<<<<<<< HEAD
-			export_to_files(record_list=[['Workspace', self.name]], record_module=self.module)
-			frappe.msgprint("Saved changes to JSON file on disk.")
-=======
 			export_to_files(record_list=[["Workspace", self.name]], record_module=self.module)
->>>>>>> official/version-13
+			frappe.msgprint("Saved changes to JSON file on disk.")
 
 	@staticmethod
 	def get_module_page_map():

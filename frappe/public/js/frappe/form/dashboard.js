@@ -178,11 +178,6 @@ frappe.ui.form.Dashboard = class FormDashboard {
 				return;
 			}
 			this.render_links();
-<<<<<<< HEAD
-			// Datahenge: Can comment-out the below, to improve performance.
-			this.set_open_count();
-=======
->>>>>>> temp
 			show = true;
 		}
 

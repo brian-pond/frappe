@@ -3,24 +3,13 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-<<<<<<< HEAD
-=======
 
->>>>>>> official/version-13
 import imaplib
 import poplib
 import smtplib
 
-<<<<<<< HEAD
-# Frappe
 import frappe
 from frappe import _
-from frappe.model.document import Document
-from frappe.utils import validate_email_address ,cint, cstr
-=======
-import frappe
-from frappe import _
->>>>>>> official/version-13
 from frappe.email.utils import get_port
 from frappe.model.document import Document
 from frappe.utils import cint, cstr, validate_email_address
@@ -141,10 +130,11 @@ class EmailDomain(Document):
 				email_account.save()
 
 			except Exception as e:
-<<<<<<< HEAD
-				frappe.msgprint(_("Error has occurred in {0}").format(email_account.name), raise_exception=e.__class__)
-
+				frappe.msgprint(
+					_("Error has occurred in {0}").format(email_account.name), raise_exception=e.__class__
+				)
 # Datahenge
+
 @frappe.whitelist()
 def validate_domain(email_domain_name):
 
@@ -206,8 +196,4 @@ def validate_domain(email_domain_name):
 		return None
 
 	frappe.msgprint(_("\u2713 Email Domain '{0}' is valid.".format(email_domain_name)), indicator='green')
-=======
-				frappe.msgprint(
-					_("Error has occurred in {0}").format(email_account.name), raise_exception=e.__class__
-				)
->>>>>>> official/version-13
+

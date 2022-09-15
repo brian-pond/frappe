@@ -1,10 +1,6 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-<<<<<<< HEAD
-from __future__ import unicode_literals, print_function
-import os
-=======
 from __future__ import print_function, unicode_literals
 
 """
@@ -13,23 +9,17 @@ from __future__ import print_function, unicode_literals
 """
 import os
 
->>>>>>> official/version-13
 import frappe
 from frappe.modules.import_file import import_file_by_path
 from frappe.modules.patch_handler import block_user
 from frappe.utils import update_progress_bar
 
 
-<<<<<<< HEAD
 def sync_all(force=0, reset_permissions=False):
 	"""
 	Synchronize DocType and DocFields from JSON text files to database.
 	By default, permissions will be synced only if none exist.
 	"""
-
-=======
-def sync_all(force=0, verbose=False, reset_permissions=False):
->>>>>>> official/version-13
 	block_user(True)
 
 	for app in frappe.get_installed_apps():
@@ -39,12 +29,7 @@ def sync_all(force=0, verbose=False, reset_permissions=False):
 
 	frappe.clear_cache()
 
-<<<<<<< HEAD
 def sync_for(app_name, force=0, reset_permissions=False):
-=======
-
-def sync_for(app_name, force=0, sync_everything=False, verbose=False, reset_permissions=False):
->>>>>>> official/version-13
 	files = []
 
 	if app_name == "frappe":
@@ -83,35 +68,24 @@ def sync_for(app_name, force=0, sync_everything=False, verbose=False, reset_perm
 			files.append(os.path.join(frappe.get_app_path("frappe"), d[0], "doctype", d[1], d[1] + ".json"))
 
 	for module_name in frappe.local.app_modules.get(app_name) or []:
-<<<<<<< HEAD
 		try:
 			folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
 		except ModuleNotFoundError as ex:
 			raise ValueError(f"Cannot load module '{module_name}'.  If this module was deleted, verify cache and contents of 'modules.txt' in the App's folder.") from ex
-		get_doc_files(files, folder)
-
-	number_of_files = len(files)
-	if number_of_files:
-		for idx, doc_path in enumerate(files):
-			import_file_by_path(doc_path, force=force, ignore_version=True,
-				reset_permissions=reset_permissions, for_sync=True)
-=======
-		folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
 		files = get_doc_files(files, folder)
 
-	l = len(files)
+	number_of_files = len(files)
 
-	if l:
+	if number_of_files:
 		for i, doc_path in enumerate(files):
 			import_file_by_path(
 				doc_path, force=force, ignore_version=True, reset_permissions=reset_permissions
 			)
->>>>>>> official/version-13
 
 			frappe.db.commit()
 
 			# show progress bar
-			update_progress_bar("Updating DocTypes for {0}".format(app_name), idx, number_of_files)
+			update_progress_bar("Updating DocTypes for {0}".format(app_name), i, number_of_files)
 
 		# print each progress bar on new line
 		print()

@@ -1,40 +1,18 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-<<<<<<< HEAD
-from __future__ import unicode_literals, print_function
-=======
 from __future__ import print_function, unicode_literals
->>>>>>> official/version-13
 
 import hashlib
 import json
 import time
 
-<<<<<<< HEAD
-# Datahenge
-import dictdiffer  # A library for finding the difference between 2 Python dictionaries.
-from six import iteritems, string_types
-from werkzeug.exceptions import NotFound, Forbidden
-
-import frappe
-from frappe import _, msgprint, is_whitelisted
-from frappe.utils import flt, cstr, now, get_datetime_str, file_lock, date_diff
-from frappe.model.base_document import BaseDocument, get_controller
-from frappe.model.naming import set_new_name
-from frappe.model import optional_fields, table_fields
-from frappe.model.workflow import validate_workflow
-from frappe.model.workflow import set_workflow_state_on_action
-from frappe.utils.global_search import update_global_search
-from frappe.integrations.doctype.webhook import run_webhooks
-from frappe.desk.form.document_follow import follow_document
-=======
+import dictdiffer  # DH: A library for finding the difference between 2 Python dictionaries.
 from six import iteritems, string_types
 from werkzeug.exceptions import Forbidden, NotFound
 
 import frappe
 from frappe import _, is_whitelisted, msgprint
->>>>>>> official/version-13
 from frappe.core.doctype.server_script.server_script_utils import run_server_script_for_doc_event
 from frappe.desk.form.document_follow import follow_document
 from frappe.integrations.doctype.webhook import run_webhooks
@@ -45,8 +23,6 @@ from frappe.model.workflow import set_workflow_state_on_action, validate_workflo
 from frappe.utils import cstr, date_diff, file_lock, flt, get_datetime_str, now
 from frappe.utils.data import get_absolute_url
 from frappe.utils.global_search import update_global_search
-
-
 # pylint: disable=invalid-name, disable=protected-access
 
 # once_only validation
@@ -134,16 +110,12 @@ class Document(BaseDocument):
 					# filter
 					self.name = frappe.db.get_value(args[0], args[1], "name")
 					if self.name is None:
-<<<<<<< HEAD
-						frappe.throw(_("{0} {1} not found").format(_(args[0]), args[1]),
-							frappe.DoesNotExistError)
-					# DATAHENGE
+						frappe.throw(_("{0} {1} not found").format(_(args[0]), args[1]), frappe.DoesNotExistError)
+					# DH Begin
 					if len(self.name) > 100:
 						frappe.throw(_("DocType name is longer than 100 characters:\n{0}").format(_(args[1])),
 							frappe.DoesNotExistError)
-=======
-						frappe.throw(_("{0} {1} not found").format(_(args[0]), args[1]), frappe.DoesNotExistError)
->>>>>>> official/version-13
+					# DH End
 				else:
 					self.name = args[1]
 
@@ -151,7 +123,6 @@ class Document(BaseDocument):
 					self.flags.for_update = kwargs.get("for_update")
 
 			self.load_from_db()
-			# Datahenge: Would be lovely to set the 'parent_doc' here, but we run into infinite recursion  :/
 			return
 
 		if args and args[0] and isinstance(args[0], dict):
@@ -166,7 +137,7 @@ class Document(BaseDocument):
 			# Datahenge: Would be lovely to set the 'parent_doc' here, but we run into infinite recursion  :/
 			# if self.parent and self.doctype not in ["DocField","DocPerm","DocType Link","Has Role",
 			#                                       "Custom DocPerm","DocType Action"]:
-				# self.set_parent_doc()
+			# self.set_parent_doc()
 
 		else:
 			# incorrect arguments. let's not proceed.
@@ -260,11 +231,7 @@ class Document(BaseDocument):
 
 	def raise_no_permission_to(self, perm_type):
 		"""Raise `frappe.PermissionError`."""
-<<<<<<< HEAD
-		frappe.flags.error_message = _('Insufficient Permission for DocType = {0}').format(self.doctype)
-=======
-		frappe.flags.error_message = _("Insufficient Permission for {0}").format(self.doctype)
->>>>>>> official/version-13
+		frappe.flags.error_message = _("Insufficient Permission for DocType = {0}").format(self.doctype)
 		raise frappe.PermissionError
 
 	def insert(
@@ -494,10 +461,9 @@ class Document(BaseDocument):
 	def get_doc_before_save(self):
 		return getattr(self, "_doc_before_save", None)
 
-<<<<<<< HEAD
+	# Datahenge : Add the ability to ignore new records.
 	def has_value_changed(self, fieldname, ignore_new=False, debug=False):
-		'''Returns true if value is changed before and after saving'''
-		# Datahenge : Add the ability to ignore new records.
+		"""Returns true if value is changed before and after saving"""
 		previous = self.get_doc_before_save()
 		if ignore_new and (not previous):
 			return False
@@ -507,13 +473,7 @@ class Document(BaseDocument):
 			return True
 		if debug:
 			print(f"Before: {previous.get(fieldname)}, After: {self.get(fieldname)}")
-		return previous.get(fieldname)!=self.get(fieldname) if previous else True
-=======
-	def has_value_changed(self, fieldname):
-		"""Returns true if value is changed before and after saving"""
-		previous = self.get_doc_before_save()
 		return previous.get(fieldname) != self.get(fieldname) if previous else True
->>>>>>> official/version-13
 
 	def set_new_name(self, force=False, set_name=None, set_child_names=True):
 		"""Calls `frappe.naming.set_new_name` for parent and child docs."""
@@ -985,12 +945,7 @@ class Document(BaseDocument):
 
 		if invalid_links:
 			msg = ", ".join((each[2] for each in invalid_links))
-<<<<<<< HEAD
-			frappe.throw(_("Invalid link. Could not find {0}").format(msg),
-				frappe.LinkValidationError)
-=======
-			frappe.throw(_("Could not find {0}").format(msg), frappe.LinkValidationError)
->>>>>>> official/version-13
+			frappe.throw(_("Invalid link. Could not find {0}").format(msg), frappe.LinkValidationError)
 
 		if cancelled_links:
 			msg = ", ".join((each[2] for each in cancelled_links))
@@ -1867,7 +1822,6 @@ def execute_action(doctype, name, action, **kwargs):
 
 		doc.add_comment("Comment", _("Action Failed") + "<br><br>" + msg)
 		doc.notify_update()
-<<<<<<< HEAD
 
 
 def get_field_differences(doc_before, doc_after,
@@ -1947,5 +1901,3 @@ def dprint(message, enabled=False):
 	"""
 	if enabled:
 		print(message)
-=======
->>>>>>> official/version-13

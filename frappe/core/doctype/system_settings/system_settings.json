@@ -70,24 +70,14 @@
   "prepared_report_section",
   "enable_prepared_report_auto_deletion",
   "prepared_report_expiry_period",
-<<<<<<< HEAD
-<<<<<<< HEAD
-  "chat",
-  "enable_chat",
   "sb_datahenge",
   "small_text_65",
   "enable_pdf_debugging"
-=======
-  "system_updates_section",
-  "disable_system_update_notification"
->>>>>>> temp
-=======
   "column_break_64",
   "max_auto_email_report_per_user",
   "system_updates_section",
   "disable_system_update_notification",
   "disable_change_log_notification"
->>>>>>> official/version-13
  ],
  "fields": [
   {
@@ -479,7 +469,6 @@
    "label": "Strip EXIF tags from uploaded images"
   },
   {
-<<<<<<< HEAD
    "default": "0",
    "description": "Converting reports to PDF is easier said than done; enabling this checkbox provides additional feedback.",
    "fieldname": "enable_pdf_debugging",
@@ -499,7 +488,6 @@
    "label": "Warning",
    "length": 200,
    "read_only": 1
-=======
    "collapsible": 1,
    "fieldname": "system_updates_section",
    "fieldtype": "Section Break",
@@ -517,9 +505,6 @@
    "fieldtype": "Select",
    "label": "First Day of the Week",
    "options": "Sunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday"
-<<<<<<< HEAD
->>>>>>> temp
-=======
   },
   {
    "fieldname": "column_break_64",
@@ -555,21 +540,12 @@
    "fieldname": "email_retry_limit",
    "fieldtype": "Int",
    "label": "Email Retry Limit"
->>>>>>> official/version-13
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
-<<<<<<< HEAD
-<<<<<<< HEAD
- "modified": "2021-12-05 20:56:20.688445",
-=======
- "modified": "2022-01-04 11:28:34.881192",
->>>>>>> temp
-=======
  "modified": "2022-06-21 13:55:04.796152",
->>>>>>> official/version-13
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

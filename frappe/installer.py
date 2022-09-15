@@ -183,6 +183,7 @@ def install_app(name, verbose=False, set_as_patched=True):
 	if name != "frappe":
 		add_module_defs(name)
 
+	# Datahenge: Removing unused arguments:
 	sync_for(name, force=True, reset_permissions=True)
 
 	add_to_installed_apps(name)

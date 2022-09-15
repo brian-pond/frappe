@@ -18,16 +18,10 @@ from frappe.desk.form.document_follow import follow_document
 @frappe.whitelist()
 def remove_attach():
 	"""remove attachment"""
-<<<<<<< HEAD
-	fid = frappe.form_dict.get('fid')
-	# Datahenge: Unused code
-	# file_name = frappe.form_dict.get('file_name')
-	frappe.delete_doc('File', fid)
-=======
 	fid = frappe.form_dict.get("fid")
-	file_name = frappe.form_dict.get("file_name")
+	# Datahenge: Unused code:
+	# file_name = frappe.form_dict.get("file_name")
 	frappe.delete_doc("File", fid)
->>>>>>> official/version-13
 
 @frappe.whitelist()
 def validate_link():

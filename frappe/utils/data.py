@@ -1403,12 +1403,8 @@ def filter_strip_join(some_list, sep):
 	"""given a list, filter None values, strip spaces and join"""
 	return (cstr(sep)).join((cstr(a).strip() for a in filter(None, some_list)))
 
-<<<<<<< HEAD
+# Datahenge : Deprecating this function.
 def DEL_get_url(uri=None, full_address=False):
-=======
-
-def get_url(uri=None, full_address=False):
->>>>>>> official/version-13
 	"""get app url from request"""
 	host_name = frappe.local.conf.host_name or frappe.local.conf.hostname
 
@@ -1464,7 +1460,6 @@ def get_url(uri=None, full_address=False):
 
 	return url
 
-<<<<<<< HEAD
 def get_url(uri=None, full_address=False, debug=False):
 	"""
 	Datahenge: This is my refactored version of the original 'get_url'
@@ -1497,9 +1492,6 @@ def get_url(uri=None, full_address=False, debug=False):
 
 	url = urljoin(scheme_domain_port, uri) if uri else scheme_domain_port
 	return url
-
-=======
->>>>>>> official/version-13
 
 def get_host_name_from_request():
 	if hasattr(frappe.local, "request") and frappe.local.request and frappe.local.request.host:
@@ -1764,38 +1756,24 @@ def sanitize_column(column_name):
 		_raise_exception()
 
 
-<<<<<<< HEAD
-
 def scrub_urls(html, debug=False):
 	"""
 	Datahenge: 	A function that only calls 1 other function.
 				This is a pointless intermediary, and could be removed later.
 	"""
 	html = expand_relative_urls(html, debug=debug)
-=======
-def scrub_urls(html):
-	html = expand_relative_urls(html)
->>>>>>> official/version-13
 	# encoding should be responsibility of the composer
 	# html = quote_urls(html)
 	return html
 
-<<<<<<< HEAD
 def expand_relative_urls(html, debug=False):
 	"""
 	Examines HTML and expands any relative URLs into absolute.
 	Very important in PDF rendering.
 	"""
 	url = get_url(debug=debug)  # This function finds the appropriate Base URL
-	if url.endswith("/"): url = url[:-1]
-=======
-
-def expand_relative_urls(html):
-	# expand relative urls
-	url = get_url()
 	if url.endswith("/"):
 		url = url[:-1]
->>>>>>> official/version-13
 
 	def _expand_relative_urls(match):
 		to_expand = list(match.groups())

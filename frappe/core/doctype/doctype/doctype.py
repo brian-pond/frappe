@@ -6,14 +6,10 @@ from __future__ import unicode_literals
 
 import copy
 import json
-<<<<<<< HEAD
 import pathlib  # Datahenge
-from frappe.cache_manager import clear_user_cache, clear_controller_cache
-=======
 import os
 import re
 import shutil
->>>>>>> official/version-13
 
 # imports - third party imports
 import six
@@ -480,22 +476,12 @@ class DocType(Document):
 
 	def rename_files_and_folders(self, old, new):
 		# move files
-<<<<<<< HEAD
-		new_path = get_doc_path(self.module, 'doctype', new)
-		old_path = get_doc_path(self.module, 'doctype', old)
-
 		# Datahenge: This extra validation helps resolve issues that felt like race conditions.
-		new_path = pathlib.Path(new_path)
-		old_path = pathlib.Path(old_path)
+		new_path = pathlib.Path(get_doc_path(self.module, "doctype", new))
+		old_path = pathlib.Path(get_doc_path(self.module, "doctype", old))
 		if (old_path.exists()) and (not new_path.exists()):
 			print(f"Moving directory '{old_path}' to '{new_path}'")
 			shutil.move(old_path, new_path)
-		# EOM
-=======
-		new_path = get_doc_path(self.module, "doctype", new)
-		old_path = get_doc_path(self.module, "doctype", old)
-		shutil.move(old_path, new_path)
->>>>>>> official/version-13
 
 		# rename files
 		for fname in os.listdir(new_path):
@@ -974,18 +960,17 @@ def validate_fields(meta):
 
 	def check_illegal_mandatory(docname, d):
 		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd:
-<<<<<<< HEAD
-			frappe.throw(_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype), IllegalMandatoryError)
-		# Datahenge: Log for "Required In Database"
-		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd_in_database:
-			frappe.throw(_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype), IllegalMandatoryError)
-
-=======
 			frappe.throw(
 				_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype),
 				IllegalMandatoryError,
 			)
->>>>>>> official/version-13
+		# Datahenge: Also throw error for "Required In Database"
+		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd_in_database:
+			frappe.throw(
+				_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype),
+				IllegalMandatoryError,
+			)
+		# Datahenge: EOM
 
 	def check_link_table_options(docname, d):
 		if frappe.flags.in_patch:
@@ -1099,16 +1084,11 @@ def validate_fields(meta):
 			d.search_index = 0
 
 		if getattr(d, "unique", False):
-<<<<<<< HEAD
 			if d.fieldtype not in ("Data", "Link", "Read Only", "Date"):  # Datahenge: Allow for unique Dates too.
-				frappe.throw(_("{0}: Fieldtype {1} for {2} cannot be unique").format(docname, d.fieldtype, d.label), NonUniqueError)
-=======
-			if d.fieldtype not in ("Data", "Link", "Read Only"):
 				frappe.throw(
 					_("{0}: Fieldtype {1} for {2} cannot be unique").format(docname, d.fieldtype, d.label),
 					NonUniqueError,
 				)
->>>>>>> official/version-13
 
 			if not d.get("__islocal") and frappe.db.has_column(d.parent, d.fieldname):
 				has_non_unique_values = frappe.db.sql(
@@ -1543,7 +1523,7 @@ def make_module_and_roles(doc, perm_fieldname="permissions"):
 				r = frappe.get_doc(dict(doctype="Role", role_name=role, desk_access=1))
 				r.flags.ignore_mandatory = r.flags.ignore_permissions = True
 				r.insert()
-	# FTP: This helps when you rename Modules, and not everything is clenaed up.
+	# Datahenge: This helps when you rename Modules, and not everything is cleaned up.
 	except KeyError as e:
 		print(f"Key error for doc '{doc}', module '{doc.module}', app '{m.app_name}'")
 		raise e

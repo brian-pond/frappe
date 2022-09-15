@@ -652,15 +652,12 @@ class BaseDocument(object):
 
 						# don't cache if fetching other values too
 						values = frappe.db.get_value(doctype, docname, values_to_fetch, as_dict=True)
-<<<<<<< HEAD
 
 						# Datahenge:  This seems like a pretty HUGE hole in the framework.
 						if not values:
 							# print(f"Datahenge: Cannot find DocType '{doctype}' with name = '{docname}'")
 							invalid_links.append((df.fieldname, docname, get_msg(df, docname)))
 						# Datahenge: End
-=======
->>>>>>> official/version-13
 
 				if frappe.get_meta(doctype).issingle:
 					values.name = doctype
@@ -1104,7 +1101,6 @@ class BaseDocument(object):
 			for df in self.meta.get("fields", {"fieldtype": ("=", "Text Editor")}):
 				extract_images_from_doc(self, df.fieldname)
 
-<<<<<<< HEAD
 	def pretty_print(self):
 		"""
 		Datahenge: A prettier version of as_json()
@@ -1114,8 +1110,6 @@ class BaseDocument(object):
 		ret_json = json.dumps(ret_dict, indent=4, sort_keys=False, default=json_handler, separators=(',', ': '))
 		print(f"\n----------------\n{self.doctype} : {self.name}\n----------------\n{ret_json}")
 
-=======
->>>>>>> official/version-13
 
 def _filter(data, filters, limit=None):
 	"""pass filters as:

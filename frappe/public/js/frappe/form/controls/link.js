@@ -547,31 +547,6 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			return value;
 		}
 
-<<<<<<< HEAD
-	fetch_and_validate_link(resolve, df, doctype, docname, value, fetch) {
-		frappe.call({
-			method: 'frappe.desk.form.utils.validate_link',
-			type: "GET",
-			args: {
-				'value': value,
-				'options': doctype,
-				'fetch': fetch
-			},
-			no_spinner: true,
-			callback: (r) => {
-				// Datahenge: New way of skipping Link Validation, when not appropriate.
-				if (df.ignore_link_validation) {
-					resolve(value);
-				}
-				else if (r.message=='Ok') {
-					if (r.fetch_values && docname) {
-						this.set_fetch_values(df, docname, r.fetch_values);
-					}
-					resolve(r.valid_value);
-				} else {
-					resolve("");
-				}
-=======
 		function update_dependant_fields(response) {
 			let field_value = "";
 			for (const [target_field, source_field] of Object.entries(fetch_map)) {
@@ -583,7 +558,6 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 					field_value,
 					df.fieldtype,
 				);
->>>>>>> temp
 			}
 		}
 

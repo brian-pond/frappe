@@ -2,12 +2,8 @@ from __future__ import unicode_literals
 
 import json
 import re
-<<<<<<< HEAD
-import bleach_allowlist.bleach_allowlist as bleach_allowlist
-=======
 
 from bleach_allowlist import bleach_allowlist
->>>>>>> official/version-13
 from six import string_types
 
 import frappe

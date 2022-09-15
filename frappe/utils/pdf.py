@@ -283,8 +283,7 @@ def get_wkhtmltopdf_version():
 		except Exception:
 			pass
 
-<<<<<<< HEAD
-	return (wkhtmltopdf_version or '0')
+	return wkhtmltopdf_version or "0"
 
 # --------
 # Datahenge Additional Functions:
@@ -312,6 +311,4 @@ def search_html_for_string(html, string_to_search):
 			ret = (idx, clean_line(line))
 			list_of_results.append(ret)
 	return list_of_results
-=======
-	return wkhtmltopdf_version or "0"
->>>>>>> official/version-13
+

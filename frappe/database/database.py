@@ -82,7 +82,7 @@ class Database(object):
 		"""Connects to a database as set in `site_config.json`."""
 		self.cur_db_name = self.user
 		self._conn = self.get_connection()  # pylint: disable=assignment-from-no-return
-		self._cursor = self._conn.cursor()  
+		self._cursor = self._conn.cursor()
 		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 
 	def use(self, db_name):
@@ -139,14 +139,10 @@ class Database(object):
 		# print(f"\n{query}\n")
 		query = str(query)
 
-<<<<<<< HEAD
-		if re.search(r'ifnull\(', query, flags=re.IGNORECASE):
-=======
 		# remove \n \t from start and end of query
 		query = re.sub(r"^\s*|\s*$", "", query)
 
 		if re.search(r"ifnull\(", query, flags=re.IGNORECASE):
->>>>>>> official/version-13
 			# replaces ifnull in query with coalesce
 			query = re.sub(r"ifnull\(", "coalesce(", query, flags=re.IGNORECASE)
 
@@ -176,14 +172,10 @@ class Database(object):
 
 			self.log_query(query, values, debug, explain)
 
-<<<<<<< HEAD
 			#if query.lower().startswith('delete'):
 			#	print("END TRACE--------------------------------------------------------")
 
-			if values!=():
-=======
 			if values != ():
->>>>>>> official/version-13
 				if isinstance(values, dict):
 					values = dict(values)
 
@@ -315,23 +307,15 @@ class Database(object):
 		"""Raises exception if more than 20,000 `INSERT`, `UPDATE` queries are
 		executed in one transaction. This is to ensure that writes are always flushed otherwise this
 		could cause the system to hang."""
-<<<<<<< HEAD
-		if self.transaction_writes and \
-			query and query.strip().split()[0].lower() in ['start', 'alter', 'drop', 'create', "begin", "truncate"]:
-			raise Exception(f"This statement can cause implicit commit:\n{query}")
-
-		if query and query.strip().lower() in ('commit', 'rollback'):
-=======
 		if (
 			self.transaction_writes
 			and query
 			and query.strip().split()[0].lower()
 			in ["start", "alter", "drop", "create", "begin", "truncate"]
 		):
-			raise Exception("This statement can cause implicit commit")
+			raise Exception(f"This statement can cause implicit commit:\n{query}")
 
 		if query and query.strip().lower() in ("commit", "rollback"):
->>>>>>> official/version-13
 			self.transaction_writes = 0
 
 		if query[:6].lower() in ("update", "insert", "delete"):
@@ -708,21 +692,15 @@ class Database(object):
 		)
 		val = val[0][0] if val else None
 
-<<<<<<< HEAD
-		docfield_metadata = frappe.get_meta(doctype).get_field(fieldname)
-		if not docfield_metadata:
-			frappe.throw(_('Invalid field name: {0}').format(frappe.bold(fieldname)), self.InvalidColumnName)
-=======
-		df = frappe.get_meta(doctype).get_field(fieldname)
+		df = frappe.get_meta(doctype).get_field(fieldname)  # DocField metadata
 
 		if not df:
 			frappe.throw(
 				_("Invalid field name: {0}").format(frappe.bold(fieldname)), self.InvalidColumnName
 			)
->>>>>>> official/version-13
 
 		# Datahenge:  This is another Holy Shit moment:  The datatype for None dates was CHANGING into Today's Date!
-		val = cast_fieldtype(docfield_metadata.fieldtype, val)
+		val = cast_fieldtype(df.fieldtype, val)
 
 		# TODO:  Datahenge:  If the SQL result is a DateTime, would be great if we applied a datetime.date format
 		#        immediately to what's in the cache.

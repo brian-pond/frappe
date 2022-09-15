@@ -20,10 +20,6 @@ from frappe.utils.file_manager import remove_all
 from frappe.utils.global_search import delete_for_document
 from frappe.utils.password import delete_all_passwords_for
 
-<<<<<<< HEAD
-def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reload=False, ignore_permissions=False,
-	flags=None, ignore_on_trash=False, ignore_missing=True, delete_permanently=False, ignore_on_change=True):
-=======
 doctypes_to_skip = (
 	"Communication",
 	"ToDo",
@@ -53,8 +49,8 @@ def delete_doc(
 	ignore_on_trash=False,
 	ignore_missing=True,
 	delete_permanently=False,
+	ignore_on_change=True  # Datahenge
 ):
->>>>>>> official/version-13
 	"""
 	Deletes a doc(dt, dn) and validates if it is not submitted and not linked in a live record
 	"""
@@ -131,7 +127,6 @@ def delete_doc(
 				if not ignore_on_trash:
 					doc.run_method("on_trash")
 					doc.flags.in_delete = True
-<<<<<<< HEAD
 					# Datahenge: Makes no sense that 'on_change' is called for Deletions prior to SQL
 					# deletion.  But -also- called post 'on_update()' for INSERT and UPDATE.
 					# Just nonsensical naming.
@@ -139,9 +134,6 @@ def delete_doc(
 					# Let's try to put an end to this madness.
 					if not ignore_on_change:
 						doc.run_method('on_change')
-=======
-					doc.run_method("on_change")
->>>>>>> official/version-13
 
 				# check if links exist
 				if not force:
@@ -286,11 +278,7 @@ def check_permission_and_not_submitted(doc):
 
 def check_if_doc_is_linked(doc, method="Delete"):
 	"""
-<<<<<<< HEAD
-		Raises exception if the given doc(dt, dn) is linked in another record.
-=======
-	Raises excption if the given doc(dt, dn) is linked in another record.
->>>>>>> official/version-13
+	Raises exception if the given doc(dt, dn) is linked in another record.
 	"""
 	from frappe.model.rename_doc import get_link_fields
 

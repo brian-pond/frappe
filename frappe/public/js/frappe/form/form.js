@@ -1647,26 +1647,15 @@ frappe.ui.form.Form = class FrappeForm {
 			frappe.model.with_doctype(doctype, function() {
 				let new_doc = frappe.model.get_new_doc(doctype, null, null, true);
 
+				// Datahenge Begin
+				// If working 'Amended From', copying the value to a different DocType doesn't
+				// make sense, and will throw an error.  So don't do that.
+				// if ((df.fieldname == 'amended_from') && (doctype != me.doc.doctype)) {
+				// continue;
+
 				// set link fields (if found)
-<<<<<<< HEAD
-				frappe.get_meta(doctype).fields.forEach(function(df) {
-					if(df.fieldtype==='Link' && df.options===me.doctype) {
-						new_doc[df.fieldname] = me.doc.name;
-					} else if (['Link', 'Dynamic Link'].includes(df.fieldtype) && me.doc[df.fieldname]) {
-						// Datahenge Begin
-						// If working 'Amended From', copying the value to a different DocType doesn't
-						// make sense, and will throw an error.  So don't do that.
-						if ((df.fieldname == 'amended_from') && (doctype != me.doc.doctype)) {
-							continue;
-						}							
-						new_doc[df.fieldname] = me.doc[df.fieldname];
-						// Datahenge End
-					}
-				});
-=======
 				me.set_link_field(doctype, new_doc);
 
->>>>>>> temp
 				frappe.ui.form.make_quick_entry(doctype, null, null, new_doc);
 				// frappe.set_route('Form', doctype, new_doc.name);
 			});

@@ -172,13 +172,8 @@ def before_tests():
 	# frappe.clear_cache()
 
 	# complete setup if missing
-<<<<<<< HEAD
-	# if not int(frappe.db.get_single_value('System Settings', 'setup_complete') or 0):
+	#if not int(frappe.db.get_single_value("System Settings", "setup_complete") or 0):
 	#	complete_setup_wizard()
-=======
-	if not int(frappe.db.get_single_value("System Settings", "setup_complete") or 0):
-		complete_setup_wizard()
->>>>>>> official/version-13
 
 	#frappe.db.commit()
 	#frappe.clear_cache()

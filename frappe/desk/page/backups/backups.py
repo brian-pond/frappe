@@ -41,11 +41,7 @@ def get_context(context):
 
 
 def get_scheduled_backup_limit():
-<<<<<<< HEAD
-	backup_limit = frappe.db.get_single_value('System Settings', 'backup_limit')
-=======
 	backup_limit = frappe.db.get_singles_value("System Settings", "backup_limit")
->>>>>>> official/version-13
 	return cint(backup_limit)
 
 

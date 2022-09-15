@@ -46,12 +46,9 @@ class DoesNotExistError(ValidationError):
 class PageDoesNotExistError(ValidationError):
 	http_status_code = 404
 
-<<<<<<< HEAD
 # Datahenge: Use case is performing a PUT against a read-only field.
 class MethodNotAllowed(ValidationError):
 	http_status_code = 405
-=======
->>>>>>> official/version-13
 
 class NameError(Exception):
 	http_status_code = 409

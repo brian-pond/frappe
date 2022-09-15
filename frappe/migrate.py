@@ -73,6 +73,7 @@ Otherwise, check the server logs and ensure that all the required services are r
 		frappe.modules.patch_handler.run_all(skip_failing)
 
 		# sync
+		# Datahenge: Removing unused arguments:
 		frappe.model.sync.sync_all()
 		frappe.translate.clear_cache()
 		sync_jobs()

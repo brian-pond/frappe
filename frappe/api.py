@@ -103,7 +103,7 @@ def handle():
 					frappe.local.response.update({"data": doc.save().as_dict()})
 
 					# -------------------------------
-					# Datahenge and Farm To People.
+					# Datahenge
 					# -------------------------------
 					# The next few lines of code are a BIG DEAL.
 					# What happens is when a Child DocType is saved, the ENTIRE parent DocType is save()
@@ -119,11 +119,13 @@ def handle():
 					# So.  I'm going to comment-out the next few lines of Code.
 					# And force each Child DocType to decide (on its own)
 					# what Parent code to call during a PUT, if any.
-
-					#if doc.parenttype and doc.parent:
-					# 	frappe.get_doc(doc.parenttype, doc.parent).save()
 					# -------------------------------
 
+					'''
+					if doc.parenttype and doc.parent:
+						frappe.get_doc(doc.parenttype, doc.parent).save()
+
+					'''
 					frappe.db.commit()
 
 				if frappe.local.request.method == "DELETE":

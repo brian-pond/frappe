@@ -130,17 +130,14 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 						folded = frm.layout.folded;
 					}
 
-<<<<<<< HEAD
 					/* Datahenge: 'reqd' is the field labeled 'Mandatory' on the DocField UI.
 					   
 					   I've added my own 'reqd_in_database' so that I can bypass any JavaScript UI errors,
 					   and only validate the mandatory field inside the validate() Controller method.
 					*/
-					if (df.reqd && !frappe.model.has_value(doc.doctype, doc.name, df.fieldname)) {
-=======
+
 					if (is_docfield_mandatory(doc, df) &&
 						!frappe.model.has_value(doc.doctype, doc.name, df.fieldname)) {
->>>>>>> official/version-13
 						has_errors = true;
 						error_fields[error_fields.length] = __(df.label);
 						// scroll to field

@@ -10,12 +10,9 @@ be used to build database driven apps.
 
 Read the documentation: https://frappeframework.com/docs
 """
-<<<<<<< HEAD
 
 # pylint: disable=assigning-non-slot,invalid-name,redefined-outer-name, wrong-import-position
 
-import os
-import warnings
 from enum import Enum  # Datahenge: Attempt at a more-flexible print function
 _dev_server = os.environ.get('DEV_SERVER', False)
 
@@ -23,16 +20,11 @@ if _dev_server:
 	warnings.simplefilter('always', DeprecationWarning)
 	warnings.simplefilter('always', PendingDeprecationWarning)
 
-from six import iteritems, binary_type, text_type, string_types
-from werkzeug.local import Local, release_local
-import sys, importlib, inspect, json
-=======
 import importlib
 import inspect
 import json
 import os
 import sys
->>>>>>> official/version-13
 import typing
 import warnings
 
@@ -411,10 +403,6 @@ def log(msg):
 
 	debug_log.append(as_unicode(msg))
 
-<<<<<<< HEAD
-def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, indicator=None,
-             alert=False, primary_action=None, is_minimizable=None, wide=None, level=None, to_console=False):
-=======
 
 def msgprint(
 	msg,
@@ -427,8 +415,9 @@ def msgprint(
 	primary_action=None,
 	is_minimizable=None,
 	wide=None,
+	level=None,  # Datahenge
+	to_console=False)  # Datahenge
 ):
->>>>>>> official/version-13
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
 	response JSON and shown in a pop-up / modal.
@@ -443,7 +432,6 @@ def msgprint(
 	:param primary_action: [optional] Bind a primary server/client side action.
 	:param is_minimizable: [optional] Allow users to minimize the modal
 	:param wide: [optional] Show wide modal
-
 	# Datahenge LLC:
 	:param level: [optional] Indicates whether message is INFO, WARNING, ERROR.
 	:param to_console: [optional] Indicates the message should also be 'print()' to console
@@ -1367,7 +1355,7 @@ def get_hooks(hook=None, default=None, app_name=None):
 
 	def load_app_hooks(app_name=None):
 		hooks = {}
-		installed_apps = get_installed_apps(sort=True)
+		# installed_apps = get_installed_apps(sort=True)
 		# print(f"Installed Apps: {installed_apps}")
 		# print(f"Loading app hooks for app_name = '{app_name}'")
 		for app in [app_name] if app_name else get_installed_apps(sort=True):
@@ -2231,14 +2219,10 @@ def safe_encode(param, encoding="utf-8"):
 	return param
 
 
-<<<<<<< HEAD
-def safe_decode(param, encoding='utf-8'):
+def safe_decode(param, encoding="utf-8"):
 	# Datahenge: Automatically handle Exceptions as strings.
 	if isinstance(param, Exception):
 		param = str(param)
-=======
-def safe_decode(param, encoding="utf-8"):
->>>>>>> official/version-13
 	try:
 		param = param.decode(encoding)
 	except Exception:
@@ -2269,8 +2253,8 @@ def mock(type, size=1, locale="en"):
 
 def validate_and_sanitize_search_inputs(fn):
 	from frappe.desk.search import validate_and_sanitize_search_inputs as func
-<<<<<<< HEAD
-	return func(fn)  # pylint: disable=no-value-for-parameter
+
+	return func(fn)
 
 # -------------------------
 # Datahenge
@@ -2391,7 +2375,4 @@ def whois_caller():
 		msg = f"CALLER: {caller_function}"
 	except:
 		print("CALLER: None (possible invoked directly by JavaScript)")
-=======
 
-	return func(fn)
->>>>>>> official/version-13

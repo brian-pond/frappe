@@ -10,7 +10,6 @@ frappe.ui.form.on("Email Domain", {
 		frm.add_custom_button(__("Validate Email Settings"), () => {
 			validate_email_domain(cur_frm, cur_frm.doc);
 		});
-		// EOM
 
 		if (frm.doc.email_id){
 			frm.set_value("domain_name",frm.doc.email_id.split("@")[1])

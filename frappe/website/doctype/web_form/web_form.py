@@ -628,14 +628,9 @@ def get_in_list_view_fields(doctype):
 	fields += [df.fieldname for df in meta.fields if df.in_list_view and df.fieldname not in fields]
 
 	def get_field_df(fieldname):
-<<<<<<< HEAD
-		if fieldname == 'name':
-			# Farm To People
-			return { 'label': 'ID', 'fieldname': 'name', 'fieldtype': 'Data' }
-=======
 		if fieldname == "name":
-			return {"label": "Name", "fieldname": "name", "fieldtype": "Data"}
->>>>>>> official/version-13
+			# Datahenge: Display ID instead of Name
+			return {"label": "ID", "fieldname":"name", "fieldtype": "Data"}
 		return meta.get_field(fieldname).as_dict()
 
 	return [get_field_df(f) for f in fields]

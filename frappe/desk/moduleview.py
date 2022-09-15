@@ -607,15 +607,6 @@ def get_report_list(module, is_standard="No"):
 
 	out = []
 	for r in reports:
-<<<<<<< HEAD
-		out.append({
-			"type": "report",
-			"doctype": r.ref_doctype,
-			"is_query_report": 1 if r.report_type in ("Query Report", "Script Report", "Custom Report") else 0,
-			"label": _(r.name),
-			"name": r.name
-		})
-=======
 		out.append(
 			{
 				"type": "report",
@@ -627,6 +618,5 @@ def get_report_list(module, is_standard="No"):
 				"name": r.name,
 			}
 		)
->>>>>>> official/version-13
 
 	return out

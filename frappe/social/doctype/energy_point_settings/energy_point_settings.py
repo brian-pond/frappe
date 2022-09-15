@@ -15,12 +15,8 @@ class EnergyPointSettings(Document):
 
 
 def is_energy_point_enabled():
-<<<<<<< HEAD
-	return frappe.db.get_single_value('Energy Point Settings', 'enabled')
-=======
 	return frappe.db.get_single_value("Energy Point Settings", "enabled", True)
 
->>>>>>> official/version-13
 
 def allocate_review_points():
 	settings = frappe.get_single("Energy Point Settings")
@@ -66,11 +62,7 @@ def get_users_with_role(role):
 		WHERE `tabHas Role`.`role`=%s
 		AND `tabUser`.`name`!='Administrator'
 		AND `tabHas Role`.`parent`=`tabUser`.`name`
-<<<<<<< HEAD
-		AND `tabUser`.`enabled`=1""", role)]
-=======
 		AND `tabUser`.`enabled`=1""",
 			role,
 		)
 	]
->>>>>>> official/version-13

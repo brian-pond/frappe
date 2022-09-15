@@ -503,11 +503,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
-<<<<<<< HEAD
- "modified": "2021-10-11 20:09:52.648983",
-=======
  "modified": "2022-04-19 12:27:28.641580",
->>>>>>> official/version-13
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

@@ -37,15 +37,11 @@ dateformats = {
 
 
 def user_to_str(date, date_format=None):
-<<<<<<< HEAD
 	# Datahenge: The name of this function is awful.  And no inline documentation to explain the point of it.
 
 	# Datahenge: Added to prevent bad argument types:
 	if not isinstance(date, str):
 		raise TypeError("Function user_to_str() expects an argument 'date' of type String.")
-
-=======
->>>>>>> official/version-13
 	if not date:
 		return date
 
@@ -53,16 +49,9 @@ def user_to_str(date, date_format=None):
 		date_format = get_user_date_format()
 
 	try:
-<<<<<<< HEAD
-		return datetime.datetime.strptime(date,
-			dateformats[date_format]).strftime('%Y-%m-%d')
+		return datetime.datetime.strptime(date, dateformats[date_format]).strftime("%Y-%m-%d")
 	except ValueError as ex:  # Datahenge: Slight improvement to error handling.
 		raise ValueError("Date %s must be in format %s" % (date, date_format)) from ex
-=======
-		return datetime.datetime.strptime(date, dateformats[date_format]).strftime("%Y-%m-%d")
-	except ValueError:
-		raise ValueError("Date %s must be in format %s" % (date, date_format))
->>>>>>> official/version-13
 
 
 def parse_date(date):

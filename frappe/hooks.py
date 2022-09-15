@@ -187,28 +187,17 @@ doc_events = {
 scheduler_events = {
 	"cron": {
 		"0/15 * * * *": [
-<<<<<<< HEAD
-			# "frappe.oauth.delete_oauth2_data",
-			# "frappe.website.doctype.web_page.web_page.check_publish_status",
-			"frappe.twofactor.delete_all_barcodes_for_users"
-=======
 			"frappe.oauth.delete_oauth2_data",
 			"frappe.website.doctype.web_page.web_page.check_publish_status",
 			"frappe.twofactor.delete_all_barcodes_for_users",
->>>>>>> official/version-13
 		]
 	},
 	"all": [
 		"frappe.email.queue.flush",
 		"frappe.email.doctype.email_account.email_account.pull",
 		"frappe.email.doctype.email_account.email_account.notify_unreplied",
-<<<<<<< HEAD
 		# "frappe.integrations.doctype.razorpay_settings.razorpay_settings.capture_payment",
-		'frappe.utils.global_search.sync_global_search',
-=======
-		"frappe.integrations.doctype.razorpay_settings.razorpay_settings.capture_payment",
 		"frappe.utils.global_search.sync_global_search",
->>>>>>> official/version-13
 		"frappe.monitor.flush",
 	],
 	"hourly": [
@@ -218,13 +207,8 @@ scheduler_events = {
 		"frappe.desk.page.backups.backups.delete_downloadable_backups",
 		"frappe.deferred_insert.save_to_db",
 		"frappe.desk.form.document_follow.send_hourly_updates",
-<<<<<<< HEAD
 		# "frappe.integrations.doctype.google_calendar.google_calendar.sync",
-		"frappe.email.doctype.newsletter.newsletter.send_scheduled_email"
-=======
-		"frappe.integrations.doctype.google_calendar.google_calendar.sync",
 		"frappe.email.doctype.newsletter.newsletter.send_scheduled_email",
->>>>>>> official/version-13
 	],
 	"daily": [
 		"frappe.email.queue.set_expiry_for_email_queue",
@@ -247,33 +231,15 @@ scheduler_events = {
 	"daily_long": [
 		# "frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backups_daily",
 		"frappe.utils.change_log.check_for_update",
-<<<<<<< HEAD
 		# "frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_daily",
-		# "frappe.integrations.doctype.google_drive.google_drive.daily_backup"
-=======
-		"frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_daily",
 		"frappe.email.doctype.auto_email_report.auto_email_report.send_daily",
-		"frappe.integrations.doctype.google_drive.google_drive.daily_backup",
->>>>>>> official/version-13
+		# "frappe.integrations.doctype.google_drive.google_drive.daily_backup",
 	],
 	"weekly_long": [
 		# "frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backups_weekly",
 		# "frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_weekly",
 		"frappe.desk.doctype.route_history.route_history.flush_old_route_records",
 		"frappe.desk.form.document_follow.send_weekly_updates",
-<<<<<<< HEAD
-		# "frappe.social.doctype.energy_point_log.energy_point_log.send_weekly_summary",
-		# "frappe.integrations.doctype.google_drive.google_drive.weekly_backup"
-	],
-	"monthly": [
-		"frappe.email.doctype.auto_email_report.auto_email_report.send_monthly",
-		# "frappe.social.doctype.energy_point_log.energy_point_log.send_monthly_summary"
-	]
-	#,
-	#"monthly_long": [
-	#	"frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_monthly"
-	#]
-=======
 		"frappe.social.doctype.energy_point_log.energy_point_log.send_weekly_summary",
 		"frappe.integrations.doctype.google_drive.google_drive.weekly_backup",
 	],
@@ -284,7 +250,6 @@ scheduler_events = {
 	"monthly_long": [
 		"frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_monthly"
 	],
->>>>>>> official/version-13
 }
 
 get_translated_dict = {
