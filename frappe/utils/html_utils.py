@@ -5,6 +5,7 @@ import re
 import bleach_allowlist.bleach_allowlist as bleach_allowlist
 from six import string_types
 
+
 def clean_html(html):
 	import bleach
 

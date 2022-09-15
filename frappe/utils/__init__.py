@@ -1,5 +1,5 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
-# MIT License. See license.txt
+# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# License: MIT. See LICENSE
 
 from __future__ import print_function, unicode_literals
 
@@ -25,7 +25,7 @@ import frappe
 # utility functions like cint, int, flt, etc.
 from frappe.utils.data import *
 from frappe.utils.html_utils import sanitize_html
-
+from collections.abc import MutableMapping, MutableSequence, Sequence
 
 default_fields = ['doctype', 'name', 'owner', 'creation', 'modified', 'modified_by',
 	'parent', 'parentfield', 'parenttype', 'idx', 'docstatus']
@@ -59,6 +59,12 @@ def get_email_address(user=None):
 def get_formatted_email(user, mail=None):
 	"""get Email Address of user formatted as: `John Doe <johndoe@example.com>`"""
 	fullname = get_fullname(user)
+	method = get_hook_method('get_sender_details')
+
+	if method:
+		sender_name, mail = method()
+		# if method exists but sender_name is ""
+		fullname = sender_name or fullname
 
 	if not mail:
 		mail = get_email_address(user) or validate_email_address(user)
@@ -97,7 +103,7 @@ def validate_name(name, throw=False):
 		return False
 
 	name = name.strip()
-	match = re.match(r"^[\w][\w\'\-]*([ \w][\w\'\-]+)*$", name)
+	match = re.match(r"^[\w][\w\'\-]*( \w[\w\'\-]*)*$", name)
 
 	if not match and throw:
 		frappe.throw(frappe._("{0} is not a valid Name").format(name), frappe.InvalidNameError)
@@ -166,7 +172,7 @@ def validate_url(txt, throw=False, valid_schemes=None):
 
 		Parameters:
 			throw (`bool`): throws a validationError if URL is not valid
-			valid_schemes (`str` or `list`): if provided checks the given URL's scheme against this 
+			valid_schemes (`str` or `list`): if provided checks the given URL's scheme against this
 
 		Returns:
 			bool: if `txt` represents a valid URL
@@ -240,7 +246,9 @@ def get_traceback() -> str:
 		return ""
 
 	trace_list = traceback.format_exception(exc_type, exc_value, exc_tb)
-	return "".join(cstr(t) for t in trace_list)
+	bench_path = get_bench_path() + "/"
+
+	return "".join(cstr(t) for t in trace_list).replace(bench_path, "")
 
 def log(event, details):
 	frappe.logger().info(details)
@@ -624,7 +632,7 @@ def get_installed_apps_info():
 	out = []
 	from frappe.utils.change_log import get_versions
 
-	for app, version_details in iteritems(get_versions()):
+	for app, version_details in get_versions().items():
 		out.append({
 			'app_name': app,
 			'version': version_details.get('branch_version') or version_details.get('version'),
@@ -745,7 +753,7 @@ def get_safe_filters(filters):
 	try:
 		filters = json.loads(filters)
 
-		if isinstance(filters, (integer_types, float)):
+		if isinstance(filters, (int, float)):
 			filters = frappe.as_unicode(filters)
 
 	except (TypeError, ValueError):
@@ -852,3 +860,34 @@ def groupby_metric(iterable: typing.Dict[str, list], key: str):
 		for item in items:
 			records.setdefault(item[key], {}).setdefault(category, []).append(item)
 	return records
+
+def get_table_name(table_name: str) -> str:
+	return f"tab{table_name}" if not table_name.startswith("__") else table_name
+
+def squashify(what):
+	if isinstance(what, Sequence) and len(what) == 1:
+		return what[0]
+
+	return what
+
+def safe_json_loads(*args):
+	results = []
+
+	for arg in args:
+		try:
+			arg = json.loads(arg)
+		except Exception:
+			pass
+
+		results.append(arg)
+
+	return squashify(results)
+
+def dictify(arg):
+	if isinstance(arg, MutableSequence):
+		for i, a in enumerate(arg):
+			arg[i] = dictify(a)
+	elif isinstance(arg, MutableMapping):
+		arg = frappe._dict(arg)
+
+	return arg

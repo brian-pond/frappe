@@ -216,9 +216,11 @@ class Document(BaseDocument):
 		is not set.
 
 		:param permtype: one of `read`, `write`, `submit`, `cancel`, `delete`"""
+		import frappe.permissions
+
 		if self.flags.ignore_permissions:
 			return True
-		return frappe.has_permission(self.doctype, permtype, self, verbose=verbose)
+		return frappe.permissions.has_permission(self.doctype, permtype, self, verbose=verbose)
 
 	def raise_no_permission_to(self, perm_type):
 		"""Raise `frappe.PermissionError`."""
@@ -330,10 +332,12 @@ class Document(BaseDocument):
 		self.flags.ignore_version = frappe.flags.in_test if ignore_version is None else ignore_version
 
 		if self.get("__islocal") or not self.get("name"):
-			self.insert()
-			return
+			return self.insert()
 
 		self.check_permission("write", "save")
+
+		if self.docstatus == 2:
+			self._rename_doc_on_cancel()
 
 		self.set_user_and_timestamp()
 		self.set_docstatus()
@@ -449,12 +453,12 @@ class Document(BaseDocument):
 
 		# If autoname has set as Prompt (name)
 		if self.get("__newname"):
-			self.name = self.get("__newname")
+			self.name = validate_name(self.doctype, self.get("__newname"))
 			self.flags.name_set = True
 			return
 
 		if set_name:
-			self.name = set_name
+			self.name = validate_name(self.doctype, set_name)
 		else:
 			set_new_name(self)
 
@@ -531,6 +535,7 @@ class Document(BaseDocument):
 		self._validate_selects()
 		self._validate_non_negative()
 		self._validate_length()
+		self._validate_code_fields()
 		self._extract_images_from_text_editor()
 		self._sanitize_content()
 		self._save_passwords()
@@ -542,6 +547,7 @@ class Document(BaseDocument):
 			d._validate_selects()
 			d._validate_non_negative()
 			d._validate_length()
+			d._validate_code_fields()
 			d._extract_images_from_text_editor()
 			d._sanitize_content()
 			d._save_passwords()
@@ -784,8 +790,10 @@ class Document(BaseDocument):
 			elif self.docstatus==1:
 				self._action = "submit"
 				self.check_permission("submit")
+			elif self.docstatus==2:
+				raise frappe.DocstatusTransitionError(_("Cannot change docstatus from 0 (Draft) to 2 (Cancelled)"))
 			else:
-				raise frappe.DocstatusTransitionError(_("Cannot change docstatus from 0 to 2"))
+				raise frappe.ValidationError(_("Invalid docstatus"), self.docstatus)
 
 		elif docstatus==1:
 			if self.docstatus==1:
@@ -794,8 +802,10 @@ class Document(BaseDocument):
 			elif self.docstatus==2:
 				self._action = "cancel"
 				self.check_permission("cancel")
+			elif self.docstatus==0:
+				raise frappe.DocstatusTransitionError(_("Cannot change docstatus from 1 (Submitted) to 0 (Draft)"))
 			else:
-				raise frappe.DocstatusTransitionError(_("Cannot change docstatus from 1 to 0"))
+				raise frappe.ValidationError(_("Invalid docstatus"), self.docstatus)
 
 		elif docstatus==2:
 			raise frappe.ValidationError(_("Cannot edit cancelled document"))
@@ -893,14 +903,14 @@ class Document(BaseDocument):
 
 	def run_method(self, method, *args, **kwargs):
 		"""run standard triggers, plus those in hooks"""
-		if "flags" in kwargs:
-			del kwargs["flags"]
 
-		if hasattr(self, method) and hasattr(getattr(self, method), "__call__"):
-			fn = lambda self, *args, **kwargs: getattr(self, method)(*args, **kwargs)
-		else:
-			# hack! to run hooks even if method does not exist
-			fn = lambda self, *args, **kwargs: None
+		def fn(self, *args, **kwargs):
+			method_object = getattr(self, method, None)
+
+			# Cannot have a field with same name as method
+			# If method found in __dict__, expect it to be callable
+			if method in self.__dict__ or callable(method_object):
+				return method_object(*args, **kwargs)
 
 		fn.__name__ = str(method)
 		out = Document.hook(fn)(self, *args, **kwargs)
@@ -962,23 +972,23 @@ class Document(BaseDocument):
 	def _submit(self):
 		"""Submit the document. Sets `docstatus` = 1, then saves."""
 		self.docstatus = 1
-		self.save()
+		return self.save()
 
 	@whitelist.__func__
 	def _cancel(self):
 		"""Cancel the document. Sets `docstatus` = 2, then saves."""
 		self.docstatus = 2
-		self.save()
+		return self.save()
 
 	@whitelist.__func__
 	def submit(self):
 		"""Submit the document. Sets `docstatus` = 1, then saves."""
-		self._submit()
+		return self._submit()
 
 	@whitelist.__func__
 	def cancel(self):
 		"""Cancel the document. Sets `docstatus` = 2, then saves."""
-		self._cancel()
+		return self._cancel()
 
 	def delete(self, ignore_permissions=False):
 		"""Delete document."""
@@ -1111,7 +1121,10 @@ class Document(BaseDocument):
 			self.set("modified", now())
 			self.set("modified_by", frappe.session.user)
 
-		self.load_doc_before_save()
+		# load but do not reload doc_before_save because before_change or on_change might expect it
+		if not self.get_doc_before_save():
+			self.load_doc_before_save()
+
 		# to trigger notification on value change
 		self.run_method('before_change')
 
@@ -1395,6 +1408,12 @@ class Document(BaseDocument):
 		"""Return a list of Tags attached to this document"""
 		from frappe.desk.doctype.tag.tag import DocTags
 		return DocTags(self.doctype).get_tags(self.name).split(",")[1:]
+
+	def _rename_doc_on_cancel(self):
+		if frappe.get_system_settings('use_original_name_for_amended_document', ignore_if_not_exists=True):
+			new_name = gen_new_name_for_cancelled_doc(self)
+			frappe.rename_doc(self.doctype, self.name, new_name, force=True, show_alert=False)
+			self.name = new_name
 
 	def __repr__(self):
 		name = self.name or "unsaved"

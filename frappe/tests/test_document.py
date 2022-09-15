@@ -159,7 +159,7 @@ class TestDocument(unittest.TestCase):
 
 	def test_varchar_length(self):
 		d = self.test_insert()
-		d.subject = "abcde"*100
+		d.sender = "abcde"*100 + "@user.com"
 		self.assertRaises(frappe.CharacterLengthExceededError, d.save)
 
 	def test_xss_filter(self):
@@ -229,3 +229,54 @@ class TestDocument(unittest.TestCase):
 		self.assertEqual(frappe.db.get_value("Currency", d.name), d.name)
 
 		frappe.delete_doc_if_exists("Currency", "Frappe Coin", 1)
+
+	def test_get_formatted(self):
+		frappe.get_doc({
+			'doctype': 'DocType',
+			'name': 'Test Formatted',
+			'module': 'Custom',
+			'custom': 1,
+			'fields': [
+				{'label': 'Currency', 'fieldname': 'currency', 'reqd': 1, 'fieldtype': 'Currency'},
+			]
+		}).insert()
+
+		frappe.delete_doc_if_exists("Currency", "INR", 1)
+
+		d = frappe.get_doc({
+			'doctype': 'Currency',
+			'currency_name': 'INR',
+			'symbol': '₹',
+		}).insert()
+
+		d = frappe.get_doc({
+			'doctype': 'Test Formatted',
+			'currency': 100000
+		})
+		self.assertEquals(d.get_formatted('currency', currency='INR', format="#,###.##"), '₹ 100,000.00')
+
+	def test_limit_for_get(self):
+		doc = frappe.get_doc("DocType", "DocType")
+		# assuming DocType has more than 3 Data fields
+		self.assertEquals(len(doc.get("fields", limit=3)), 3)
+
+		# limit with filters
+		self.assertEquals(len(doc.get("fields", filters={"fieldtype": "Data"}, limit=3)), 3)
+
+	def test_run_method(self):
+		doc = frappe.get_last_doc("User")
+
+		# Case 1: Override with a string
+		doc.as_dict = ""
+
+		# run_method should throw TypeError
+		self.assertRaisesRegex(TypeError, "not callable", doc.run_method, "as_dict")
+
+		# Case 2: Override with a function
+		def my_as_dict(*args, **kwargs):
+			return "success"
+
+		doc.as_dict = my_as_dict
+
+		# run_method should get overridden
+		self.assertEqual(doc.run_method("as_dict"), "success")

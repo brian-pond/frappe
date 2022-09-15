@@ -82,7 +82,7 @@ def get_home_page():
 
 			# portal default
 			if not home_page:
-				home_page = frappe.db.get_value("Portal Settings", None, "default_portal_home")
+				home_page = frappe.db.get_single_value("Portal Settings", "default_portal_home")
 
 		# by hooks
 		if not home_page:
@@ -90,7 +90,7 @@ def get_home_page():
 
 		# global
 		if not home_page:
-			home_page = frappe.db.get_value("Website Settings", None, "home_page")
+			home_page = frappe.db.get_single_value("Website Settings", "home_page")
 
 		if not home_page:
 			home_page = "login" if frappe.session.user == 'Guest' else "me"
@@ -141,6 +141,9 @@ def is_signup_enabled():
 				frappe.local.is_signup_enabled = False
 
 	return frappe.local.is_signup_enabled
+
+def is_signup_disabled():
+	return frappe.db.get_single_value('Website Settings', 'disable_signup', True)
 
 def cleanup_page_name(title):
 	"""make page name from title"""

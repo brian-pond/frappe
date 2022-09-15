@@ -116,7 +116,7 @@ function get_version_timeline_content(version_doc, frm) {
 						frm.perm);
 
 					if (field_display_status === 'Read' || field_display_status === 'Write') {
-						return frappe.meta.get_label(frm.doctype, p[0]);
+						return __(frappe.meta.get_label(frm.doctype, p[0]));
 					}
 				}
 			});
@@ -152,6 +152,7 @@ function get_version_comment(version_doc, text) {
 		let unlinked_content = "";
 
 		try {
+			text += '</>';
 			Array.from($(text)).forEach(element => {
 				if ($(element).is('a')) {
 					version_comment += unlinked_content ? frappe.utils.get_form_link('Version', version_doc.name, true, unlinked_content) : "";

@@ -75,7 +75,7 @@ frappe.ui.form.Layout = Class.extend({
 			// remove previous color
 			this.message.removeClass(this.message_color);
 		}
-		this.message_color = (color && ['yellow', 'blue'].includes(color)) ? color : 'blue';
+		this.message_color = (color && ['yellow', 'blue', 'red'].includes(color)) ? color : 'blue';
 		if (html) {
 			if (html.substr(0, 1)!=='<') {
 				// wrap in a block
@@ -250,6 +250,18 @@ frappe.ui.form.Layout = Class.extend({
 			// collapse sections
 			this.refresh_section_collapse();
 		}
+
+		if (document.activeElement) {
+			if (document.activeElement.tagName == 'INPUT' && this.is_numeric_field_active()) {
+				document.activeElement.select();
+			}
+		}
+	},
+	
+	is_numeric_field_active() {
+		const control = $(document.activeElement).closest(".frappe-control");
+		const fieldtype = (control.data() || {}).fieldtype;
+		return frappe.model.numeric_fieldtypes.includes(fieldtype);
 	},
 
 	refresh_sections: function() {
@@ -396,7 +408,8 @@ frappe.ui.form.Layout = Class.extend({
 					// next row
 					grid_row.grid.grid_rows[grid_row.doc.idx].toggle_view(true);
 				}
-			} else {
+			} else if (!shift) {
+				// End of tab navigation
 				$(this.primary_button).focus();
 			}
 		}
@@ -540,7 +553,7 @@ frappe.ui.form.Layout = Class.extend({
 
 		} else if (expression.substr(0, 5)=='eval:') {
 			try {
-				out = eval(expression.substr(5));
+				out = frappe.utils.eval(expression.substr(5), { doc, parent });
 				if (parent && parent.istable && expression.includes('is_submittable')) {
 					out = true;
 				}

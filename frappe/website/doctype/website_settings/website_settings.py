@@ -23,8 +23,9 @@ class WebsiteSettings(Document):
 	def validate_home_page(self):
 		if frappe.flags.in_install:
 			return
+
 		if self.home_page and not resolve_route(self.home_page):
-			frappe.msgprint(_("Invalid Home Page") + " (Standard pages - index, login, products, blog, about, contact)")
+			frappe.msgprint(_("Invalid Home Page") + " (Standard pages - home, login, products, blog, about, contact)")
 			self.home_page = ''
 
 	def validate_top_bar_items(self):
@@ -121,8 +122,7 @@ def get_website_settings(context=None):
 		"facebook_share", "google_plus_one", "twitter_share", "linked_in_share",
 		"disable_signup", "hide_footer_signup", "head_html", "title_prefix",
 		"navbar_template", "footer_template", "navbar_search", "enable_view_tracking",
-		"footer_logo", "call_to_action", "call_to_action_url", "show_language_picker",
-		"chat_enable"]:
+		"footer_logo", "call_to_action", "call_to_action_url", "show_language_picker"]:
 		if hasattr(settings, k):
 			context[k] = settings.get(k)
 

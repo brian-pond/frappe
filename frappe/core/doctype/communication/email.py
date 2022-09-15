@@ -20,9 +20,8 @@ from frappe.utils.background_jobs import enqueue
 def make(doctype=None, name=None, content=None, subject=None, sent_or_received = "Sent",
 	sender=None, sender_full_name=None, recipients=None, communication_medium="Email", send_email=False,
 	print_html=None, print_format=None, attachments='[]', send_me_a_copy=False, cc=None, bcc=None,
-	flags=None, read_receipt=None, print_letterhead=True, email_template=None, communication_type=None,
-	ignore_permissions=False):
-	"""Make a new communication.
+	read_receipt=None, print_letterhead=True, email_template=None, communication_type=None, **kwargs):
+	"""Make a new communication. Checks for email permissions for specified Document.
 
 	:param doctype: Reference DocType.
 	:param name: Reference Document name.
@@ -39,18 +38,71 @@ def make(doctype=None, name=None, content=None, subject=None, sent_or_received =
 	:param send_me_a_copy: Send a copy to the sender (default **False**).
 	:param email_template: Template which is used to compose mail .
 	"""
+	if kwargs:
+		from frappe.utils.commands import warn
+		warn(
+			f"Options {kwargs} used in frappe.core.doctype.communication.email.make "
+			"are deprecated or unsupported",
+			category=DeprecationWarning
+		)
 
-	is_error_report = (doctype=="User" and name==frappe.session.user and subject=="Error Report")
-	send_me_a_copy = cint(send_me_a_copy)
+	if doctype and name and not frappe.has_permission(doctype=doctype, ptype="email", doc=name):
+		raise frappe.PermissionError(
+			f"You are not allowed to send emails related to: {doctype} {name}"
+		)
 
-	if not ignore_permissions:
-		if doctype and name and not is_error_report and not frappe.has_permission(doctype, "email", name) and not (flags or {}).get('ignore_doctype_permissions'):
-			raise frappe.PermissionError("You are not allowed to send emails related to: {doctype} {name}".format(
-				doctype=doctype, name=name))
+	return _make(
+		doctype=doctype,
+		name=name,
+		content=content,
+		subject=subject,
+		sent_or_received=sent_or_received,
+		sender=sender,
+		sender_full_name=sender_full_name,
+		recipients=recipients,
+		communication_medium=communication_medium,
+		send_email=send_email,
+		print_html=print_html,
+		print_format=print_format,
+		attachments=attachments,
+		send_me_a_copy=cint(send_me_a_copy),
+		cc=cc,
+		bcc=bcc,
+		read_receipt=read_receipt,
+		print_letterhead=print_letterhead,
+		email_template=email_template,
+		communication_type=communication_type,
+		add_signature=False,
+	)
 
-	if not sender:
-		sender = get_formatted_email(frappe.session.user)
 
+def _make(
+	doctype=None,
+	name=None,
+	content=None,
+	subject=None,
+	sent_or_received="Sent",
+	sender=None,
+	sender_full_name=None,
+	recipients=None,
+	communication_medium="Email",
+	send_email=False,
+	print_html=None,
+	print_format=None,
+	attachments="[]",
+	send_me_a_copy=False,
+	cc=None,
+	bcc=None,
+	read_receipt=None,
+	print_letterhead=True,
+	email_template=None,
+	communication_type=None,
+	add_signature=True,
+):
+	"""Internal method to make a new communication that ignores Permission checks.
+	"""
+
+	sender = sender or get_formatted_email(frappe.session.user)
 	recipients = list_to_str(recipients) if isinstance(recipients, list) else recipients
 	cc = list_to_str(cc) if isinstance(cc, list) else cc
 	bcc = list_to_str(bcc) if isinstance(bcc, list) else bcc
@@ -72,10 +124,10 @@ def make(doctype=None, name=None, content=None, subject=None, sent_or_received =
 		"message_id":get_message_id().strip(" <>"),
 		"read_receipt":read_receipt,
 		"has_attachment": 1 if attachments else 0,
-		"communication_type": communication_type
-	}).insert(ignore_permissions=True)
-
-	comm.save(ignore_permissions=True)
+		"communication_type": communication_type,
+	})
+	comm.flags.skip_add_signature = not add_signature
+	comm.insert(ignore_permissions=True)
 
 	if isinstance(attachments, string_types):
 		attachments = json.loads(attachments)
@@ -85,6 +137,8 @@ def make(doctype=None, name=None, content=None, subject=None, sent_or_received =
 		add_attachments(comm.name, attachments)
 
 	if cint(send_email):
+		# Raise error if outgoing email account is missing
+		_ = frappe.email.smtp.get_outgoing_email_account(append_to=comm.doctype, sender=comm.sender)
 		frappe.flags.print_letterhead = cint(print_letterhead)
 		comm.send(print_html, print_format, attachments, send_me_a_copy=send_me_a_copy)
 
@@ -138,7 +192,7 @@ def notify(doc, print_html=None, print_format=None, attachments=None,
 			recipients=recipients, cc=cc, bcc=None)
 	else:
 		enqueue(sendmail, queue="default", timeout=300, event="sendmail",
-			communication_name=doc.name,
+			enqueue_after_commit=True, communication_name=doc.name,
 			print_html=print_html, print_format=print_format, attachments=attachments,
 			recipients=recipients, cc=cc, bcc=bcc, lang=frappe.local.lang,
 			session=frappe.local.session, print_letterhead=frappe.flags.print_letterhead)
@@ -474,25 +528,43 @@ def sendmail(communication_name, print_html=None, print_format=None, attachments
 		traceback = frappe.log_error("frappe.core.doctype.communication.email.sendmail")
 		raise
 
-@frappe.whitelist(allow_guest=True)
-def mark_email_as_seen(name=None):
+@frappe.whitelist(allow_guest=True, methods=("GET",))
+def mark_email_as_seen(name: str = None):
 	try:
-		if name and frappe.db.exists("Communication", name) and not frappe.db.get_value("Communication", name, "read_by_recipient"):
-			frappe.db.set_value("Communication", name, "read_by_recipient", 1)
-			frappe.db.set_value("Communication", name, "delivery_status", "Read")
-			frappe.db.set_value("Communication", name, "read_by_recipient_on", get_datetime())
-			frappe.db.commit()
+		update_communication_as_read(name)
+		frappe.db.commit()  # nosemgrep: this will be called in a GET request
+
 	except Exception:
 		frappe.log_error(frappe.get_traceback())
-	finally:
-		# Return image as response under all circumstances
-		from PIL import Image
-		import io
-		im = Image.new('RGBA', (1, 1))
-		im.putdata([(255,255,255,0)])
-		buffered_obj = io.BytesIO()
-		im.save(buffered_obj, format="PNG")
 
-		frappe.response["type"] = 'binary'
-		frappe.response["filename"] = "imaginary_pixel.png"
-		frappe.response["filecontent"] = buffered_obj.getvalue()
+	finally:
+		frappe.response.update({
+			"type": "binary",
+			"filename": "imaginary_pixel.png",
+			"filecontent": (
+				b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00"
+				b"\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\r"
+				b"IDATx\x9cc\xf8\xff\xff?\x03\x00\x08\xfc\x02\xfe\xa7\x9a\xa0"
+				b"\xa0\x00\x00\x00\x00IEND\xaeB`\x82"
+			)
+		})
+
+def update_communication_as_read(name):
+	if not name or not isinstance(name, str):
+		return
+
+	communication = frappe.db.get_value(
+		"Communication",
+		name,
+		"read_by_recipient",
+		as_dict=True
+	)
+
+	if not communication or communication.read_by_recipient:
+		return
+
+	frappe.db.set_value("Communication", name, {
+		"read_by_recipient": 1,
+		"delivery_status": "Read",
+		"read_by_recipient_on": get_datetime()
+	})

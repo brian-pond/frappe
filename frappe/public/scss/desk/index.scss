@@ -2,6 +2,7 @@
 @import "../common/mixins.scss";
 @import "../common/global.scss";
 @import "../common/icons.scss";
+@import "../common/alert.scss";
 
 @import "~bootstrap/scss/bootstrap";
 @import "global";
@@ -46,3 +47,4 @@
 @import "link_preview";
 @import "../common/quill";
 @import "plyr";
+@import "version";

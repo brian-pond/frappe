@@ -4,15 +4,16 @@
 from __future__ import unicode_literals
 import frappe
 import datetime
-from frappe.utils import formatdate, fmt_money, flt, cstr, cint, format_datetime, format_time, format_duration
+from frappe.utils import formatdate, fmt_money, flt, cstr, cint, format_datetime, format_time, format_duration, format_timedelta
 from frappe.model.meta import get_field_currency, get_field_precision
 import re
-from six import string_types
+from dateutil.parser import ParserError
 
-def format_value(value, df=None, doc=None, currency=None, translated=False):
+
+def format_value(value, df=None, doc=None, currency=None, translated=False, format=None):
 	'''Format value based on given fieldtype, document reference, currency reference.
 	If docfield info (df) is not given, it will try and guess based on the datatype of the value'''
-	if isinstance(df, string_types):
+	if isinstance(df, str):
 		df = frappe._dict(fieldtype=df)
 
 	if not df:
@@ -49,7 +50,10 @@ def format_value(value, df=None, doc=None, currency=None, translated=False):
 		return format_datetime(value)
 
 	elif df.get("fieldtype")=="Time":
-		return format_time(value)
+		try:
+			return format_time(value)
+		except ParserError:
+			return format_timedelta(value)
 
 	elif value==0 and df.get("fieldtype") in ("Int", "Float", "Currency", "Percent") and df.get("print_hide_if_no_value"):
 		# this is required to show 0 as blank in table columns
@@ -58,7 +62,7 @@ def format_value(value, df=None, doc=None, currency=None, translated=False):
 	elif df.get("fieldtype") == "Currency":
 		default_currency = frappe.db.get_default("currency")
 		currency = currency or get_field_currency(df, doc) or default_currency
-		return fmt_money(value, precision=get_field_precision(df, doc), currency=currency)
+		return fmt_money(value, precision=get_field_precision(df, doc), currency=currency, format=format)
 
 	elif df.get("fieldtype") == "Float":
 		precision = get_field_precision(df, doc)

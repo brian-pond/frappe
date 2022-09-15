@@ -11,15 +11,15 @@
   "message_level",
   "section_break_3",
   "email",
-  "last_name",
-  "language",
-  "column_break0",
   "first_name",
-  "full_name",
-  "time_zone",
-  "column_break_11",
   "middle_name",
+  "last_name",
+  "column_break0",
+  "full_name",
   "username",
+  "column_break_11",
+  "language",
+  "time_zone",
   "send_welcome_email",
   "unsubscribed",
   "user_image",
@@ -203,7 +203,8 @@
    "fieldname": "role_profile_name",
    "fieldtype": "Link",
    "label": "Role Profile",
-   "options": "Role Profile"
+   "options": "Role Profile",
+   "permlevel": 1
   },
   {
    "fieldname": "roles_html",
@@ -555,20 +556,22 @@
    "collapsible": 1,
    "fieldname": "api_access",
    "fieldtype": "Section Break",
-   "label": "Api Access"
+   "label": "API Access"
   },
   {
-   "description": "API Key cannot be  regenerated",
+   "description": "API Key cannot be regenerated",
    "fieldname": "api_key",
    "fieldtype": "Data",
    "label": "API Key",
+   "permlevel": 1,
    "read_only": 1,
    "unique": 1
   },
   {
    "fieldname": "generate_keys",
    "fieldtype": "Button",
-   "label": "Generate Keys"
+   "label": "Generate Keys",
+   "permlevel": 1
   },
   {
    "fieldname": "column_break_65",
@@ -578,6 +581,7 @@
    "fieldname": "api_secret",
    "fieldtype": "Password",
    "label": "API Secret",
+   "permlevel": 1,
    "read_only": 1
   },
   {
@@ -620,11 +624,6 @@
   {
    "group": "Profile",
    "link_doctype": "Contact",
-   "link_fieldname": "user"
-  },
-  {
-   "group": "Profile",
-   "link_doctype": "Chat Profile",
    "link_fieldname": "user"
   },
   {
@@ -678,8 +677,12 @@
    "link_fieldname": "user"
   }
  ],
+<<<<<<< HEAD
  "max_attachments": 5,
  "modified": "2021-06-22 10:19:55.987351",
+=======
+ "modified": "2022-03-09 01:47:56.745069",
+>>>>>>> temp
  "modified_by": "Administrator",
  "module": "Core",
  "name": "User",
@@ -712,6 +715,7 @@
  "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "full_name",
  "track_changes": 1
 }

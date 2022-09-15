@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
 from __future__ import unicode_literals
@@ -20,7 +20,7 @@ from frappe.website.redirect import resolve_redirect
 from frappe.website.utils import (get_home_page, can_cache, delete_page_cache,
 	get_toc, get_next_link)
 from frappe.website.router import clear_sitemap, evaluate_dynamic_routes
-from frappe.translate import guess_language
+from frappe.translate import get_language
 
 class PageNotFoundError(Exception): pass
 
@@ -89,16 +89,25 @@ def render(path=None, http_status_code=None):
 
 	return build_response(path, data, http_status_code or 200)
 
+def is_binary_file(path):
+	# ref: https://stackoverflow.com/a/7392391/10309266
+	textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+	with open(path, 'rb') as f:
+		content = f.read(1024)
+		return bool(content.translate(None, textchars))
+
 def is_static_file(path):
-	if ('.' not in path):
-		return False
-	extn = path.rsplit('.', 1)[-1]
+	_, extn = os.path.splitext(path)
+
+	if extn:
+		extn = extn[1:] # remove leading .
+
 	if extn in ('html', 'md', 'js', 'xml', 'css', 'txt', 'py', 'json'):
 		return False
 
 	for app in frappe.get_installed_apps():
 		file_path = frappe.get_app_path(app, 'www') + '/' + path
-		if os.path.exists(file_path):
+		if os.path.isfile(file_path) and (extn or is_binary_file(file_path)):
 			frappe.flags.file_path = file_path
 			return True
 
@@ -162,7 +171,7 @@ def add_preload_headers(response):
 
 def render_page_by_language(path):
 	translated_languages = frappe.get_hooks("translated_languages_for_website")
-	user_lang = guess_language(translated_languages)
+	user_lang = get_language(translated_languages)
 	if translated_languages and user_lang in translated_languages:
 		try:
 			if path and path != "index":

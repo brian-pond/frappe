@@ -50,13 +50,12 @@ class UserPermission(Document):
 			}, or_filters={
 				'applicable_for': cstr(self.applicable_for),
 				'apply_to_all_doctypes': 1,
-				'hide_descendants': cstr(self.hide_descendants)
 			}, limit=1)
 		if overlap_exists:
 			ref_link = frappe.get_desk_link(self.doctype, overlap_exists[0].name)
 			frappe.throw(_("{0} has already assigned default value for {1}.").format(ref_link, self.allow))
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_user_permissions(user=None):
 	'''Get all users permissions for the user as a dict of doctype'''
 	# if this is called from client-side,

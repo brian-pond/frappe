@@ -1,19 +1,22 @@
 import re
-import frappe
+from typing import List, Tuple, Union
+
 import psycopg2
 import psycopg2.extensions
 from six import string_types
-from frappe.utils import cstr
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from psycopg2.errorcodes import STRING_DATA_RIGHT_TRUNCATION
 
+import frappe
 from frappe.database.database import Database
 from frappe.database.postgres.schema import PostgresTable
+from frappe.utils import cstr, get_table_name
 
 # cast decimals as floats
 DEC2FLOAT = psycopg2.extensions.new_type(
-    psycopg2.extensions.DECIMAL.values,
-    'DEC2FLOAT',
-    lambda value, curs: float(value) if value is not None else None)
+	psycopg2.extensions.DECIMAL.values,
+	'DEC2FLOAT',
+	lambda value, curs: float(value) if value is not None else None)
 
 psycopg2.extensions.register_type(DEC2FLOAT)
 
@@ -30,11 +33,11 @@ class PostgresDatabase(Database):
 	def setup_type_map(self):
 		self.db_type = 'postgres'
 		self.type_map = {
-			'Currency':		('decimal', '18,6'),
+			'Currency':		('decimal', '21,9'),
 			'Int':			('bigint', None),
 			'Long Int':		('bigint', None),
-			'Float':		('decimal', '18,6'),
-			'Percent':		('decimal', '18,6'),
+			'Float':		('decimal', '21,9'),
+			'Percent':		('decimal', '21,9'),
 			'Check':		('smallint', None),
 			'Small Text':	('text', ''),
 			'Long Text':	('text', ''),
@@ -59,7 +62,8 @@ class PostgresDatabase(Database):
 			'Color':		('varchar', self.VARCHAR_LEN),
 			'Barcode':		('text', ''),
 			'Geolocation':	('text', ''),
-			'Duration':		('decimal', '18,6')
+			'Duration':		('decimal', '21,9'),
+			'Icon':			('varchar', self.VARCHAR_LEN)
 		}
 
 	def get_connection(self):
@@ -74,6 +78,12 @@ class PostgresDatabase(Database):
 		"""Excape quotes and percent in given string."""
 		if isinstance(s, bytes):
 			s = s.decode('utf-8')
+
+		# MariaDB's driver treats None as an empty string
+		# So Postgres should do the same
+
+		if s is None:
+			s = ''
 
 		if percent:
 			s = s.replace("%", "%%")
@@ -140,6 +150,10 @@ class PostgresDatabase(Database):
 		return getattr(e, 'pgcode', None) == '42P01'
 
 	@staticmethod
+	def is_missing_table(e):
+		return PostgresDatabase.is_table_missing(e)
+
+	@staticmethod
 	def is_missing_column(e):
 		return getattr(e, 'pgcode', None) == '42703'
 
@@ -157,11 +171,11 @@ class PostgresDatabase(Database):
 
 	@staticmethod
 	def is_primary_key_violation(e):
-		return e.pgcode == '23505' and '_pkey' in cstr(e.args[0])
+		return getattr(e, "pgcode", None) == '23505' and '_pkey' in cstr(e.args[0])
 
 	@staticmethod
 	def is_unique_key_violation(e):
-		return e.pgcode == '23505' and '_key' in cstr(e.args[0])
+		return getattr(e, "pgcode", None) == '23505' and '_key' in cstr(e.args[0])
 
 	@staticmethod
 	def is_duplicate_fieldname(e):
@@ -169,7 +183,20 @@ class PostgresDatabase(Database):
 
 	@staticmethod
 	def is_data_too_long(e):
-		return e.pgcode == '22001'
+		return e.pgcode == STRING_DATA_RIGHT_TRUNCATION
+
+	def rename_table(self, old_name: str, new_name: str) -> Union[List, Tuple]:
+		old_name = get_table_name(old_name)
+		new_name = get_table_name(new_name)
+		return self.sql(f"ALTER TABLE `{old_name}` RENAME TO `{new_name}`")
+
+	def describe(self, doctype: str)-> Union[List, Tuple]:
+		table_name = get_table_name(doctype)
+		return self.sql(f"SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_NAME = '{table_name}'")
+
+	def change_column_type(self, table: str, column: str, type: str) -> Union[List, Tuple]:
+		table_name = get_table_name(table)
+		return self.sql(f'ALTER TABLE "{table_name}" ALTER COLUMN "{column}" TYPE {type}')
 
 	def create_auth_table(self):
 		self.sql_ddl("""create table if not exists "__Auth" (
@@ -246,11 +273,11 @@ class PostgresDatabase(Database):
 	def add_index(self, doctype, fields, index_name=None):
 		"""Creates an index with given fields if not already created.
 		Index name will be `fieldname1_fieldname2_index`"""
+		table_name = get_table_name(doctype)
 		index_name = index_name or self.get_index_name(fields)
-		table_name = 'tab' + doctype
+		fields_str = '", "'.join(re.sub(r"\(.*\)", "", field) for field in fields)
 
-		self.commit()
-		self.sql("""CREATE INDEX IF NOT EXISTS "{}" ON `{}`("{}")""".format(index_name, table_name, '", "'.join(fields)))
+		self.sql_ddl(f'CREATE INDEX IF NOT EXISTS "{index_name}" ON `{table_name}` ("{fields_str}")')
 
 	def add_unique(self, doctype, fields, constraint_name=None):
 		if isinstance(fields, string_types):
@@ -279,18 +306,20 @@ class PostgresDatabase(Database):
 				WHEN 'timestamp without time zone' THEN 'timestamp'
 				ELSE a.data_type
 			END AS type,
-			COUNT(b.indexdef) AS Index,
+			BOOL_OR(b.index) AS index,
 			SPLIT_PART(COALESCE(a.column_default, NULL), '::', 1) AS default,
 			BOOL_OR(b.unique) AS unique
 			FROM information_schema.columns a
 			LEFT JOIN
-				(SELECT indexdef, tablename, indexdef LIKE '%UNIQUE INDEX%' AS unique
+				(SELECT indexdef, tablename,
+					indexdef LIKE '%UNIQUE INDEX%' AS unique,
+					indexdef NOT LIKE '%UNIQUE INDEX%' AS index
 					FROM pg_indexes
 					WHERE tablename='{table_name}') b
-					ON SUBSTRING(b.indexdef, '\(.*\)') LIKE CONCAT('%', a.column_name, '%')
+				ON SUBSTRING(b.indexdef, '(.*)') LIKE CONCAT('%', a.column_name, '%')
 			WHERE a.table_name = '{table_name}'
-			GROUP BY a.column_name, a.data_type, a.column_default, a.character_maximum_length;'''
-			.format(table_name=table_name), as_dict=1)
+			GROUP BY a.column_name, a.data_type, a.column_default, a.character_maximum_length;
+		'''.format(table_name=table_name), as_dict=1)
 
 	def get_database_list(self, target):
 		return [d[0] for d in self.sql("SELECT datname FROM pg_database;")]
@@ -298,6 +327,7 @@ class PostgresDatabase(Database):
 def modify_query(query):
 	""""Modifies query according to the requirements of postgres"""
 	# replace ` with " for definitions
+	query = str(query)
 	query = query.replace('`', '"')
 	query = replace_locate_with_strpos(query)
 	# select from requires ""

@@ -84,6 +84,12 @@ class TestReportview(unittest.TestCase):
 			self.assertFalse(result
 				in DatabaseQuery("DocType").execute(filters={"name": ["not in", 'DocType,DocField']}))
 
+	def test_none_filter(self):
+		query = frappe.db.query.get_sql("DocType", fields="name", filters={"restrict_to_domain": None})
+		sql = str(query).replace('`', '').replace('"', '')
+		condition = 'restrict_to_domain IS NULL'
+		self.assertIn(condition, sql)
+
 	def test_or_filters(self):
 		data = DatabaseQuery("DocField").execute(
 				filters={"parent": "DocType"}, fields=["fieldname", "fieldtype"],
@@ -332,7 +338,6 @@ class TestReportview(unittest.TestCase):
 		self.assertTrue(len(data) == 0)
 		self.assertTrue(len(frappe.get_all('Nested DocType', {'name': ('not ancestors of', 'Root')})) == len(frappe.get_all('Nested DocType')))
 
-
 	def test_is_set_is_not_set(self):
 		res = DatabaseQuery('DocType').execute(filters={'autoname': ['is', 'not set']})
 		self.assertTrue({'name': 'Integration Request'} in res)
@@ -416,6 +421,25 @@ class TestReportview(unittest.TestCase):
 		user.remove_roles("Blogger", "Website Manager")
 		user.add_roles(*user_roles)
 
+	def test_reportview_get_aggregation(self):
+		# test aggregation based on child table field
+		frappe.local.form_dict = frappe._dict({
+			"doctype": "DocType",
+			"fields": """["`tabDocField`.`label` as field_label","`tabDocField`.`name` as field_name"]""",
+			"filters": "[]",
+			"order_by": "_aggregate_column desc",
+			"start": 0,
+			"page_length": 20,
+			"view": "Report",
+			"with_comment_count": 0,
+			"group_by": "field_label, field_name",
+			"aggregate_on_field": "columns",
+			"aggregate_on_doctype": "DocField",
+			"aggregate_function": "sum"
+		})
+
+		response = execute_cmd("frappe.desk.reportview.get")
+		self.assertListEqual(response["keys"], ["field_label", "field_name", "_aggregate_column", 'columns'])
 
 def add_child_table_to_blog_post():
 	child_table = frappe.get_doc({

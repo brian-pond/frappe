@@ -530,6 +530,7 @@ def console(context):
 @click.command('run-tests')
 @click.option('--app', help="For App")
 @click.option('--doctype', help="For DocType")
+@click.option('--case', help="Select particular TestCase")
 @click.option('--doctype-list-path', help="Path to .txt file for list of doctypes. Example erpnext/tests/server/agriculture.txt")
 @click.option('--test', multiple=True, help="Specific test")
 @click.option('--ui-tests', is_flag=True, default=False, help="Run UI Tests")
@@ -539,11 +540,11 @@ def console(context):
 @click.option('--skip-test-records', is_flag=True, default=False, help="Don't create test records")
 @click.option('--skip-before-tests', is_flag=True, default=False, help="Don't run before tests hook")
 @click.option('--junit-xml-output', help="Destination file path for junit xml report")
-@click.option('--failfast', is_flag=True, default=False)
+@click.option('--failfast', is_flag=True, default=False, help="Stop the test run on the first error or failure")
 @pass_context
 def run_tests(context, app=None, module=None, doctype=None, test=(), profile=False,
 		coverage=False, junit_xml_output=False, ui_tests = False, doctype_list_path=None,
-		skip_test_records=False, skip_before_tests=False, failfast=False):
+		skip_test_records=False, skip_before_tests=False, failfast=False, case=None):
 
 	"Run tests"
 	import frappe.test_runner
@@ -566,32 +567,20 @@ def run_tests(context, app=None, module=None, doctype=None, test=(), profile=Fal
 
 	if coverage:
 		from coverage import Coverage
+		from frappe.coverage import STANDARD_INCLUSIONS, STANDARD_EXCLUSIONS, FRAPPE_EXCLUSIONS
 
 		# Generate coverage report only for app that is being tested
 		source_path = os.path.join(get_bench_path(), 'apps', app or 'frappe')
-		incl = [
-			'*.py',
-		]
-		omit = [
-			'*.html',
-			'*.js',
-			'*.xml',
-			'*.pyc',
-			'*.css',
-			'*.less',
-			'*.scss',
-			'*.vue',
-			'*/test_*',
-			'*/node_modules/*',
-			'*/doctype/*/*_dashboard.py',
-			'*/patches/*',
-		]
+		omit = STANDARD_EXCLUSIONS[:]
 
 		if not app or app == 'frappe':
-			omit.append('*/tests/*')
-			omit.append('*/commands/*')
+			omit.extend(FRAPPE_EXCLUSIONS)
 
-		cov = Coverage(source=[source_path], omit=omit, include=incl)
+		ret = frappe.test_runner.main(app, module, doctype, context.verbose, tests=tests,
+			force=context.force, profile=profile, junit_xml_output=junit_xml_output,
+			ui_tests=ui_tests, doctype_list_path=doctype_list_path, failfast=failfast, case=case)
+
+		cov = Coverage(source=[source_path], omit=omit, include=STANDARD_INCLUSIONS)
 		cov.start()
 
 	ret = frappe.test_runner.main(app, module, doctype, context.verbose, tests=tests,
@@ -638,27 +627,29 @@ def run_ui_tests(context, app, headless=False, parallel=True, ci_build_id=None):
 	admin_password = frappe.get_conf(site).admin_password
 
 	# override baseUrl using env variable
-	site_env = 'CYPRESS_baseUrl={}'.format(site_url)
-	password_env = 'CYPRESS_adminPassword={}'.format(admin_password) if admin_password else ''
+	site_env = f'CYPRESS_baseUrl={site_url}'
+	password_env = f'CYPRESS_adminPassword={admin_password}' if admin_password else ''
 
 	os.chdir(app_base_path)
 
 	node_bin = subprocess.getoutput("npm bin")
-	cypress_path = "{0}/cypress".format(node_bin)
-	plugin_path = "{0}/../cypress-file-upload".format(node_bin)
+	cypress_path = f"{node_bin}/cypress"
+	plugin_path = f"{node_bin}/../cypress-file-upload"
+	testing_library_path = f"{node_bin}/../@testing-library"
 
 	# check if cypress in path...if not, install it.
 	if not (
 		os.path.exists(cypress_path)
 		and os.path.exists(plugin_path)
+		and os.path.exists(testing_library_path)
 		and cint(subprocess.getoutput("npm view cypress version")[:1]) >= 6
 	):
 		# install cypress
 		click.secho("Installing Cypress...", fg="yellow")
-		frappe.commands.popen("yarn add cypress@^6 cypress-file-upload@^5 --no-lockfile")
+		frappe.commands.popen("yarn add cypress@^6 cypress-file-upload@^5 @testing-library/cypress@^8 --no-lockfile")
 
 	# run for headless mode
-	run_or_open = 'run --browser firefox --record' if headless else 'open'
+	run_or_open = 'run --browser chrome --record' if headless else 'open'
 	command = '{site_env} {password_env} {cypress} {run_or_open}'
 	formatted_command = command.format(site_env=site_env, password_env=password_env, cypress=cypress_path, run_or_open=run_or_open)
 
@@ -666,7 +657,7 @@ def run_ui_tests(context, app, headless=False, parallel=True, ci_build_id=None):
 		formatted_command += ' --parallel'
 
 	if ci_build_id:
-		formatted_command += ' --ci-build-id {}'.format(ci_build_id)
+		formatted_command += f' --ci-build-id {ci_build_id}'
 
 	click.secho("Running Cypress...", fg="yellow")
 	frappe.commands.popen(formatted_command, cwd=app_base_path, raise_err=True)

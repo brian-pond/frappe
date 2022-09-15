@@ -107,20 +107,26 @@ class CustomizeForm(Document):
 	def set_name_translation(self):
 		'''Create, update custom translation for this doctype'''
 		current = self.get_name_translation()
-		if current:
-			if self.label and current.translated_text != self.label:
-				frappe.db.set_value('Translation', current.name, 'translated_text', self.label)
-				frappe.translate.clear_cache()
-			else:
+		if not self.label:
+			if current:
 				# clear translation
 				frappe.delete_doc('Translation', current.name)
+			return
 
-		else:
-			if self.label:
-				frappe.get_doc(dict(doctype='Translation',
-					source_text=self.doc_type,
-					translated_text=self.label,
-					language_code=frappe.local.lang or 'en')).insert()
+		if not current:
+			frappe.get_doc(
+				{
+					"doctype": 'Translation',
+					"source_text": self.doc_type,
+					"translated_text": self.label,
+					"language_code": frappe.local.lang or 'en'
+				}
+			).insert()
+			return
+
+		if self.label != current.translated_text:
+			frappe.db.set_value('Translation', current.name, 'translated_text', self.label)
+			frappe.translate.clear_cache()
 
 	def clear_existing_doc(self):
 		doc_type = self.doc_type
@@ -192,6 +198,16 @@ class CustomizeForm(Document):
 	def allow_property_change(self, prop, meta_df, df):
 		if prop == "fieldtype":
 			self.validate_fieldtype_change(df, meta_df[0].get(prop), df.get(prop))
+
+		elif prop == "length":
+			old_value_length = cint(meta_df[0].get(prop))
+			new_value_length = cint(df.get(prop))
+
+			if new_value_length and (old_value_length > new_value_length):
+				self.check_length_for_fieldtypes.append({'df': df, 'old_value': meta_df[0].get(prop)})
+				self.validate_fieldtype_length()
+			else:
+				self.flags.update_db = True
 
 		elif prop == "allow_on_submit" and df.get(prop):
 			if not frappe.db.get_value("DocField",
@@ -366,7 +382,7 @@ class CustomizeForm(Document):
 
 	def make_property_setter(self, prop, value, property_type, fieldname=None,
 		apply_on=None, row_name = None):
-		delete_property_setter(self.doc_type, prop, fieldname)
+		delete_property_setter(self.doc_type, prop, fieldname, row_name)
 
 		property_value = self.get_existing_property_value(prop, fieldname)
 
@@ -517,6 +533,7 @@ docfield_properties = {
 	'in_global_search': 'Check',
 	'in_preview': 'Check',
 	'bold': 'Check',
+	'no_copy': 'Check',
 	'hidden': 'Check',
 	'collapsible': 'Check',
 	'collapsible_depends_on': 'Data',
@@ -570,4 +587,4 @@ ALLOWED_FIELDTYPE_CHANGE = (
 	('Code', 'Geolocation'),
 	('Table', 'Table MultiSelect'))
 
-ALLOWED_OPTIONS_CHANGE = ('Read Only', 'HTML', 'Select', 'Data')
+ALLOWED_OPTIONS_CHANGE = ('Read Only', 'HTML', 'Data')

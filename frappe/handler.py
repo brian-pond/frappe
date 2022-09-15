@@ -12,7 +12,7 @@ from frappe.utils import cint
 from frappe import _, is_whitelisted
 from frappe.utils.response import build_response
 from frappe.utils.csvutils import build_csv_response
-from frappe.core.doctype.server_script.server_script_utils import run_server_script_api
+from frappe.core.doctype.server_script.server_script_utils import get_server_script_map
 
 
 ALLOWED_MIMETYPES = ('image/png', 'image/jpeg', 'application/pdf', 'application/msword',
@@ -49,14 +49,15 @@ def execute_cmd(cmd, from_async=False):
 		break
 
 	# via server script
-	if run_server_script_api(cmd):
-		return None
+	server_script = get_server_script_map().get('_api', {}).get(cmd)
+	if server_script:
+		return run_server_script(server_script)
 
 	try:
 		method = get_attr(cmd)
 	except Exception as e:
 		# Datahenge: Better error messaging
-		frappe.throw(_('Invalid Method: {0}').format(e))
+		frappe.throw(_('Failed to get method for command {0} with {1}').format(cmd, e))
 
 	if from_async:
 		method = method.queue
@@ -67,7 +68,20 @@ def execute_cmd(cmd, from_async=False):
 
 	return frappe.call(method, **frappe.form_dict)
 
+
+def run_server_script(server_script):
+	response = frappe.get_doc('Server Script', server_script).execute_method()
+
+	# some server scripts return output using flags (empty dict by default),
+	# while others directly modify frappe.response
+	# return flags if not empty dict (this overwrites frappe.response.message)
+	if response != {}:
+		return response
+
 def is_valid_http_method(method):
+	if frappe.flags.in_safe_exec:
+		return
+
 	http_method = frappe.local.request.method
 
 	if http_method not in frappe.allowed_http_methods_for_whitelisted_func[method]:
@@ -147,8 +161,8 @@ def upload_file():
 	file_url = frappe.form_dict.file_url
 	folder = frappe.form_dict.folder or 'Home'
 	method = frappe.form_dict.method
+	filename = frappe.form_dict.file_name
 	content = None
-	filename = None
 
 	if 'file' in files:
 		file = files['file']
@@ -158,7 +172,7 @@ def upload_file():
 	frappe.local.uploaded_file = content
 	frappe.local.uploaded_filename = filename
 
-	if frappe.session.user == 'Guest' or (user and not user.has_desk_access()):
+	if not file_url and (frappe.session.user == "Guest" or (user and not user.has_desk_access())):
 		import mimetypes
 		filetype = mimetypes.guess_type(filename)[0]
 		if filetype not in ALLOWED_MIMETYPES:
@@ -212,7 +226,10 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 		doc = frappe.get_doc(dt, dn)
 
 	else:
-		doc = frappe.get_doc(json.loads(docs))
+		if isinstance(docs, str):
+			docs = json.loads(docs)
+
+		doc = frappe.get_doc(docs)
 		doc._original_modified = doc.modified
 		doc.check_if_latest()
 
@@ -249,7 +266,7 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 
 	# build output as csv
 	if cint(frappe.form_dict.get('as_csv')):
-		build_csv_response(response, doc.doctype.replace(' ', ''))
+		build_csv_response(response, _(doc.doctype).replace(' ', ''))
 		return
 
 	frappe.response['message'] = response

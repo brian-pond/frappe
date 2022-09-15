@@ -373,15 +373,28 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 		return __('Filters applied for {0}', [filter_string]);
 	},
 
-	set_custom_query: function(args) {
-		var set_nulls = function(obj) {
-			$.each(obj, function(key, value) {
-				if(value!==undefined) {
-					obj[key] = value;
+	set_custom_query(args) {
+		const is_valid_value = (value, key) => {
+			if (value) return true;
+			// check if empty value is valid
+			if (this.frm) {
+				let field = frappe.meta.get_docfield(this.frm.doctype, key);
+				// empty value link fields is invalid
+				return !field || !["Link", "Dynamic Link"].includes(field.fieldtype);
+			} else {
+				return value !== undefined;
+			}
+		};
+
+		const set_nulls = (obj) => {
+			$.each(obj, (key, value) => {
+				if (!is_valid_value(value, key)) {
+					delete obj[key];
 				}
 			});
 			return obj;
 		};
+
 		if(this.get_query || this.df.get_query) {
 			var get_query = this.get_query || this.df.get_query;
 			if($.isPlainObject(get_query)) {
@@ -408,13 +421,13 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 					// add "filters" for standard query (search.py)
 					args.filters = filters;
 				}
-			} else if(typeof(get_query)==="string") {
+			} else if (typeof (get_query) === "string") {
 				args.query = get_query;
 			} else {
 				// get_query by function
 				var q = (get_query)(this.frm && this.frm.doc || this.doc, this.doctype, this.docname);
 
-				if (typeof(q)==="string") {
+				if (typeof (q) ==="string") {
 					// returns a string
 					args.query = q;
 				} else if($.isPlainObject(q)) {
@@ -442,32 +455,33 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			$.extend(args.filters, this.df.filters);
 		}
 	},
-	validate: function(value) {
+
+	validate(value) {
 		// validate the value just entered
-		if(this.df.options=="[Select]" || this.df.ignore_link_validation) {
+		if (
+			this._validated
+			|| this.df.options=="[Select]"
+			|| this.df.ignore_link_validation
+		) {
 			return value;
 		}
 
 		return this.validate_link_and_fetch(this.df, this.get_options(),
 			this.docname, value);
 	},
-	validate_link_and_fetch: function(df, doctype, docname, value) {
-		if(value) {
-			return new Promise((resolve) => {
-				var fetch = '';
-				if(this.frm && this.frm.fetch_dict[df.fieldname]) {
-					fetch = this.frm.fetch_dict[df.fieldname].columns.join(', ');
-				}
-				// if default and no fetch, no need to validate
-				if (!fetch && df.__default_value && df.__default_value===value) {
-					resolve(value);
-				}
 
-				this.fetch_and_validate_link(resolve, df, doctype, docname, value, fetch);
-			});
+	validate_link_and_fetch(df, options, docname, value) {
+		if (!options) return;
+
+		const fetch_map = this.get_fetch_map();
+		const columns_to_fetch = Object.values(fetch_map);
+
+		// if default and no fetch, no need to validate
+		if (!columns_to_fetch.length && df.__default_value === value) {
+			return value;
 		}
-	},
 
+<<<<<<< HEAD
 	fetch_and_validate_link(resolve, df, doctype, docname, value, fetch) {
 		frappe.call({
 			method: 'frappe.desk.form.utils.validate_link',
@@ -491,16 +505,51 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 				} else {
 					resolve("");
 				}
+=======
+		function update_dependant_fields(response) {
+			let field_value = "";
+			for (const [target_field, source_field] of Object.entries(fetch_map)) {
+				if (value) field_value = response[source_field];
+				frappe.model.set_value(
+					df.parent,
+					docname,
+					target_field,
+					field_value,
+					df.fieldtype,
+				);
+>>>>>>> temp
 			}
-		});
-	},
+		}
 
-	set_fetch_values: function(df, docname, fetch_values) {
-		var fl = this.frm.fetch_dict[df.fieldname].fields;
-		for(var i=0; i < fl.length; i++) {
-			frappe.model.set_value(df.parent, docname, fl[i], fetch_values[i], df.fieldtype);
+		// to avoid unnecessary request
+		if (value) {
+			return frappe.xcall("frappe.client.validate_link", {
+				doctype: options,
+				docname: value,
+				fields: columns_to_fetch,
+			}).then((response) => {
+				if (!docname || !columns_to_fetch.length) return response.name;
+				update_dependant_fields(response);
+				return response.name;
+			});
+		} else {
+			update_dependant_fields({});
+			return value;
 		}
 	},
+
+	get_fetch_map() {
+		const fetch_map = {};
+		if (!this.frm) return fetch_map;
+
+		for (const key of ["*", this.df.parent]) {
+			if (this.frm.fetch_dict[key] && this.frm.fetch_dict[key][this.df.fieldname]) {
+				Object.assign(fetch_map, this.frm.fetch_dict[key][this.df.fieldname]);
+			}
+		}
+
+		return fetch_map;
+	}
 });
 
 if (Awesomplete) {

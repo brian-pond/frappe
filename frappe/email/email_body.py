@@ -15,8 +15,8 @@ from email import policy
 
 def get_email(recipients, sender='', msg='', subject='[No Subject]',
 	text_content = None, footer=None, print_html=None, formatted=None, attachments=None,
-	content=None, reply_to=None, cc=[], bcc=[], email_account=None, expose_recipients=None,
-	inline_images=[], header=None):
+	content=None, reply_to=None, cc=None, bcc=None, email_account=None, expose_recipients=None,
+	inline_images=None, header=None):
 	""" Prepare an email with the following format:
 		- multipart/mixed
 			- multipart/alternative
@@ -27,6 +27,14 @@ def get_email(recipients, sender='', msg='', subject='[No Subject]',
 				- attachment
 	"""
 	content = content or msg
+
+	if cc is None:
+		cc = []
+	if bcc is None:
+		bcc = []
+	if inline_images is None:
+		inline_images = []
+
 	emailobj = EMail(sender, recipients, subject, reply_to=reply_to, cc=cc, bcc=bcc, email_account=email_account, expose_recipients=expose_recipients)
 
 	if not content.strip().startswith("<"):
@@ -252,17 +260,12 @@ def get_formatted_html(subject, message, footer=None, print_html=None,
 	if not email_account:
 		email_account = get_outgoing_email_account(False, sender=sender)
 
-	signature = None
-	if "<!-- signature-included -->" not in message:
-		signature = get_signature(email_account)
-
 	rendered_email = frappe.get_template("templates/emails/standard.html").render({
 		"brand_logo": get_brand_logo(email_account) if with_container or header else None,
 		"with_container": with_container,
 		"site_url": get_url(),
 		"header": get_header(header),
 		"content": message,
-		"signature": signature,
 		"footer": get_footer(email_account, footer),
 		"title": subject,
 		"print_html": print_html,
@@ -274,8 +277,7 @@ def get_formatted_html(subject, message, footer=None, print_html=None,
 	if unsubscribe_link:
 		html = html.replace("<!--unsubscribe link here-->", unsubscribe_link.html)
 
-	html = inline_style_in_html(html)
-	return html
+	return inline_style_in_html(html)
 
 @frappe.whitelist()
 def get_email_html(template, args, subject, header=None, with_container=False):

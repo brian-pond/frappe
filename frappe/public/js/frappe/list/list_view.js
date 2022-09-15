@@ -176,7 +176,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			frappe.render_template("list_view_permission_restrictions", {
 				condition_list: match_rules_list,
 			}),
-			__("Restrictions")
+			__("Restrictions", null, "Title of message showing restrictions in list view")
 		);
 	}
 
@@ -231,8 +231,13 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 	set_primary_action() {
 		if (this.can_create) {
+			const doctype_name = __(frappe.router.doctype_layout) || __(this.doctype);
+
+			// Better style would be __("Add {0}", [doctype_name], "Primary action in list view")
+			// Keeping it like this to not disrupt existing translations
+			const label = `${__("Add", null, "Primary action in list view")} ${doctype_name}`;
 			this.page.set_primary_action(
-				`${__("Add")} ${frappe.router.doctype_layout || __(this.doctype)}`,
+				label,
 				() => {
 					if (this.settings.primary_action) {
 						this.settings.primary_action();
@@ -278,14 +283,27 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	refresh(refresh_header=false) {
 		super.refresh().then(() => {
 			this.render_header(refresh_header);
+			this.update_checkbox();
 		});
+	}
+
+	update_checkbox(target) {
+		if (!this.$checkbox_actions) return;
+
+		let $check_all_checkbox = this.$checkbox_actions.find(".list-check-all");
+
+		if ($check_all_checkbox.prop("checked") && target && !target.prop("checked")) {
+			$check_all_checkbox.prop("checked", false); 
+		}
+
+		$check_all_checkbox.prop("checked", this.$checks.length === this.data.length);
 	}
 
 	setup_freeze_area() {
 		this.$freeze = $(
-			`<div class="freeze flex justify-center align-center text-muted">${__(
-				"Loading"
-			)}...</div>`
+			`<div class="freeze flex justify-center align-center text-muted">
+				${__("Loading")}...
+			</div>`
 		).hide();
 		this.$result.append(this.$freeze);
 	}
@@ -367,6 +385,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		if (
 			!this.settings.hide_name_column &&
+			this.meta.title_field &&
 			this.meta.title_field !== 'name'
 		) {
 			this.columns.push({
@@ -422,8 +441,8 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			? __("No {0} found", [__(this.doctype)])
 			: __("You haven't created a {0} yet", [__(this.doctype)]);
 		let new_button_label = filters && filters.length
-			? __("Create a new {0}", [__(this.doctype)])
-			: __("Create your first {0}", [__(this.doctype)]);
+			? __("Create a new {0}", [__(this.doctype)], "Create a new document from list view")
+			: __("Create your first {0}", [__(this.doctype)], "Create a new document from list view");
 		let empty_state_image =
 			this.settings.empty_state_image ||
 			"/assets/frappe/images/ui-states/list-empty-state.svg";
@@ -431,7 +450,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		const new_button = this.can_create
 			? `<p><button class="btn btn-primary btn-sm btn-new-doc hidden-xs">
 				${new_button_label}
-			</button> <button class="btn btn-primary btn-new-doc visible-xs">${__('Create New')}</button></p>`
+			</button> <button class="btn btn-primary btn-new-doc visible-xs">
+				${__("Create New", null, "Create a new document from list view")}
+			</button></p>`
 			: "";
 
 		return `<div class="msg-box no-border">
@@ -448,7 +469,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		if (this.list_view_settings && !this.list_view_settings.disable_count) {
 			this.$result
 				.find(".list-count")
-				.html(`<span>${__("Refreshing")}...</span>`);
+				.html(`<span>${__("Refreshing", null, "Document count in list view")}...</span>`);
 		}
 	}
 
@@ -514,7 +535,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 	render_skeleton() {
 		const $row = this.get_list_row_html_skeleton(
-			'<div><input type="checkbox" /></div>'
+			'<div><input type="checkbox" class="render-list-checkbox"/></div>'
 		);
 		this.$result.append($row);
 	}
@@ -547,6 +568,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 	render() {
 		this.render_list();
+		this.set_rows_as_checked();
 		this.on_row_checked();
 		this.render_count();
 	}
@@ -582,9 +604,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const subject_field = this.columns[0].df;
 		let subject_html = `
-			<input class="level-item list-check-all hidden-xs" type="checkbox"
+			<input class="level-item list-check-all" type="checkbox"
 				title="${__("Select All")}">
-			<span class="level-item list-liked-by-me">
+			<span class="level-item list-liked-by-me hidden-xs">
 				<span title="${__("Likes")}">${frappe.utils.icon('heart', 'sm', 'like-icon')}</span>
 			</span>
 			<span class="level-item">${__(subject_field.label)}</span>
@@ -621,7 +643,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				</div>
 				<div class="level-left checkbox-actions">
 					<div class="level list-subject">
-						<input class="level-item list-check-all hidden-xs" type="checkbox"
+						<input class="level-item list-check-all" type="checkbox"
 							title="${__("Select All")}">
 						<span class="level-item list-header-meta"></span>
 					</div>
@@ -867,8 +889,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			filters: this.get_filters_for_args()
 		}).then(total_count => {
 			this.total_count = total_count || current_count;
+			this.count_without_children = count_without_children !== current_count ? count_without_children : undefined;
 			let str = __('{0} of {1}', [current_count, this.total_count]);
-			if (count_without_children !== current_count) {
+			if (this.count_without_children) {
 				str = __('{0} of {1} ({2} rows with children)', [count_without_children, this.total_count, current_count]);
 			}
 			return str;
@@ -880,7 +903,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			return this.settings.get_form_link(doc);
 		}
 
-		const docname = doc.name.match(/[%'"\s]/)
+		const docname = doc.name.match(/[%'"#\s]/)
 			? encodeURIComponent(doc.name)
 			: doc.name;
 
@@ -927,10 +950,12 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		const seen = this.get_seen_class(doc);
 
 		let subject_html = `
-			<input class="level-item list-row-checkbox hidden-xs" type="checkbox"
-				data-name="${escape(doc.name)}">
-			<span class="level-item" style="margin-bottom: 1px;">
-				${this.get_like_html(doc)}
+			<span class="level-item select-like">
+				<input class="list-row-checkbox" type="checkbox"
+					data-name="${escape(doc.name)}">
+				<span class="list-row-like hidden-xs style="margin-bottom: 1px;">
+					${this.get_like_html(doc)}
+				</span>
 			</span>
 			<span class="level-item ${seen} ellipsis" title="${escaped_subject}">
 				<a class="ellipsis"
@@ -1027,14 +1052,14 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		frappe.ui.keys.add_shortcut({
 			shortcut: "down",
 			action: () => handle_navigation("down"),
-			description: __("Navigate list down"),
+			description: __("Navigate list down", null, "Description of a list view shortcut"),
 			page: this.page,
 		});
 
 		frappe.ui.keys.add_shortcut({
 			shortcut: "up",
 			action: () => handle_navigation("up"),
-			description: __("Navigate list up"),
+			description: __("Navigate list up", null, "Description of a list view shortcut"),
 			page: this.page,
 		});
 
@@ -1046,7 +1071,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				check_row($list_row);
 				focus_next();
 			},
-			description: __("Select multiple list items"),
+			description: __("Select multiple list items", null, "Description of a list view shortcut"),
 			page: this.page,
 		});
 
@@ -1058,7 +1083,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				check_row($list_row);
 				focus_prev();
 			},
-			description: __("Select multiple list items"),
+			description: __("Select multiple list items", null, "Description of a list view shortcut"),
 			page: this.page,
 		});
 
@@ -1072,7 +1097,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				}
 				return false;
 			},
-			description: __("Open list item"),
+			description: __("Open list item", null, "Description of a list view shortcut"),
 			page: this.page,
 		});
 
@@ -1086,7 +1111,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				}
 				return false;
 			},
-			description: __("Select list item"),
+			description: __("Select list item", null, "Description of a list view shortcut"),
 			page: this.page,
 		});
 	}
@@ -1127,7 +1152,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			// don't open form when checkbox, like, filterable are clicked
 			if (
 				$target.hasClass("filterable") ||
-				$target.hasClass("icon-heart") ||
+				$target.hasClass("select-like") ||
+				$target.hasClass("file-select") ||
+				$target.hasClass("list-row-like") ||
 				$target.is(":checkbox")
 			) {
 				e.stopPropagation();
@@ -1215,6 +1242,8 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			}
 
 			this.$checkbox_cursor = $target;
+
+			this.update_checkbox($target);
 		});
 	}
 
@@ -1360,6 +1389,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			this.$checkbox_actions.show();
 			this.$list_head_subject.hide();
 		}
+		this.update_checkbox();
 		this.toggle_actions_menu_button(this.$checks.length > 0);
 	}
 
@@ -1399,7 +1429,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				return [
 					filter[1],
 					"=",
-					JSON.stringify([filter[2], filter[3]]),
+					encodeURIComponent(JSON.stringify([filter[2], filter[3]])),
 				].join("");
 			})
 			.join("&");
@@ -1423,6 +1453,11 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					read_only: 1,
 				},
 			],
+			primary_action_label: __("Copy to clipboard"),
+			primary_action: () => {
+				frappe.utils.copy_to_clipboard(this.get_share_url());
+				d.hide();
+			},
 		});
 		d.show();
 	}
@@ -1433,7 +1468,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		if (frappe.model.can_import(doctype)) {
 			items.push({
-				label: __("Import"),
+				label: __("Import", null, "Button in list view menu"),
 				action: () =>
 					frappe.set_route("list", "data-import", {
 						reference_doctype: doctype,
@@ -1444,7 +1479,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		if (frappe.model.can_set_user_permissions(doctype)) {
 			items.push({
-				label: __("User Permissions"),
+				label: __("User Permissions", null, "Button in list view menu"),
 				action: () =>
 					frappe.set_route("list", "user-permission", {
 						allow: doctype,
@@ -1455,7 +1490,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		if (frappe.user_roles.includes("System Manager")) {
 			items.push({
-				label: __("Role Permissions Manager"),
+				label: __("Role Permissions Manager", null, "Button in list view menu"),
 				action: () =>
 					frappe.set_route("permission-manager", {
 						doctype,
@@ -1464,7 +1499,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			});
 
 			items.push({
-				label: __("Customize"),
+				label: __("Customize", null, "Button in list view menu"),
 				action: () => {
 					if (!this.meta) return;
 					if (this.meta.custom) {
@@ -1481,7 +1516,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		}
 
 		items.push({
-			label: __("Toggle Sidebar"),
+			label: __("Toggle Sidebar", null, "Button in list view menu"),
 			action: () => this.toggle_side_bar(),
 			condition: () => !this.hide_sidebar,
 			standard: true,
@@ -1489,7 +1524,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		});
 
 		items.push({
-			label: __("Share URL"),
+			label: __("Share URL", null, "Button in list view menu"),
 			action: () => this.share_url(),
 			standard: true,
 			shortcut: "Ctrl+L",
@@ -1501,7 +1536,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		) {
 			// edit doctype
 			items.push({
-				label: __("Edit DocType"),
+				label: __("Edit DocType", null, "Button in list view menu"),
 				action: () => frappe.set_route("form", "doctype", doctype),
 				standard: true,
 			});
@@ -1509,7 +1544,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		if (frappe.user.has_role("System Manager")) {
 			items.push({
-				label: __("List Settings"),
+				label: __("List Settings", null, "Button in list view menu"),
 				action: () => this.show_list_settings(),
 				standard: true,
 			});
@@ -1600,7 +1635,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		// utility
 		const bulk_assignment = () => {
 			return {
-				label: __("Assign To"),
+				label: __("Assign To", null, "Button in list view actions menu"),
 				action: () =>
 					bulk_operations.assign(
 						this.get_checked_items(true),
@@ -1612,7 +1647,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const bulk_assignment_rule = () => {
 			return {
-				label: __("Apply Assignment Rule"),
+				label: __("Apply Assignment Rule", null, "Button in list view actions menu"),
 				action: () =>
 					bulk_operations.apply_assignment_rule(
 						this.get_checked_items(true),
@@ -1624,7 +1659,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const bulk_add_tags = () => {
 			return {
-				label: __("Add Tags"),
+				label: __("Add Tags", null, "Button in list view actions menu"),
 				action: () =>
 					bulk_operations.add_tags(
 						this.get_checked_items(true),
@@ -1636,7 +1671,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const bulk_printing = () => {
 			return {
-				label: __("Print"),
+				label: __("Print", null, "Button in list view actions menu"),
 				action: () => bulk_operations.print(this.get_checked_items()),
 				standard: true,
 			};
@@ -1644,13 +1679,13 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const bulk_delete = () => {
 			return {
-				label: __("Delete"),
+				label: __("Delete", null, "Button in list view actions menu"),
 				action: () => {
 					const docnames = this.get_checked_items(true).map(
 						(docname) => docname.toString()
 					);
 					frappe.confirm(
-						__("Delete {0} items permanently?", [docnames.length]),
+						__("Delete {0} items permanently?", [docnames.length], "Title of confirmation dialog"),
 						() => bulk_operations.delete(docnames, this.refresh)
 					);
 				},
@@ -1660,12 +1695,12 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const bulk_cancel = () => {
 			return {
-				label: __("Cancel"),
+				label: __("Cancel", null, "Button in list view actions menu"),
 				action: () => {
 					const docnames = this.get_checked_items(true);
 					if (docnames.length > 0) {
 						frappe.confirm(
-							__("Cancel {0} documents?", [docnames.length]),
+							__("Cancel {0} documents?", [docnames.length], "Title of confirmation dialog"),
 							() =>
 								bulk_operations.submit_or_cancel(
 									docnames,
@@ -1681,12 +1716,12 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const bulk_submit = () => {
 			return {
-				label: __("Submit"),
+				label: __("Submit", null, "Button in list view actions menu"),
 				action: () => {
 					const docnames = this.get_checked_items(true);
 					if (docnames.length > 0) {
 						frappe.confirm(
-							__("Submit {0} documents?", [docnames.length]),
+							__("Submit {0} documents?", [docnames.length], "Title of confirmation dialog"),
 							() =>
 								bulk_operations.submit_or_cancel(
 									docnames,
@@ -1702,7 +1737,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		const bulk_edit = () => {
 			return {
-				label: __("Edit"),
+				label: __("Edit", null, "Button in list view actions menu"),
 				action: () => {
 					let field_mappings = {};
 
@@ -1841,12 +1876,6 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		const doctype = data.doctype;
 		if (!doctype) return;
 		frappe.provide("frappe.views.trees");
-
-		// refresh tree view
-		if (frappe.views.trees[doctype]) {
-			frappe.views.trees[doctype].tree.refresh();
-			return;
-		}
 
 		// refresh list view
 		const page_name = frappe.get_route_str();

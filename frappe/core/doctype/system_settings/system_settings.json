@@ -17,10 +17,11 @@
   "date_and_number_format",
   "date_format",
   "time_format",
-  "column_break_7",
   "number_format",
+  "column_break_7",
   "float_precision",
   "currency_precision",
+  "first_day_of_the_week",
   "sec_backup_limit",
   "backup_limit",
   "background_workers",
@@ -66,11 +67,16 @@
   "prepared_report_section",
   "enable_prepared_report_auto_deletion",
   "prepared_report_expiry_period",
+<<<<<<< HEAD
   "chat",
   "enable_chat",
   "sb_datahenge",
   "small_text_65",
   "enable_pdf_debugging"
+=======
+  "system_updates_section",
+  "disable_system_update_notification"
+>>>>>>> temp
  ],
  "fields": [
   {
@@ -385,18 +391,6 @@
    "label": "Hide footer in auto email reports"
   },
   {
-   "collapsible": 1,
-   "fieldname": "chat",
-   "fieldtype": "Section Break",
-   "label": "Chat"
-  },
-  {
-   "default": "1",
-   "fieldname": "enable_chat",
-   "fieldtype": "Check",
-   "label": "Enable Chat"
-  },
-  {
    "fieldname": "column_break_21",
    "fieldtype": "Column Break"
   },
@@ -474,6 +468,7 @@
    "label": "Strip EXIF tags from uploaded images"
   },
   {
+<<<<<<< HEAD
    "default": "0",
    "description": "Converting reports to PDF is easier said than done; enabling this checkbox provides additional feedback.",
    "fieldname": "enable_pdf_debugging",
@@ -493,12 +488,35 @@
    "label": "Warning",
    "length": 200,
    "read_only": 1
+=======
+   "collapsible": 1,
+   "fieldname": "system_updates_section",
+   "fieldtype": "Section Break",
+   "label": "System Updates"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_system_update_notification",
+   "fieldtype": "Check",
+   "label": "Disable System Update Notification"
+  },
+  {
+   "default": "Sunday",
+   "fieldname": "first_day_of_the_week",
+   "fieldtype": "Select",
+   "label": "First Day of the Week",
+   "options": "Sunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday"
+>>>>>>> temp
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
+<<<<<<< HEAD
  "modified": "2021-12-05 20:56:20.688445",
+=======
+ "modified": "2022-01-04 11:28:34.881192",
+>>>>>>> temp
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",
@@ -515,5 +533,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "ASC",
+ "states": [],
  "track_changes": 1
 }

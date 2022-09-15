@@ -19,6 +19,7 @@
   "in_global_search",
   "in_preview",
   "bold",
+  "no_copy",
   "allow_in_quick_entry",
   "translatable",
   "column_break_7",
@@ -82,7 +83,7 @@
    "label": "Type",
    "oldfieldname": "fieldtype",
    "oldfieldtype": "Select",
-   "options": "Attach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nRating\nRead Only\nSection Break\nSelect\nSignature\nSmall Text\nTable\nTable MultiSelect\nText\nText Editor\nTime",
+   "options": "Attach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nIcon\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nRating\nRead Only\nSection Break\nSelect\nSignature\nSmall Text\nTable\nTable MultiSelect\nText\nText Editor\nTime",
    "reqd": 1,
    "search_index": 1
   },
@@ -422,13 +423,19 @@
    "fieldname": "non_negative",
    "fieldtype": "Check",
    "label": "Non Negative"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_copy",
+   "fieldtype": "Check",
+   "label": "No Copy"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-10-29 06:11:57.661039",
+ "modified": "2022-02-08 19:38:16.111199",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form Field",

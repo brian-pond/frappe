@@ -3,6 +3,7 @@
 .web-form-wrapper {
 	.form-control {
 		color: var(--text-color);
+		background-color: var(--control-bg);
 	}
 
 	.form-section {
@@ -21,6 +22,10 @@
 
 		&:last-child {
 			padding-right: 0;
+		}
+
+		@include media-breakpoint-down(sm) {
+			padding: 0;
 		}
 	}
 }
