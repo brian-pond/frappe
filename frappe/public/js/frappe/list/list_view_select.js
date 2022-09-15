@@ -8,6 +8,9 @@ frappe.views.ListViewSelect = class ListViewSelect {
 	}
 
 	add_view_to_menu(view, action) {
+		if (this.doctype == "File" && view == "List") {
+			view = "File";
+		}
 		let $el = this.page.add_custom_menu_item(
 			this.parent,
 			__(view),
@@ -116,7 +119,7 @@ frappe.views.ListViewSelect = class ListViewSelect {
 				action: () => this.set_route("tree")
 			},
 			Kanban: {
-				condition: true,
+				condition: this.doctype != "File",
 				action: () => this.setup_kanban_boards(),
 				current_view_handler: () => {
 					frappe.views.KanbanView.get_kanbans(this.doctype).then(
@@ -150,7 +153,7 @@ frappe.views.ListViewSelect = class ListViewSelect {
 		const views_wrapper = this.sidebar.sidebar.find(".views-section");
 		views_wrapper.find(".sidebar-label").html(`${__(view)}`);
 		const $dropdown = views_wrapper.find(".views-dropdown");
-		
+
 		let placeholder = `${__("Select {0}", [__(view)])}`;
 		let html = ``;
 
@@ -235,7 +238,7 @@ frappe.views.ListViewSelect = class ListViewSelect {
 						// don't repeat
 						added.push(route);
 						reports_to_add.push({
-							name: r.title || r.name,
+							name: __(r.title || r.name),
 							route: route
 						});
 					}
@@ -265,16 +268,25 @@ frappe.views.ListViewSelect = class ListViewSelect {
 			frappe.model.user_settings[this.doctype]["Kanban"] &&
 			frappe.model.user_settings[this.doctype]["Kanban"]
 				.last_kanban_board;
-		if (last_opened_kanban) {
-			frappe.set_route(
-				"list",
+
+		if (!last_opened_kanban) {
+			return frappe.views.KanbanView.show_kanban_dialog(
 				this.doctype,
-				"kanban",
-				last_opened_kanban
+				true
 			);
-		} else {
-			frappe.views.KanbanView.show_kanban_dialog(this.doctype, true);
 		}
+		frappe.db.exists("Kanban Board", last_opened_kanban).then(exists => {
+			if (exists) {
+				frappe.set_route(
+					"list",
+					this.doctype,
+					"kanban",
+					last_opened_kanban
+				);
+			} else {
+				frappe.views.KanbanView.show_kanban_dialog(this.doctype, true);
+			}
+		});
 	}
 
 	get_calendars() {

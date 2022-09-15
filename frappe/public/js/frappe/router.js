@@ -56,6 +56,11 @@ $('body').on('click', 'a', function(e) {
 		return override(e.currentTarget.hash);
 	}
 
+	if (frappe.router.is_app_route(e.currentTarget.pathname)) {
+		// target has "/app, this is a v2 style route.
+		return override(e.currentTarget.pathname + e.currentTarget.hash);
+	}
+
 });
 
 frappe.router = {
@@ -329,11 +334,7 @@ frappe.router = {
 				frappe.route_options = a;
 				return null;
 			} else {
-				a = String(a);
-				if (a && a.match(/[%'"#\s\t]/)) {
-					// if special chars, then encode
-					a = encodeURIComponent(a);
-				}
+				a = encodeURIComponent(String(a));
 				return a;
 			}
 		}).join('/');

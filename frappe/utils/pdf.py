@@ -7,8 +7,8 @@ from __future__ import unicode_literals
 import io
 import os
 import re
-from distutils.version import LooseVersion
 import subprocess
+from distutils.version import LooseVersion
 
 import pdfkit
 import six
@@ -20,8 +20,12 @@ from frappe import _
 from frappe.utils import scrub_urls
 from frappe.utils.jinja import is_rtl
 
-PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError",
-	"UnknownContentError", "RemoteHostClosedError"]
+PDF_CONTENT_ERRORS = [
+	"ContentNotFoundError",
+	"ContentOperationNotPermittedError",
+	"UnknownContentError",
+	"RemoteHostClosedError",
+]
 
 def get_pdf(html, options=None, output=None):
 	"""
@@ -55,13 +59,10 @@ def get_pdf(html, options=None, output=None):
 	# 2. Prepare options.  This strips some of the leading HTML.
 	html, options = prepare_options(html, options)
 
-	options.update({
-		"disable-javascript": "",
-		"disable-local-file-access": ""
-	})
+	options.update({"disable-javascript": "", "disable-local-file-access": ""})
 
-	filedata = ''
-	if LooseVersion(get_wkhtmltopdf_version()) > LooseVersion('0.12.3'):
+	filedata = ""
+	if LooseVersion(get_wkhtmltopdf_version()) > LooseVersion("0.12.3"):
 		options.update({"disable-smart-shrinking": ""})
 
 	try:
@@ -121,21 +122,23 @@ def prepare_options(html, options):
 	if not options:
 		options = {}
 
-	options.update({
-		'print-media-type': None,
-		'background': None,
-		'images': None,
-		'quiet': None,
-		# 'no-outline': None,
-		'encoding': "UTF-8",
-		# 'load-error-handling': 'ignore'
-	})
+	options.update(
+		{
+			"print-media-type": None,
+			"background": None,
+			"images": None,
+			"quiet": None,
+			# 'no-outline': None,
+			"encoding": "UTF-8",
+			# 'load-error-handling': 'ignore'
+		}
+	)
 
 	if not options.get("margin-right"):
-		options['margin-right'] = '15mm'
+		options["margin-right"] = "15mm"
 
 	if not options.get("margin-left"):
-		options['margin-left'] = '15mm'
+		options["margin-left"] = "15mm"
 
 	html, html_options = read_options_from_html(html)
 	options.update(html_options or {})
@@ -145,9 +148,7 @@ def prepare_options(html, options):
 
 	# page size
 	pdf_page_size = (
-		options.get("page-size")
-		or frappe.db.get_single_value("Print Settings", "pdf_page_size")
-		or "A4"
+		options.get("page-size") or frappe.db.get_single_value("Print Settings", "pdf_page_size") or "A4"
 	)
 
 	if pdf_page_size == "Custom":
@@ -175,9 +176,10 @@ def get_cookie_options():
 		with open(cookiejar, "w") as f:
 			f.write("sid={}; Domain={};\n".format(frappe.session.sid, domain))
 
-		options['cookie-jar'] = cookiejar
+		options["cookie-jar"] = cookiejar
 
 	return options
+
 
 def read_options_from_html(html):
 	options = {}
@@ -188,13 +190,21 @@ def read_options_from_html(html):
 	toggle_visible_pdf(soup)
 
 	# use regex instead of soup-parser
-	for attr in ("margin-top", "margin-bottom", "margin-left", "margin-right", "page-size", "header-spacing", "orientation"):
+	for attr in (
+		"margin-top",
+		"margin-bottom",
+		"margin-left",
+		"margin-right",
+		"page-size",
+		"header-spacing",
+		"orientation",
+	):
 		try:
 			pattern = re.compile(r"(\.print-format)([\S|\s][^}]*?)(" + str(attr) + r":)(.+)(mm;)")
 			match = pattern.findall(html)
 			if match:
 				options[attr] = str(match[-1][3]).strip()
-		except:
+		except Exception:
 			pass
 
 	return str(soup), options
@@ -217,15 +227,18 @@ def prepare_header_footer(soup):
 				tag.extract()
 
 			toggle_visible_pdf(content)
-			html = frappe.render_template("templates/print_formats/pdf_header_footer.html", {
-				"head": head,
-				"content": content,
-				"styles": styles,
-				"html_id": html_id,
-				"css": css,
-				"lang": frappe.local.lang,
-				"layout_direction": "rtl" if is_rtl() else "ltr"
-			})
+			html = frappe.render_template(
+				"templates/print_formats/pdf_header_footer.html",
+				{
+					"head": head,
+					"content": content,
+					"styles": styles,
+					"html_id": html_id,
+					"css": css,
+					"lang": frappe.local.lang,
+					"layout_direction": "rtl" if is_rtl() else "ltr",
+				},
+			)
 
 			# create temp file
 			fname = os.path.join("/tmp", "frappe-pdf-{0}.html".format(frappe.generate_hash()))
@@ -248,14 +261,16 @@ def cleanup(options):
 		if options.get(key) and os.path.exists(options[key]):
 			os.remove(options[key])
 
+
 def toggle_visible_pdf(soup):
 	for tag in soup.find_all(attrs={"class": "visible-pdf"}):
 		# remove visible-pdf class to unhide
-		tag.attrs['class'].remove('visible-pdf')
+		tag.attrs["class"].remove("visible-pdf")
 
 	for tag in soup.find_all(attrs={"class": "hidden-pdf"}):
 		# remove tag from html
 		tag.extract()
+
 
 def get_wkhtmltopdf_version():
 	wkhtmltopdf_version = frappe.cache().hget("wkhtmltopdf_version", None)
@@ -263,11 +278,12 @@ def get_wkhtmltopdf_version():
 	if not wkhtmltopdf_version:
 		try:
 			res = subprocess.check_output(["wkhtmltopdf", "--version"])
-			wkhtmltopdf_version = res.decode('utf-8').split(" ")[1]
+			wkhtmltopdf_version = res.decode("utf-8").split(" ")[1]
 			frappe.cache().hset("wkhtmltopdf_version", None, wkhtmltopdf_version)
 		except Exception:
 			pass
 
+<<<<<<< HEAD
 	return (wkhtmltopdf_version or '0')
 
 # --------
@@ -296,3 +312,6 @@ def search_html_for_string(html, string_to_search):
 			ret = (idx, clean_line(line))
 			list_of_results.append(ret)
 	return list_of_results
+=======
+	return wkhtmltopdf_version or "0"
+>>>>>>> official/version-13

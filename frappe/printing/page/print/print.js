@@ -8,7 +8,7 @@ frappe.pages['print'].on_page_load = function(wrapper) {
 	$(wrapper).bind('show', () => {
 		const route = frappe.get_route();
 		const doctype = route[1];
-		const docname = route[2];
+		const docname = route.slice(2).join("/");
 		if (!frappe.route_options || !frappe.route_options.frm) {
 			frappe.model.with_doc(doctype, docname, () => {
 				let frm = { doctype: doctype, docname: docname };
@@ -19,7 +19,8 @@ frappe.pages['print'].on_page_load = function(wrapper) {
 				});
 			});
 		} else {
-			print_view.frm = frappe.route_options.frm;
+			print_view.frm = frappe.route_options.frm.doctype ?
+				frappe.route_options.frm : frappe.route_options.frm.frm;
 			frappe.route_options.frm = null;
 			print_view.show(print_view.frm);
 		}
@@ -37,7 +38,7 @@ frappe.ui.form.PrintView = class {
 		this.print_wrapper = this.page.main.empty().html(
 			`<div class="print-preview-wrapper"><div class="print-preview">
 				${frappe.render_template('print_skeleton_loading')}
-				<iframe class="print-format-container" width="100%" height="0" frameBorder="0" scrolling="no"">
+				<iframe class="print-format-container" width="100%" height="0" frameBorder="0" scrolling="no">
 				</iframe>
 			</div>
 			<div class="page-break-message text-muted text-center text-medium margin-top"></div>
@@ -81,6 +82,10 @@ frappe.ui.form.PrintView = class {
 			() => this.refresh_print_format(),
 			{ icon: 'refresh' }
 		);
+
+		this.page.add_action_icon("file", () => {
+			this.go_to_form_view();
+		}, '', __("Form"));
 	}
 
 	setup_sidebar() {
@@ -343,7 +348,11 @@ frappe.ui.form.PrintView = class {
 		let doc_letterhead = this.frm.doc.letter_head;
 
 		return frappe.db
-			.get_list('Letter Head', { fields: ['name', 'is_default'], limit: 0 })
+			.get_list('Letter Head', {
+				filters: {'disabled': 0},
+				fields: ['name', 'is_default'],
+				limit: 0
+			})
 			.then((letterheads) => {
 				letterheads.map((letterhead) => {
 					if (letterhead.is_default) default_letterhead = letterhead.name;
@@ -445,6 +454,13 @@ frappe.ui.form.PrintView = class {
 					: this.frm.page.previous_view_name || 'main'
 			);
 		}
+	}
+
+	go_to_form_view() {
+		frappe.route_options = {
+			frm: this,
+		};
+		frappe.set_route('Form', this.frm.doctype, this.frm.docname);
 	}
 
 	show_footer() {

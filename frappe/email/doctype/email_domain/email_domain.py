@@ -3,16 +3,28 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+<<<<<<< HEAD
+=======
+
+>>>>>>> official/version-13
 import imaplib
 import poplib
 import smtplib
 
+<<<<<<< HEAD
 # Frappe
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import validate_email_address ,cint, cstr
+=======
+import frappe
+from frappe import _
+>>>>>>> official/version-13
 from frappe.email.utils import get_port
+from frappe.model.document import Document
+from frappe.utils import cint, cstr, validate_email_address
+
 
 class EmailDomain(Document):
 	def autoname(self):
@@ -35,25 +47,36 @@ class EmailDomain(Document):
 		if not frappe.local.flags.in_install and not frappe.local.flags.in_patch:
 			try:
 				if self.use_imap:
-					logger.info('Checking incoming IMAP email server {host}:{port} ssl={ssl}...'.format(
-						host=self.email_server, port=get_port(self), ssl=self.use_ssl))
+					logger.info(
+						"Checking incoming IMAP email server {host}:{port} ssl={ssl}...".format(
+							host=self.email_server, port=get_port(self), ssl=self.use_ssl
+						)
+					)
 					if self.use_ssl:
+						self.use_starttls = 0
 						test = imaplib.IMAP4_SSL(self.email_server, port=get_port(self))
 					else:
 						test = imaplib.IMAP4(self.email_server, port=get_port(self))
 
 				else:
-					logger.info('Checking incoming POP3 email server {host}:{port} ssl={ssl}...'.format(
-						host=self.email_server, port=get_port(self), ssl=self.use_ssl))
+					logger.info(
+						"Checking incoming POP3 email server {host}:{port} ssl={ssl}...".format(
+							host=self.email_server, port=get_port(self), ssl=self.use_ssl
+						)
+					)
 					if self.use_ssl:
 						test = poplib.POP3_SSL(self.email_server, port=get_port(self))
 					else:
 						test = poplib.POP3(self.email_server, port=get_port(self))
 
 			except Exception as e:
-				logger.warn('Incoming email account "{host}" not correct'.format(host=self.email_server), exc_info=e)
-				frappe.throw(title=_("Incoming email account not correct"),
-					msg='Error connecting IMAP/POP3 "{host}": {e}'.format(host=self.email_server, e=e))
+				logger.warning(
+					'Incoming email account "{host}" not correct'.format(host=self.email_server), exc_info=e
+				)
+				frappe.throw(
+					title=_("Incoming email account not correct"),
+					msg='Error connecting IMAP/POP3 "{host}": {e}'.format(host=self.email_server, e=e),
+				)
 
 			finally:
 				try:
@@ -65,36 +88,60 @@ class EmailDomain(Document):
 					pass
 
 			try:
-				if self.get('use_ssl_for_outgoing'):
-					if not self.get('smtp_port'):
+				if self.get("use_ssl_for_outgoing"):
+					if not self.get("smtp_port"):
 						self.smtp_port = 465
 
-					logger.info('Checking outgoing SMTPS email server {host}:{port}...'.format(
-						host=self.smtp_server, port=self.smtp_port))
-					sess = smtplib.SMTP_SSL((self.smtp_server or "").encode('utf-8'),
-							cint(self.smtp_port) or None)
+					logger.info(
+						"Checking outgoing SMTPS email server {host}:{port}...".format(
+							host=self.smtp_server, port=self.smtp_port
+						)
+					)
+					sess = smtplib.SMTP_SSL(
+						(self.smtp_server or "").encode("utf-8"), cint(self.smtp_port) or None
+					)
 				else:
 					if self.use_tls and not self.smtp_port:
 						self.smtp_port = 587
-					logger.info('Checking outgoing SMTP email server {host}:{port} STARTTLS={tls}...'.format(
-						host=self.smtp_server, port=self.get('smtp_port'), tls=self.use_tls))
+					logger.info(
+						"Checking outgoing SMTP email server {host}:{port} STARTTLS={tls}...".format(
+							host=self.smtp_server, port=self.get("smtp_port"), tls=self.use_tls
+						)
+					)
 					sess = smtplib.SMTP(cstr(self.smtp_server or ""), cint(self.smtp_port) or None)
 				sess.quit()
 			except Exception as e:
-				logger.warn('Outgoing email account "{host}" not correct'.format(host=self.smtp_server), exc_info=e)
-				frappe.throw(title=_("Outgoing email account not correct"),
-					msg='Error connecting SMTP "{host}": {e}'.format(host=self.smtp_server, e=e))
+				logger.warning(
+					'Outgoing email account "{host}" not correct'.format(host=self.smtp_server), exc_info=e
+				)
+				frappe.throw(
+					title=_("Outgoing email account not correct"),
+					msg='Error connecting SMTP "{host}": {e}'.format(host=self.smtp_server, e=e),
+				)
 
 	def on_update(self):
 		"""update all email accounts using this domain"""
 		for email_account in frappe.get_all("Email Account", filters={"domain": self.name}):
 			try:
 				email_account = frappe.get_doc("Email Account", email_account.name)
-				for attr in ["email_server", "use_imap", "use_ssl", "use_tls", "attachment_limit", "smtp_server", "smtp_port", "use_ssl_for_outgoing", "append_emails_to_sent_folder", "incoming_port"]:
+				for attr in [
+					"email_server",
+					"use_imap",
+					"use_ssl",
+					"use_tls",
+					"use_starttls",
+					"attachment_limit",
+					"smtp_server",
+					"smtp_port",
+					"use_ssl_for_outgoing",
+					"append_emails_to_sent_folder",
+					"incoming_port",
+				]:
 					email_account.set(attr, self.get(attr, default=0))
 				email_account.save()
 
 			except Exception as e:
+<<<<<<< HEAD
 				frappe.msgprint(_("Error has occurred in {0}").format(email_account.name), raise_exception=e.__class__)
 
 # Datahenge
@@ -159,3 +206,8 @@ def validate_domain(email_domain_name):
 		return None
 
 	frappe.msgprint(_("\u2713 Email Domain '{0}' is valid.".format(email_domain_name)), indicator='green')
+=======
+				frappe.msgprint(
+					_("Error has occurred in {0}").format(email_account.name), raise_exception=e.__class__
+				)
+>>>>>>> official/version-13

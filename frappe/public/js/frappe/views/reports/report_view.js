@@ -42,6 +42,7 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 			this.add_totals_row = this.view_user_settings.add_totals_row || 0;
 			this.chart_args = this.view_user_settings.chart_args;
 		}
+		return this.get_list_view_settings();
 	}
 
 	setup_view() {
@@ -208,6 +209,9 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 	}
 
 	render_count() {
+		if (this.list_view_setting && this.list_view_settings.disable_count) {
+			return;
+		}
 		let $list_count = this.$paging_area.find('.list-count');
 		if (!$list_count.length) {
 			$list_count = $('<span>')
@@ -616,9 +620,11 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 				title: __('Edit {0}', [col.docfield.label]),
 				fields: [col.docfield],
 				primary_action: () => {
-					this.datatable.cellmanager.submitEditing();
 					this.datatable.cellmanager.deactivateEditing();
 					d.hide();
+				},
+				on_hide: () => {
+					this.datatable.cellmanager.deactivateEditing(false);
 				}
 			});
 			d.show();
@@ -800,7 +806,7 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 
 	add_status_dependency_column(col, doctype) {
 		// Adds dependent column from which status is derived if required
-		if (!this.fields.find(f => f[0] === col)) {
+		if (col && !this.fields.find(f => f[0] === col)) {
 			const field = [col, doctype];
 			this.fields.push(field);
 			this.refresh();
@@ -1148,12 +1154,10 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 				// get status from docstatus
 				let status = frappe.get_indicator(d, this.doctype);
 				if (status) {
-					if (!status[0]) {
-						// get_indicator returns the dependent field's condition as the 3rd parameter
-						let dependent_col = status[2].split(',')[0];
-						// add status dependency column
-						this.add_status_dependency_column(dependent_col, this.doctype);
-					}
+					// get_indicator returns the dependent field's condition as the 3rd parameter
+					let dependent_col = status[2] && status[2].split(',')[0];
+					// add status dependency column
+					this.add_status_dependency_column(dependent_col, this.doctype);
 					return {
 						name: d.name,
 						doctype: col.docfield.parent,
@@ -1528,6 +1532,12 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 					frappe.set_route('List', 'User Permission', args);
 				}
 			});
+		}
+
+		if (frappe.user.has_role("System Manager")) {
+			if (this.get_view_settings) {
+				items.push(this.get_view_settings());
+			}
 		}
 
 		return items.map(i => Object.assign(i, { standard: true }));

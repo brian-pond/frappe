@@ -32,8 +32,8 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 		if(this.frm) {
 			me.parse_validate_and_set_in_model(null);
 			me.refresh();
-			me.frm.attachments.remove_attachment_by_filename(me.value, function() {
-				me.parse_validate_and_set_in_model(null);
+			me.frm.attachments.remove_attachment_by_filename(me.value, async function() {
+				await me.parse_validate_and_set_in_model(null);
 				me.refresh();
 				me.frm.doc.docstatus == 1 ? me.frm.save('Update') : me.frm.save();
 			});
@@ -67,6 +67,7 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 			options.doctype = this.frm.doctype;
 			options.docname = this.frm.docname;
 			options.fieldname = this.df.fieldname;
+			options.make_attachments_public = this.frm.meta.make_attachments_public;
 		}
 
 		if (this.df.options) {
@@ -76,8 +77,9 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 	},
 
 	set_input: function(value, dataurl) {
+		this.last_value = this.value;
 		this.value = value;
-		if(this.value) {
+		if (this.value) {
 			this.$input.toggle(false);
 			// value can also be using this format: FILENAME,DATA_URL
 			// Important: We have to be careful because normal filenames may also contain ","
@@ -100,9 +102,9 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 		return this.value || null;
 	},
 
-	on_upload_complete: function(attachment) {
+	on_upload_complete: async function(attachment) {
 		if(this.frm) {
-			this.parse_validate_and_set_in_model(attachment.file_url);
+			await this.parse_validate_and_set_in_model(attachment.file_url);
 			this.frm.attachments.update_attachment(attachment);
 			this.frm.doc.docstatus == 1 ? this.frm.save('Update') : this.frm.save();
 		}

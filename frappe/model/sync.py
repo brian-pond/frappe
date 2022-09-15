@@ -1,20 +1,35 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
+<<<<<<< HEAD
 from __future__ import unicode_literals, print_function
 import os
+=======
+from __future__ import print_function, unicode_literals
+
+"""
+	Sync's doctype and docfields from txt files to database
+	perms will get synced only if none exist
+"""
+import os
+
+>>>>>>> official/version-13
 import frappe
 from frappe.modules.import_file import import_file_by_path
 from frappe.modules.patch_handler import block_user
 from frappe.utils import update_progress_bar
 
 
+<<<<<<< HEAD
 def sync_all(force=0, reset_permissions=False):
 	"""
 	Synchronize DocType and DocFields from JSON text files to database.
 	By default, permissions will be synced only if none exist.
 	"""
 
+=======
+def sync_all(force=0, verbose=False, reset_permissions=False):
+>>>>>>> official/version-13
 	block_user(True)
 
 	for app in frappe.get_installed_apps():
@@ -24,12 +39,18 @@ def sync_all(force=0, reset_permissions=False):
 
 	frappe.clear_cache()
 
+<<<<<<< HEAD
 def sync_for(app_name, force=0, reset_permissions=False):
+=======
+
+def sync_for(app_name, force=0, sync_everything=False, verbose=False, reset_permissions=False):
+>>>>>>> official/version-13
 	files = []
 
 	if app_name == "frappe":
 		# these need to go first at time of install
-		for d in (("core", "docfield"),
+		for d in (
+			("core", "docfield"),
 			("core", "docperm"),
 			("core", "doctype_action"),
 			("core", "doctype_link"),
@@ -57,11 +78,12 @@ def sync_for(app_name, force=0, reset_permissions=False):
 			("desk", "workspace_link"),
 			("desk", "workspace_chart"),
 			("desk", "workspace_shortcut"),
-			("desk", "workspace")):
-			files.append(os.path.join(frappe.get_app_path("frappe"), d[0],
-				"doctype", d[1], d[1] + ".json"))
+			("desk", "workspace"),
+		):
+			files.append(os.path.join(frappe.get_app_path("frappe"), d[0], "doctype", d[1], d[1] + ".json"))
 
 	for module_name in frappe.local.app_modules.get(app_name) or []:
+<<<<<<< HEAD
 		try:
 			folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
 		except ModuleNotFoundError as ex:
@@ -73,6 +95,18 @@ def sync_for(app_name, force=0, reset_permissions=False):
 		for idx, doc_path in enumerate(files):
 			import_file_by_path(doc_path, force=force, ignore_version=True,
 				reset_permissions=reset_permissions, for_sync=True)
+=======
+		folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
+		files = get_doc_files(files, folder)
+
+	l = len(files)
+
+	if l:
+		for i, doc_path in enumerate(files):
+			import_file_by_path(
+				doc_path, force=force, ignore_version=True, reset_permissions=reset_permissions
+			)
+>>>>>>> official/version-13
 
 			frappe.db.commit()
 
@@ -82,6 +116,7 @@ def sync_for(app_name, force=0, reset_permissions=False):
 		# print each progress bar on new line
 		print()
 
+
 def get_doc_files(files, start_path):
 	"""walk and sync all doctypes and pages"""
 
@@ -89,10 +124,23 @@ def get_doc_files(files, start_path):
 		files = []
 
 	# load in sequence - warning for devs
-	document_types = ['doctype', 'page', 'report', 'dashboard_chart_source', 'print_format',
-		'website_theme', 'web_form', 'web_template', 'notification', 'print_style',
-		'data_migration_mapping', 'data_migration_plan', 'workspace',
-		'onboarding_step', 'module_onboarding']
+	document_types = [
+		"doctype",
+		"page",
+		"report",
+		"dashboard_chart_source",
+		"print_format",
+		"website_theme",
+		"web_form",
+		"web_template",
+		"notification",
+		"print_style",
+		"data_migration_mapping",
+		"data_migration_plan",
+		"workspace",
+		"onboarding_step",
+		"module_onboarding",
+	]
 
 	for doctype in document_types:
 		doctype_path = os.path.join(start_path, doctype)

@@ -1,18 +1,20 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
-from __future__ import unicode_literals
 
-import os
 import unittest
+from unittest.mock import Mock
 
 import frappe
-from frappe.utils import cint
-from frappe.model.naming import revert_series_if_last, make_autoname, parse_naming_series
+from frappe.model.naming import make_autoname, parse_naming_series, revert_series_if_last
+from frappe.utils import cint, set_request
+from frappe.website import render
+
+from . import update_system_settings
 
 
 class TestDocument(unittest.TestCase):
 	def test_get_return_empty_list_for_table_field_if_none(self):
-		d = frappe.get_doc({"doctype":"User"})
+		d = frappe.get_doc({"doctype": "User"})
 		self.assertEqual(d.get("roles"), [])
 
 	def test_load(self):
@@ -22,7 +24,7 @@ class TestDocument(unittest.TestCase):
 		self.assertEqual(d.allow_rename, 1)
 		self.assertTrue(isinstance(d.fields, list))
 		self.assertTrue(isinstance(d.permissions, list))
-		self.assertTrue(filter(lambda d: d.fieldname=="email", d.fields))
+		self.assertTrue(filter(lambda d: d.fieldname == "email", d.fields))
 
 	def test_load_single(self):
 		d = frappe.get_doc("Website Settings", "Website Settings")
@@ -31,32 +33,34 @@ class TestDocument(unittest.TestCase):
 		self.assertTrue(d.disable_signup in (0, 1))
 
 	def test_insert(self):
-		d = frappe.get_doc({
-			"doctype":"Event",
-			"subject":"test-doc-test-event 1",
-			"starts_on": "2014-01-01",
-			"event_type": "Public"
-		})
+		d = frappe.get_doc(
+			{
+				"doctype": "Event",
+				"subject": "test-doc-test-event 1",
+				"starts_on": "2014-01-01",
+				"event_type": "Public",
+			}
+		)
 		d.insert()
 		self.assertTrue(d.name.startswith("EV"))
-		self.assertEqual(frappe.db.get_value("Event", d.name, "subject"),
-			"test-doc-test-event 1")
+		self.assertEqual(frappe.db.get_value("Event", d.name, "subject"), "test-doc-test-event 1")
 
 		# test if default values are added
 		self.assertEqual(d.send_reminder, 1)
 		return d
 
 	def test_insert_with_child(self):
-		d = frappe.get_doc({
-			"doctype":"Event",
-			"subject":"test-doc-test-event 2",
-			"starts_on": "2014-01-01",
-			"event_type": "Public"
-		})
+		d = frappe.get_doc(
+			{
+				"doctype": "Event",
+				"subject": "test-doc-test-event 2",
+				"starts_on": "2014-01-01",
+				"event_type": "Public",
+			}
+		)
 		d.insert()
 		self.assertTrue(d.name.startswith("EV"))
-		self.assertEqual(frappe.db.get_value("Event", d.name, "subject"),
-			"test-doc-test-event 2")
+		self.assertEqual(frappe.db.get_value("Event", d.name, "subject"), "test-doc-test-event 2")
 
 	def test_update(self):
 		d = self.test_insert()
@@ -69,17 +73,19 @@ class TestDocument(unittest.TestCase):
 		d = self.test_insert()
 		d.subject = "subject changed again"
 		d.save()
-		self.assertTrue(d.has_value_changed('subject'))
-		self.assertFalse(d.has_value_changed('event_type'))
+		self.assertTrue(d.has_value_changed("subject"))
+		self.assertFalse(d.has_value_changed("event_type"))
 
 	def test_mandatory(self):
 		# TODO: recheck if it is OK to force delete
 		frappe.delete_doc_if_exists("User", "test_mandatory@example.com", 1)
 
-		d = frappe.get_doc({
-			"doctype": "User",
-			"email": "test_mandatory@example.com",
-		})
+		d = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": "test_mandatory@example.com",
+			}
+		)
 		self.assertRaises(frappe.MandatoryError, d.insert)
 
 		d.set("first_name", "Test Mandatory")
@@ -116,22 +122,18 @@ class TestDocument(unittest.TestCase):
 	def test_link_validation(self):
 		frappe.delete_doc_if_exists("User", "test_link_validation@example.com", 1)
 
-		d = frappe.get_doc({
-			"doctype": "User",
-			"email": "test_link_validation@example.com",
-			"first_name": "Link Validation",
-			"roles": [
-				{
-					"role": "ABC"
-				}
-			]
-		})
+		d = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": "test_link_validation@example.com",
+				"first_name": "Link Validation",
+				"roles": [{"role": "ABC"}],
+			}
+		)
 		self.assertRaises(frappe.LinkValidationError, d.insert)
 
 		d.roles = []
-		d.append("roles", {
-			"role": "System Manager"
-		})
+		d.append("roles", {"role": "System Manager"})
 		d.insert()
 
 		self.assertEqual(frappe.db.get_value("User", d.name), d.name)
@@ -159,7 +161,7 @@ class TestDocument(unittest.TestCase):
 
 	def test_varchar_length(self):
 		d = self.test_insert()
-		d.sender = "abcde"*100 + "@user.com"
+		d.sender = "abcde" * 100 + "@user.com"
 		self.assertRaises(frappe.CharacterLengthExceededError, d.save)
 
 	def test_xss_filter(self):
@@ -167,7 +169,7 @@ class TestDocument(unittest.TestCase):
 
 		# script
 		xss = '<script>alert("XSS")</script>'
-		escaped_xss = xss.replace('<', '&lt;').replace('>', '&gt;')
+		escaped_xss = xss.replace("<", "&lt;").replace(">", "&gt;")
 		d.subject += xss
 		d.save()
 		d.reload()
@@ -177,7 +179,7 @@ class TestDocument(unittest.TestCase):
 
 		# onload
 		xss = '<div onload="alert("XSS")">Test</div>'
-		escaped_xss = '<div>Test</div>'
+		escaped_xss = "<div>Test</div>"
 		d.subject += xss
 		d.save()
 		d.reload()
@@ -203,57 +205,56 @@ class TestDocument(unittest.TestCase):
 			prefix = series
 
 			if ".#" in series:
-				prefix = series.rsplit('.',1)[0]
+				prefix = series.rsplit(".", 1)[0]
 
 			prefix = parse_naming_series(prefix)
-			old_current = frappe.db.get_value('Series', prefix, "current", order_by="name")
+			old_current = frappe.db.get_value("Series", prefix, "current", order_by="name")
 
 			revert_series_if_last(series, name)
-			new_current = cint(frappe.db.get_value('Series', prefix, "current", order_by="name"))
+			new_current = cint(frappe.db.get_value("Series", prefix, "current", order_by="name"))
 
 			self.assertEqual(cint(old_current) - 1, new_current)
 
 	def test_non_negative_check(self):
 		frappe.delete_doc_if_exists("Currency", "Frappe Coin", 1)
 
-		d = frappe.get_doc({
-			'doctype': 'Currency',
-			'currency_name': 'Frappe Coin',
-			'smallest_currency_fraction_value': -1
-		})
+		d = frappe.get_doc(
+			{"doctype": "Currency", "currency_name": "Frappe Coin", "smallest_currency_fraction_value": -1}
+		)
 
 		self.assertRaises(frappe.NonNegativeError, d.insert)
 
-		d.set('smallest_currency_fraction_value', 1)
+		d.set("smallest_currency_fraction_value", 1)
 		d.insert()
 		self.assertEqual(frappe.db.get_value("Currency", d.name), d.name)
 
 		frappe.delete_doc_if_exists("Currency", "Frappe Coin", 1)
 
 	def test_get_formatted(self):
-		frappe.get_doc({
-			'doctype': 'DocType',
-			'name': 'Test Formatted',
-			'module': 'Custom',
-			'custom': 1,
-			'fields': [
-				{'label': 'Currency', 'fieldname': 'currency', 'reqd': 1, 'fieldtype': 'Currency'},
-			]
-		}).insert()
+		frappe.get_doc(
+			{
+				"doctype": "DocType",
+				"name": "Test Formatted",
+				"module": "Custom",
+				"custom": 1,
+				"fields": [
+					{"label": "Currency", "fieldname": "currency", "reqd": 1, "fieldtype": "Currency"},
+				],
+			}
+		).insert()
 
 		frappe.delete_doc_if_exists("Currency", "INR", 1)
 
-		d = frappe.get_doc({
-			'doctype': 'Currency',
-			'currency_name': 'INR',
-			'symbol': '₹',
-		}).insert()
+		d = frappe.get_doc(
+			{
+				"doctype": "Currency",
+				"currency_name": "INR",
+				"symbol": "₹",
+			}
+		).insert()
 
-		d = frappe.get_doc({
-			'doctype': 'Test Formatted',
-			'currency': 100000
-		})
-		self.assertEquals(d.get_formatted('currency', currency='INR', format="#,###.##"), '₹ 100,000.00')
+		d = frappe.get_doc({"doctype": "Test Formatted", "currency": 100000})
+		self.assertEquals(d.get_formatted("currency", currency="INR", format="#,###.##"), "₹ 100,000.00")
 
 	def test_limit_for_get(self):
 		doc = frappe.get_doc("DocType", "DocType")
@@ -280,3 +281,63 @@ class TestDocument(unittest.TestCase):
 
 		# run_method should get overridden
 		self.assertEqual(doc.run_method("as_dict"), "success")
+
+	def test_realtime_notify(self):
+		todo = frappe.new_doc("ToDo")
+		todo.description = "this will trigger realtime update"
+		todo.notify_update = Mock()
+		todo.insert()
+		self.assertEqual(todo.notify_update.call_count, 1)
+
+		todo.reload()
+		todo.flags.notify_update = False
+		todo.description = "this won't trigger realtime update"
+		todo.save()
+		self.assertEqual(todo.notify_update.call_count, 1)
+
+
+class TestDocumentWebView(unittest.TestCase):
+	def get(self, path):
+		from frappe.app import make_form_dict
+
+		frappe.set_user("Guest")
+		set_request(method="GET", path=path)
+		make_form_dict(frappe.local.request)
+		response = render.render()
+		frappe.set_user("Administrator")
+		return response
+
+	def test_web_view_link_authentication(self):
+		todo = frappe.get_doc({"doctype": "ToDo", "description": "Test"}).insert()
+		document_key = todo.get_document_share_key()
+		frappe.db.commit()
+
+		# with old-style signature key
+		update_system_settings({"allow_older_web_view_links": True}, True)
+		old_document_key = todo.get_signature()
+		url = f"/ToDo/{todo.name}?key={old_document_key}"
+		self.assertEquals(self.get(url).status, "200 OK")
+
+		update_system_settings({"allow_older_web_view_links": False}, True)
+		self.assertEquals(self.get(url).status, "401 UNAUTHORIZED")
+
+		# with valid key
+		url = f"/ToDo/{todo.name}?key={document_key}"
+		self.assertEquals(self.get(url).status, "200 OK")
+
+		# with invalid key
+		invalid_key_url = f"/ToDo/{todo.name}?key=INVALID_KEY"
+		self.assertEquals(self.get(invalid_key_url).status, "401 UNAUTHORIZED")
+
+		# expire the key
+		document_key_doc = frappe.get_doc("Document Share Key", {"key": document_key})
+		document_key_doc.expires_on = "2020-01-01"
+		document_key_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+
+		# with expired key
+		self.assertEquals(self.get(url).status, "410 GONE")
+
+		# without key
+		url_without_key = f"/ToDo/{todo.name}"
+		self.assertEquals(self.get(url_without_key).status, "403 FORBIDDEN")

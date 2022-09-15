@@ -65,6 +65,14 @@ frappe.views.BaseList = class BaseList {
 		];
 	}
 
+	get_list_view_settings() {
+		return frappe
+			.call("frappe.desk.listview.get_list_settings", {
+				doctype: this.doctype,
+			})
+			.then((doc) => (this.list_view_settings = doc.message || {}));
+	}
+
 	setup_fields() {
 		this.set_fields();
 		this.build_fields();
@@ -120,7 +128,7 @@ frappe.views.BaseList = class BaseList {
 			// df is passed
 			const df = fieldname;
 			fieldname = df.fieldname;
-			doctype = df.parent;
+			doctype = df.parent || doctype;
 		}
 
 		if (!this.fields) this.fields = [];
@@ -235,7 +243,7 @@ frappe.views.BaseList = class BaseList {
 				item.shortcut
 			);
 			if (item.class) {
-				$item && $item.addClass(item.class);
+				$item[0] && $item.addClass(item.class);
 			}
 		});
 	}

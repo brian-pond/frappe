@@ -13,7 +13,11 @@
   "email_server",
   "use_imap",
   "use_ssl",
+<<<<<<< HEAD
   "cb1",
+=======
+  "use_starttls",
+>>>>>>> official/version-13
   "incoming_port",
   "attachment_limit",
   "append_to",
@@ -125,17 +129,29 @@
    "label": "Use SSL for Outgoing"
   },
   {
+<<<<<<< HEAD
    "fieldname": "cb1",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "cb2",
    "fieldtype": "Column Break"
+=======
+   "default": "0",
+   "depends_on": "eval:doc.use_imap && !doc.use_ssl",
+   "fieldname": "use_starttls",
+   "fieldtype": "Check",
+   "label": "Use STARTTLS"
+>>>>>>> official/version-13
   }
  ],
  "icon": "icon-inbox",
  "links": [],
+<<<<<<< HEAD
  "modified": "2021-12-05 17:41:39.257553",
+=======
+ "modified": "2022-08-19 11:22:46.342609",
+>>>>>>> official/version-13
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Domain",
