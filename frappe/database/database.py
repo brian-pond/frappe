@@ -667,7 +667,7 @@ class Database(object):
 		"""
 		return self.set_value(doctype, doctype, fieldname, value, *args, **kwargs)
 
-	def get_single_value(self, doctype, fieldname):  # DH - Removing unused cache argument.
+	def get_single_value(self, doctype, fieldname, cache=True):
 		"""Get property of Single DocType. Cache locally by default
 
 		:param doctype: DocType of the single object whose value is requested
@@ -699,8 +699,8 @@ class Database(object):
 				_("Invalid field name: {0}").format(frappe.bold(fieldname)), self.InvalidColumnName
 			)
 
-		# Datahenge:  This is another Holy Shit moment:  The datatype for None dates was CHANGING into Today's Date!
-		val = cast_fieldtype(df.fieldtype, val)
+		# Datahenge:  This was another 'Wow!' moment:  The datatype for a 'None' date was automatically CHANGING into Today's Date!
+		val = cast(df.fieldtype, val)
 
 		# TODO:  Datahenge:  If the SQL result is a DateTime, would be great if we applied a datetime.date format
 		#        immediately to what's in the cache.
