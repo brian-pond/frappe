@@ -72,7 +72,7 @@
   "prepared_report_expiry_period",
   "sb_datahenge",
   "small_text_65",
-  "enable_pdf_debugging"
+  "enable_pdf_debugging",
   "column_break_64",
   "max_auto_email_report_per_user",
   "system_updates_section",
@@ -481,8 +481,8 @@
    "label": "Datahenge Custom"
   },
   {
-   "default": "In `common_site_config.json`, the key `restart_supervisor_on_update` is interpreted by Frappe as \"PRODUCTION MODE ENABLE\".  This is incredibly not-obvious, and will burn you on PDF rendering if you are not careful.",
-   "description": "In `common_site_config.json`, the key `restart_supervisor_on_update` is interpreted by Frappe as \"PRODUCTION MODE ENABLE\".  This is incredibly not-obvious, and will burn you on PDF rendering if you are not careful.",
+   "default": "In `common_site_config.json`, the key `restart_supervisor_on_update` is interpreted by Frappe as 'PRODUCTION MODE ENABLE'.  This is incredibly not-obvious, and will burn you on PDF rendering if you are not careful.",
+   "description": "In `common_site_config.json`, the key `restart_supervisor_on_update` is interpreted by Frappe as 'PRODUCTION MODE ENABLE'.  This is incredibly not-obvious, and will burn you on PDF rendering if you are not careful.",
    "fieldname": "small_text_65",
    "fieldtype": "Read Only",
    "label": "Warning",

@@ -37,6 +37,7 @@ def migrate(verbose=True, skip_failing=False, skip_search_index=False):
 	- run after migrate hooks
 	"""
 
+	'''
 	service_status = check_connection(redis_services=["redis_cache"])
 	if False in service_status.values():
 		for service in service_status:
@@ -51,6 +52,7 @@ $ bench start
 Otherwise, check the server logs and ensure that all the required services are running."""
 		)
 		sys.exit(1)
+	'''
 
 	touched_tables_file = frappe.get_site_path("touched_tables.json")
 	if os.path.exists(touched_tables_file):

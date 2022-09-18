@@ -130,7 +130,7 @@ class Report(Document):
 
 		# Datahenge : Also allow SQL CTE queries.
 		if (not self.query.lower().startswith("with")) and (not self.query.lower().startswith("select")):
-			frappe.throw(_("Query must be a SELECT or WITH"), title=_("Report Document Error")
+			frappe.throw(_("Query must be a SELECT or WITH"), title=_("Report Document Error"))
 		# EOM
 
 		result = [list(t) for t in frappe.db.sql(self.query, filters)]

@@ -86,7 +86,7 @@ frappe.views.Workspace = class Workspace {
 				this.build_sidebar_section(category, this.workspaces[category]);
 			}
 			else {
-				frappe.msgprint("Foo bar?");
+				frappe.msgprint("No workspace for category {0}", category);
 			}
 		});
 	}

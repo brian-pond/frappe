@@ -183,8 +183,12 @@ def read_doc_from_file(path):
 		with open(path, "r") as f:
 			try:
 				doc = json.loads(f.read())
-			except ValueError:
-				print("bad json: {0}".format(path))
+			except ValueError as ex:
+				print("\Bad JSON format: {0}".format(path))
+				print(ex)
+				raise
+			except Exception as ex:
+				print(f"Error while reading JSON from file: '{path}'")
 				raise
 	else:
 		raise IOError("%s missing" % path)
