@@ -280,7 +280,7 @@ def get_stats(stats, doctype, filters=None):
 	"""get tag info"""
 
 	# Datahenge
-	frappe.msgprint("Brian had disabled 'get_stats()' due to performance concerns.")
+	# frappe.msgprint("Brian had disabled 'get_stats()' due to performance concerns.")
 	return
 
 	import json
