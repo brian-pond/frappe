@@ -47,6 +47,7 @@ def update_document_title(doctype, docname, title_field=None, old_title=None, ne
 
 	return docname
 
+@frappe.whitelist()  # Spectrum Fruits:  Necessary to rename a Period Closing Voucher.
 def rename_doc(
 	doctype,
 	old,

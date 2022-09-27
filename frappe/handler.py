@@ -66,8 +66,8 @@ def execute_cmd(cmd, from_async=False):
 def is_whitelisted(method):
 	# check if whitelisted
 	if frappe.session['user'] == 'Guest':
-		if (method not in frappe.guest_methods):
-			frappe.msgprint(_("Not permitted"))
+		if method not in frappe.guest_methods:
+			frappe.msgprint(_("Method is not permitted for Guest."))
 			raise frappe.PermissionError('Not Allowed, {0}'.format(method))
 
 		if method not in frappe.xss_safe_methods:
@@ -79,7 +79,8 @@ def is_whitelisted(method):
 
 	else:
 		if not method in frappe.whitelisted:
-			frappe.msgprint(_(f"Not permitted (Python function '{method}' not safelisted)"))
+			# frappe.whatis(f"Function named {method.__name__}, dir '{method.__dir__}', module '{method.__module__}'")
+			frappe.msgprint(_(f"Not permitted.  Python function '{method.__name__}', module '{method.__module__}' is not safelisted."))
 			raise frappe.PermissionError('Not Allowed, {0}'.format(method))
 
 def is_valid_http_method(method):
@@ -179,8 +180,8 @@ def upload_file():
 		content = file.stream.read()
 		filename = file.filename
 
-	frappe.local.uploaded_file = content
-	frappe.local.uploaded_filename = filename
+	frappe.local.uploaded_file = content  # pylint: disable=assigning-non-slot
+	frappe.local.uploaded_filename = filename  # pylint: disable=assigning-non-slot
 
 	if frappe.session.user == 'Guest':
 		import mimetypes
