@@ -156,6 +156,8 @@ class RedisWrapper(redis.Redis):
 
 		# set in redis
 		try:
+			if not _name or not key:
+				return None
 			super(RedisWrapper, self).hset(_name,
 				key, pickle.dumps(value))
 		except redis.exceptions.ConnectionError:
@@ -175,6 +177,8 @@ class RedisWrapper(redis.Redis):
 
 		value = None
 		try:
+			if not _name or not key:
+				return None
 			value = super(RedisWrapper, self).hget(_name, key)
 		except redis.exceptions.ConnectionError:
 			pass
