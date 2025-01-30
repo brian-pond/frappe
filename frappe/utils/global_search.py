@@ -250,7 +250,11 @@ def update_global_search(doc):
 
 	# Get children
 	for child in doc.meta.get_table_fields():
-		for d in doc.get(child.fieldname):
+		# Datahenge - More bug fixing when doc.get() returns a NoneType instead of a List
+		intermediate_value = doc.get(child.fieldname)
+		if not intermediate_value:
+			intermediate_value  =[]  # recast to List if None
+		for d in intermediate_value:
 			if d.parent == doc.name:
 				content.extend(
 					get_formatted_value(d.get(field.fieldname), field)

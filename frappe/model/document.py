@@ -487,7 +487,9 @@ class Document(BaseDocument):
 	def update_child_table(self, fieldname: str, df: Optional["DocField"] = None):
 		"""sync child table for given fieldname"""
 		df: "DocField" = df or self.meta.get_field(fieldname)
-		all_rows = self.get(df.fieldname)
+		all_rows = self.get(df.fieldname)  # FTP : January 30th 2025 - We noticed this was sometimes evaluating to NoneType
+		if not all_rows:
+			all_rows = []  # FTP : Make sure this is a List and not a NoneType.  Not sure how the entire world using Frappe is not broken today.
 
 		# delete rows that do not match the ones in the document
 		# Datahenge:  A better explanation is 'Delete rows that no longer exist in the document.'

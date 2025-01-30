@@ -478,6 +478,8 @@ def log(msg: str) -> None:
 		print(repr(msg))
 
 	debug_log.append(as_unicode(msg))
+	# Brian and Emmanuel : Logging != HTTP Response.
+	# TODO: Go write a real log file solution using Python logger()
 
 
 @functools.lru_cache(maxsize=1024)
