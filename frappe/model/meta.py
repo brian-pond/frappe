@@ -849,7 +849,7 @@ def trim_tables(doctype=None, dry_run=False, quiet=False):
 		except Exception as e:
 			if quiet:
 				continue
-			click.echo(e, err=True)
+			click.echo(f"DocType {doctype} : {e}", err=True)
 
 	return UPDATED_TABLES
 

@@ -1372,6 +1372,7 @@ class Database:
 				frappe.qb.from_(information_schema.columns)
 				.select(information_schema.columns.column_name)
 				.where(information_schema.columns.table_name == table)
+				.where(information_schema.columns.table_schema == frappe.conf.db_name)
 				.run(pluck=True)
 			)
 

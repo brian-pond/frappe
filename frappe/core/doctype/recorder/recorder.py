@@ -274,7 +274,9 @@ def _fetch_table_stats(doctype: str, columns: list[str]) -> dict | None:
 		frappe.db.sql(
 			f"""select table_rows
 			   from  information_schema.tables
-			   where table_name = 'tab{doctype}'"""
+			   where table_name = 'tab{doctype}'
+			   AND table_schema = '{frappe.conf.db_name}'
+			"""
 		)[0][0]
 	)
 

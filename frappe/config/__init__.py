@@ -36,10 +36,14 @@ def get_modules_from_app(app):
 def get_all_empty_tables_by_module():
 	table_rows = frappe.qb.Field("table_rows")
 	table_name = frappe.qb.Field("table_name")
+	table_schema = frappe.qb.Field("table_schema")
 	information_schema = frappe.qb.Schema("information_schema")
 
 	empty_tables = (
-		frappe.qb.from_(information_schema.tables).select(table_name).where(table_rows == 0)
+		frappe.qb.from_(information_schema.tables)
+		.select(table_name)
+		.where(table_rows == 0)
+		.where(table_schema == frappe.conf.db_name)
 	).run()
 
 	empty_tables = {r[0] for r in empty_tables}

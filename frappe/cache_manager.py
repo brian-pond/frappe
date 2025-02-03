@@ -201,10 +201,10 @@ def build_table_count_cache():
 	table_rows = frappe.qb.Field("table_rows").as_("count")
 	information_schema = frappe.qb.Schema("information_schema")
 
-	# TODO: Datahenge, limit the results to the current Site database only!
-	# database_name = frappe.db.db_name
-	# WHERE TABLE_SCHEMA = '{database_name}'
-	data = (frappe.qb.from_(information_schema.tables).select(table_name, table_rows)).run(as_dict=True)
+	data = (frappe.qb.from_(information_schema.tables)
+	.select(table_name, table_rows)
+	.where(information_schema.tables.table_schema == frappe.conf.db_name)
+	).run(as_dict=True)
 	counts = {d.get("name").replace("tab", "", 1): d.get("count", None) for d in data}
 	frappe.cache.set_value("information_schema:counts", counts)
 

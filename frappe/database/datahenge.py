@@ -108,7 +108,7 @@ class SQLTransaction():
 
 		# Enforce a single row.
 		if len(query_result) > 1:
-			raise Exception(f"ERROR: Found more then 1 row of 'information_schema.innodb_trx'.  {query_result}")
+			raise RuntimeError(f"ERROR: Found more then 1 row of 'information_schema.innodb_trx'.  {query_result}")
 
 		query_result = query_result[0]
 
