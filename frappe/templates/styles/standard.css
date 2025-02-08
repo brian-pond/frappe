@@ -60,7 +60,7 @@
 }
 
 .data-field .value {
-	word-wrap: break-word;
+	overflow-wrap: break-word;
 }
 
 .important .value {

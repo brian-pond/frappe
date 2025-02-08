@@ -690,7 +690,7 @@ details > summary:focus {
 .diffview {
 	font-family: monospace;
 	white-space: pre;
-	word-wrap: break-word;
+	overflow-wrap: break-word;
 	color: var(--text-color);
 }
 

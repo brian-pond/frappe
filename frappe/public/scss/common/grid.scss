@@ -538,7 +538,7 @@
 }
 
 .grid-overflow-no-ellipsis {
-	word-wrap: break-word;
+	overflow-wrap: break-word;
 	overflow: hidden;
 	padding-right: 0px;
 }
