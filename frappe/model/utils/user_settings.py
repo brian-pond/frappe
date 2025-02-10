@@ -17,7 +17,7 @@ def get_user_settings(doctype, for_update=False):
 	if doctype in ignored_doctypes:
 		return '{}'
 	# Datahenge End
-	
+
 	user_settings = frappe.cache.hget("_user_settings", f"{doctype}::{frappe.session.user}")
 
 	if user_settings is None:

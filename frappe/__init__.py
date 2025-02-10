@@ -1077,10 +1077,12 @@ def has_permission(
 	if throw and not out:
 		document_label = f"{_(doctype)} {doc if isinstance(doc, str) else doc.name}" if doc else _(doctype)
 		frappe.flags.error_message = _("No permission for {0}").format(document_label)
-		# Datahenge: Error handling should be so much better...
+		# Datahenge: This error handling could (and should!) be so much better...
 		if not user:
 			user = frappe.session.user
-		raise frappe.PermissionError(f"User {user} does not have permissions for DocType {document_label}")
+		error_message = f"User {user} does not have {ptype} permissions for DocType {document_label}"
+		print(f"frappe.has_permission() : {error_message}")
+		raise frappe.PermissionError(error_message)
 
 	return out
 
