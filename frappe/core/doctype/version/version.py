@@ -120,21 +120,22 @@ def get_diff(old, new, for_child=False, compare_cancelled=False):
 			found_rows = set()
 
 			# check rows for additions, changes
-			for i, d in enumerate(new_value):
-				old_row_name = getattr(d, old_row_name_field, None)
-				if compare_cancelled:
-					if amended_from:
-						if len(old_value) > i:
-							old_row_name = old_value[i].name
+			if new_value:
+				for i, d in enumerate(new_value):
+					old_row_name = getattr(d, old_row_name_field, None)
+					if compare_cancelled:
+						if amended_from:
+							if len(old_value) > i:
+								old_row_name = old_value[i].name
 
-				if old_row_name and old_row_name in old_rows_by_name:
-					found_rows.add(old_row_name)
+					if old_row_name and old_row_name in old_rows_by_name:
+						found_rows.add(old_row_name)
 
-					diff = get_diff(old_rows_by_name[old_row_name], d, for_child=True)
-					if diff and diff.changed:
-						out.row_changed.append((df.fieldname, i, d.name, diff.changed))
-				else:
-					out.added.append([df.fieldname, d.as_dict()])
+						diff = get_diff(old_rows_by_name[old_row_name], d, for_child=True)
+						if diff and diff.changed:
+							out.row_changed.append((df.fieldname, i, d.name, diff.changed))
+					else:
+						out.added.append([df.fieldname, d.as_dict()])
 
 			# check for deletions
 			for d in old_value:
