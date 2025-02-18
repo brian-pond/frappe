@@ -45,9 +45,11 @@ def bootstrap_database(verbose, source_sql=None):
 
 
 def import_db_from_sql(source_sql=None, verbose=False):
-	if verbose:
-		print("Starting database import...")
+
 	db_name = frappe.conf.db_name
+	if verbose:
+		print(f"Starting import into database '{db_name}' ...")
+
 	if not source_sql:
 		source_sql = os.path.join(os.path.dirname(__file__), "framework_postgres.sql")
 	DbManager(frappe.local.db).restore_database(

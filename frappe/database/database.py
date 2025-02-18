@@ -1360,21 +1360,42 @@ class Database:
 	def get_db_table_columns(self, table) -> list[str]:
 		"""Returns list of column names from given table."""
 
-		# Datahenge: Limit to current database.
-		# WHERE TABLE_SCHEMA = %(database_name)s 
-		# AND table_name = %(table)s ''', values={"database_name": frappe.db.db_name, "table": table})]
+		# There is a difference in what data 'information_schema' contains between MariaDB and Postgres.
+		#
+
+		# -- MARIADB
+		# table_catalog = 'def'
+		# table_schema = 'dbprod'
+		# table_name = 'tabDocField'
+
+		# -- POSTGRES
+		# table_catalog = 'pgv15'
+		# table_schema = 'public'
+		# table_name = 'tabDocField'
 
 		columns = frappe.cache.hget("table_columns", table)
 		if columns is None:
 			information_schema = frappe.qb.Schema("information_schema")
 
-			columns = (
-				frappe.qb.from_(information_schema.columns)
-				.select(information_schema.columns.column_name)
-				.where(information_schema.columns.table_name == table)
-				.where(information_schema.columns.table_schema == frappe.conf.db_name)
-				.run(pluck=True)
-			)
+			if frappe.conf.db_type == "mariadb":
+				columns = (
+					frappe.qb.from_(information_schema.columns)
+					.select(information_schema.columns.column_name)
+					.where(information_schema.columns.table_name == table)
+					.where(information_schema.columns.table_schema == frappe.conf.db_name)  # This line ONLY works for MariaDB
+					.run(pluck=True)
+				)
+			elif frappe.conf.db_type == "postgres":
+				columns = (
+					frappe.qb.from_(information_schema.columns)
+					.select(information_schema.columns.column_name)
+					.where(information_schema.columns.table_name == table)
+					.where(information_schema.columns.table_schema == 'public')  # This line ONLY works for Postgres
+					.where(information_schema.columns.table_catalog == frappe.conf.db_name)  # This line ONLY works for Postgres
+					.run(pluck=True)
+				)
+			else:
+				raise RuntimeError(f"Frappe Framework does not support a 'db_type' of {frappe.conf.db_type}")
 
 			if columns:
 				frappe.cache.hset("table_columns", table, columns)

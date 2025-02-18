@@ -2271,7 +2271,6 @@ def get_field_differences(doc_before,
 	if doc_before.doctype != doc_after.doctype:
 		raise ValueError("It's unwise to compare the DocFields of 2 different DocTypes.")
 
-	# frappe.whatis(f"Comparing before and after DocFields for DocType '{doc_before.doctype}'")
 	#  frappe.utils.data.cast_fieldtype
 	#  frappe.utils.data.cast
 
