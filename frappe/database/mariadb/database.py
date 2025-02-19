@@ -362,6 +362,7 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 			.where(
 				(information_schema.columns.table_name == table)
 				& (information_schema.columns.column_name == column)
+				& (information_schema.columns.table_schema == self.cur_db_name)
 			)
 			.run(pluck=True)[0]
 		)
@@ -390,7 +391,7 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 				as_dict=True,
 			)
 		except Exception as ex:
-			print(f"ERROR in get_column_index() for table {table_name}")
+			print(f"ERROR in get_column_index() for table {table_name} : str{ex}")  # Datahenge:  Let's share the error message
 			return None
 
 		# Same index can be part of clustered index which contains more fields
@@ -444,7 +445,7 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 		"""
 		res = self.sql("select issingle from `tabDocType` where name=%s", (doctype,))
 		if not res:
-			raise Exception(f"Wrong doctype {doctype} in updatedb")
+			raise ValueError(f"Wrong doctype {doctype} in updatedb")
 
 		if not res[0][0]:
 			db_table = MariaDBTable(doctype, meta)
@@ -468,12 +469,12 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 		if to_query:
 			information_schema = frappe.qb.Schema("information_schema")
 
-			# Datahenge: Why is standard code returning every single Table name in the entire database?
+			# Datahenge: No reason for standard code to return every SQL Table name in the entire database?
 			tables = (
 				frappe.qb.from_(information_schema.tables)
 				.select(information_schema.tables.table_name)
-				#.where(information_schema.tables.table_schema != "information_schema")
 				.where(information_schema.tables.table_schema == frappe.db.cur_db_name)
+				.where(information_schema.tables.table_type == "BASE TABLE")
 				.run(pluck=True)
 			)
 			frappe.cache.set_value("db_tables", tables)
@@ -536,7 +537,7 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 	@contextmanager
 	def unbuffered_cursor(self):
 		from pymysql.cursors import SSCursor
-
+		# pylint: disable=used-before-assignment
 		try:
 			if not self._conn:
 				self.connect()
@@ -547,3 +548,26 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 		finally:
 			self._cursor = original_cursor
 			new_cursor.close()
+
+
+	# ========
+	# DATAHENGE
+	# ========
+
+	def get_table_row_count(self, sql_table_name: str=None) -> list:
+		"""
+		Calculate the number of rows, per SQL table (Datahenge add-on)
+		"""
+		information_schema = frappe.qb.Schema("information_schema")
+		table_name = frappe.qb.Field("table_name").as_("name")
+		table_rows = frappe.qb.Field("table_rows").as_("count")
+
+		query = frappe.qb.from_(information_schema.tables)\
+		    .select(table_name, table_rows)\
+		    .where(information_schema.tables.table_schema == frappe.conf.db_name)\
+		    .where(information_schema.tables.table_catalog == "def")
+		if sql_table_name:
+			query = query.where(information_schema.tables.table_name == sql_table_name)
+
+		# print(query.get_sql())
+		return query.run(as_dict=True)

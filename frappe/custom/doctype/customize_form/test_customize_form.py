@@ -248,12 +248,27 @@ class TestCustomizeForm(FrappeTestCase):
 			str(new_document_length),
 		)
 
-		length = frappe.db.sql(
-			"""SELECT character_maximum_length
-			FROM information_schema.columns
-			WHERE table_name = 'tabNotification Log'
-			AND column_name = 'document_name'"""
-		)[0][0]
+		if frappe.conf.db_type == "mariadb":
+			length = frappe.db.sql(
+				"""SELECT character_maximum_length
+				FROM information_schema.columns
+				WHERE table_name = 'tabNotification Log'
+				AND table_schema = %(database_name)s
+				AND column_name = 'document_name'""",
+				{"database_name": frappe.conf.db_name}
+			)[0][0]
+		elif frappe.conf.db_type == "postgres":
+			length = frappe.db.sql(
+				"""SELECT character_maximum_length
+				FROM information_schema.columns
+				WHERE table_name = 'tabNotification Log'
+				AND table_catalog = %(database_name)s
+				AND table_schema = 'public'
+				AND column_name = 'document_name'""",
+				{"database_name": frappe.conf.db_name}
+			)[0][0]
+		else:
+			raise RuntimeError("Unrecognized database type '{}'")
 
 		self.assertEqual(length, new_document_length)
 

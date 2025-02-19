@@ -34,21 +34,11 @@ def get_modules_from_app(app):
 
 
 def get_all_empty_tables_by_module():
-	table_rows = frappe.qb.Field("table_rows")
-	table_name = frappe.qb.Field("table_name")
-	table_schema = frappe.qb.Field("table_schema")
-	information_schema = frappe.qb.Schema("information_schema")
 
-	empty_tables = (
-		frappe.qb.from_(information_schema.tables)
-		.select(table_name)
-		.where(table_rows == 0)
-		.where(table_schema == frappe.conf.db_name)
-	).run()
-
-	empty_tables = {r[0] for r in empty_tables}
-
+	# Datahenge: Leveraging the database subclasses for MariaDB and Postgres
+	empty_tables = { each['name'] for each in frappe.db.get_table_row_count() if each['count'] == 0 }
 	results = frappe.get_all("DocType", fields=["name", "module"])
+	results = [ (each['name'], each['module']) for each in results ]  # transform the Values in tuples
 	empty_tables_by_module = {}
 
 	for doctype, module in results:

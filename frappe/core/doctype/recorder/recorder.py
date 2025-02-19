@@ -156,9 +156,9 @@ def _optimize(recorder_id):
 	total_duration = record.time_in_queries
 
 	# Any index with query time less than 5% of total time is not suggested
-	PERCENT_DURATION_THRESHOLD_OVERALL = 0.05
+	PERCENT_DURATION_THRESHOLD_OVERALL = 0.05  # pylint: disable=invalid-name
 	# Any query with duration less than 0.5% of total duration is not analyzed
-	PERCENT_DURATION_THRESHOLD_QUERY = 0.005
+	PERCENT_DURATION_THRESHOLD_QUERY = 0.005  # pylint: disable=invalid-name
 
 	# Index suggestion -> Query duration
 	index_suggestions = Counter()
@@ -270,15 +270,7 @@ def _fetch_table_stats(doctype: str, columns: list[str]) -> dict | None:
 		if idx["Seq_in_index"] == 1:
 			update_cardinality(idx["Column_name"], idx["Cardinality"])
 
-	total_rows = cint(
-		frappe.db.sql(
-			f"""select table_rows
-			   from  information_schema.tables
-			   where table_name = 'tab{doctype}'
-			   AND table_schema = '{frappe.conf.db_name}'
-			"""
-		)[0][0]
-	)
+	total_rows = cint(frappe.db.get_table_row_count(sql_table_name=f"tab{doctype}")[0]['count'])  # Datahenge: Use database.py
 
 	# fetch accurate cardinality for columns by query. WARN: This can take A LOT of time.
 	for column in columns:

@@ -1227,7 +1227,7 @@ def stop_recording(context):
 @pass_context
 def start_ngrok(context, bind_tls, use_default_authtoken):
 	"""Start a ngrok tunnel to your local development server."""
-	from pyngrok import ngrok
+	from pyngrok import ngrok  # pylint: disable=import-error; This is a Development Dependency.
 
 	site = get_site(context)
 	frappe.init(site=site)
@@ -1342,24 +1342,15 @@ def trim_database(context, dry_run, format, no_backup, yes=False):
 
 	from frappe.utils.backups import scheduled_backup
 
-	ALL_DATA = {}
+	ALL_DATA = {}  # pylint: disable=invalid-name
 
 	for site in context.sites:
 		frappe.init(site=site)
 		frappe.connect()
 
-		TABLES_TO_DROP = []
-		STANDARD_TABLES = get_standard_tables()
-		information_schema = frappe.qb.Schema("information_schema")
-		table_name = frappe.qb.Field("table_name").as_("name")
-
-		database_tables: list[str] = (
-			frappe.qb.from_(information_schema.tables)
-			.select(table_name)
-			.where(information_schema.tables.table_schema == frappe.conf.db_name)
-			.where(information_schema.tables.table_type == "BASE TABLE")
-			.run(pluck=True)
-		)
+		TABLES_TO_DROP = []  # pylint: disable=invalid-name
+		STANDARD_TABLES = get_standard_tables()  # pylint: disable=invalid-name
+		database_tables: list[str] = frappe.db.get_tables()
 		doctype_tables = frappe.get_all("DocType", pluck="name")
 
 		for table_name in database_tables:

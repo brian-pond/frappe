@@ -96,6 +96,9 @@ class SQLTransaction():
 		NOTE: Requires granting a new privilege to the SQL User:  GRANT Process ON *.* TO 'user_name'@'%';`
 		"""
 
+		if frappe.db.db_type != "mariadb":
+			raise NotImplementedError(f"get_sql_transaction_details() not implemented for {frappe.db.db_type}")
+
 		connection_id = SQLTransaction.get_connection_id()
 		if not connection_id:
 			raise ValueError("Critical Error: Unable to determine the current MySQL connection identifer.")

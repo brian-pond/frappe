@@ -217,7 +217,12 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 	# pylint: disable=W0221
 	def sql(self, query, values=EmptyQueryValues, *args, **kwargs):
-		return super().sql(modify_query(query), modify_values(values), *args, **kwargs)
+		try:
+			return super().sql(modify_query(query), modify_values(values), *args, **kwargs)
+		except Exception as ex:
+			print(f"SQL Exception: {ex}")
+			print(f"SQL Query: {query}")
+			raise ex
 
 	def lazy_mogrify(self, *args, **kwargs) -> str:
 		return self.last_query
@@ -258,9 +263,17 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		return self.sql(f"ALTER TABLE `{old_name}` RENAME TO `{new_name}`")
 
 	def describe(self, doctype: str) -> list | tuple:
+		"""
+		Returns a list or tuple of SQL Column names.
+		"""
 		table_name = get_table_name(doctype)
 		return self.sql(
-			f"SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_NAME = '{table_name}'"
+			f"""SELECT COLUMN_NAME
+			FROM information_schema.COLUMNS WHERE TABLE_NAME = '{table_name}'
+			AND TABLE_CATALOG = %(database_name)s
+			AND TABLE_SCHEMA = %(schema_name)s
+			""",
+			{"database_name": self.cur_db_name, "schema_name": frappe.conf.get("db_schema", "public")}
 		)
 
 	def change_column_type(
@@ -428,6 +441,31 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 	def get_database_list(self):
 		return self.sql("SELECT datname FROM pg_database", pluck=True)
+
+	# ========
+	# DATAHENGE
+	# ========
+
+	def get_table_row_count(self, sql_table_name: str=None) -> list:
+		"""
+		Calculate the number of rows, per SQL table (Datahenge add-on)
+		"""
+
+		# NOTE: Attempting to accomplish this with frappe.qb.Schema or "information_schema" is a headache I don't have time to deal with.
+		#       So I'm just querying Postgres the way it was intended.
+
+		pg_stat_user_tables = frappe.qb.Table("pg_stat_user_tables")
+		table_name = frappe.qb.Field("relname").as_("name")
+		table_rows = frappe.qb.Field("n_live_tup").as_("count")
+
+		query = frappe.qb.from_(pg_stat_user_tables)\
+		    .select(table_name, table_rows)\
+		    .where(pg_stat_user_tables.schemaname == "public")
+		if sql_table_name:
+			query = query.where(pg_stat_user_tables.table_name == sql_table_name)
+
+		# print(query.get_sql())
+		return query.run(as_dict=True)
 
 
 def modify_query(query):

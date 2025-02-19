@@ -94,7 +94,7 @@ def clear_user_cache(user=None):
 		for name in user_cache_keys:
 			frappe.cache.delete_key(name)
 		clear_defaults_cache()
-		clear_global_cache() # TODO: DATAHENGE: I don't why a function 'clear_user_cache()' should (sometimes) implicitly destroy the Global Cache.
+		clear_global_cache() # TODO: DATAHENGE: Why design 'clear_user_cache()' to sometimes implicitly destroy the Global Cache?  Seems dangerous.
 
 
 def clear_domain_cache(user=None):  # DATAHENGE: Unused argument, what's the point?
@@ -197,14 +197,8 @@ def build_table_count_cache():
 	):
 		return
 
-	table_name = frappe.qb.Field("table_name").as_("name")
-	table_rows = frappe.qb.Field("table_rows").as_("count")
-	information_schema = frappe.qb.Schema("information_schema")
-
-	data = (frappe.qb.from_(information_schema.tables)
-	.select(table_name, table_rows)
-	.where(information_schema.tables.table_schema == frappe.conf.db_name)
-	).run(as_dict=True)
+	# Datahenge: The calculation now happens in the MariaDB/Postgres subclasses in database.py
+	data = frappe.db.get_table_row_count()
 	counts = {d.get("name").replace("tab", "", 1): d.get("count", None) for d in data}
 	frappe.cache.set_value("information_schema:counts", counts)
 

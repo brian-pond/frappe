@@ -21,7 +21,8 @@ def execute(filters=None):
 						round(((data_length + index_length) / 1024 / 1024), 2) `size`,
 						round((data_length / 1024 / 1024), 2) as data_size,
 						round((index_length / 1024 / 1024), 2) as index_size
-				FROM information_schema.TABLES
+				FROM information_schema.tables
+				WHERE table_schema = %(database_name)s
 				ORDER BY (data_length + index_length) DESC;
 			""",
 			"postgres": """
@@ -32,9 +33,12 @@ def execute(filters=None):
 				  round(pg_indexes_size(quote_ident(table_name)) / 1024 / 1024, 2) as "index_size"
 				FROM information_schema.tables
 				WHERE table_schema = 'public'
-				ORDER BY 2 DESC;
+				AND table_catalog = %(database_name)s
+				ORDER BY
+					round(pg_total_relation_size(quote_ident(table_name)) / 1024 / 1024, 2) DESC;
 			""",
 		},
+		values={'database_name': frappe.conf.db_name},
 		as_dict=1,
 	)
 	return COLUMNS, data

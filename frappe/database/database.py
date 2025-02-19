@@ -1,9 +1,12 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
-import datetime
+# pylint: disable=protected-access, too-many-lines
+
+# import datetime
 import itertools
 import json
+import os  # Datahenge
 import random
 import re
 import string
@@ -11,10 +14,10 @@ import traceback
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager, suppress
 from time import time
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union  # pylint: disable=unused-import
 
 from pypika.dialects import MySQLQueryBuilder, PostgreSQLQueryBuilder
-from pypika.terms import Criterion, NullValue
+from pypika.terms import Criterion, NullValue  # pylint: disable=unused-import
 
 import frappe
 import frappe.defaults
@@ -35,6 +38,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import CallbackManager, cint, get_datetime, get_table_name, getdate, now, sbool
 from frappe.utils import cast as cast_fieldtype
 from frappe.utils.deprecations import deprecated, deprecation_warning
+from frappe.database.datahenge import SQLTransaction  # Datahenge
 
 if TYPE_CHECKING:
 	from psycopg2 import connection as PostgresConnection
@@ -51,9 +55,6 @@ MULTI_WORD_PATTERN = re.compile(r'([`"])(tab([A-Z]\w+)( [A-Z]\w+)+)\1')
 SQL_ITERATOR_BATCH_SIZE = 100
 
 # Datahenge - For debugging
-import os
-from frappe.database.datahenge import SQLTransaction
-NoneType = type(None)
 env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
 debug_mode = bool(env_value and int(env_value) == 1)
 # EOM
@@ -869,7 +870,7 @@ class Database:
 		import warnings
 		message = "Function 'get_singles_value' is deprecated, using 'get_single_value' instead."
 		frappe.throw(message, exc=None)
-		warnings.warn(message, DeprecationWarning)		
+		warnings.warn(message, DeprecationWarning)
 		return self.get_single_value(*args, **kwargs)
 
 	def _get_values_from_table(
@@ -1592,6 +1593,12 @@ class Database:
 		"""
 		raise NotImplementedError
 
+	def get_table_row_count(self, sql_table_name: str=None) -> list:
+		"""
+		Calculate the number of rows, per SQL table (Datahenge add-on)
+		"""
+		raise NotImplementedError
+
 
 @contextmanager
 def savepoint(catch: type | tuple[type, ...] = Exception):
@@ -1610,13 +1617,13 @@ def savepoint(catch: type | tuple[type, ...] = Exception):
 	        doc.insert()
 	"""
 	try:
-		savepoint = "".join(random.sample(string.ascii_lowercase, 10))
-		frappe.db.savepoint(savepoint)
+		_savepoint = "".join(random.sample(string.ascii_lowercase, 10))
+		frappe.db.savepoint(_savepoint)
 		yield  # control back to calling function
 	except catch:
-		frappe.db.rollback(save_point=savepoint)
+		frappe.db.rollback(save_point=_savepoint)
 	else:
-		frappe.db.release_savepoint(savepoint)
+		frappe.db.release_savepoint(_savepoint)
 
 
 def get_query_execution_timeout() -> int:
