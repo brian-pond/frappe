@@ -176,7 +176,7 @@ def search_widget(
 		formatted_fields.append(f"""{_relevance} as `_relevance`""")
 		# Since we are sorting by alias postgres needs to know number of column we are sorting
 		if frappe.db.db_type == "mariadb":
-			order_by = f"ifnull(_relevance, -9999) desc, {order_by}"
+			order_by = f"COALESCE(_relevance, -9999) desc, {order_by}"
 		elif frappe.db.db_type == "postgres":
 			# Since we are sorting by alias postgres needs to know number of column we are sorting
 			order_by = f"{len(formatted_fields)} desc nulls last, {order_by}"

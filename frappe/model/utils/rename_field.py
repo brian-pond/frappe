@@ -76,7 +76,7 @@ def update_reports(doctype, old_fieldname, new_fieldname):
 
 	reports = frappe.db.sql(
 		"""select name, ref_doctype, json from tabReport
-		where report_type = 'Report Builder' and ifnull(is_standard, 'No') = 'No'
+		where report_type = 'Report Builder' and COALESCE(is_standard, 'No') = 'No'
 		and json like %s and json like %s""",
 		("%%%s%%" % old_fieldname, "%%%s%%" % doctype),
 		as_dict=True,

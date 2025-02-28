@@ -74,7 +74,7 @@ class Workflow(Document):
 					f"""
 					UPDATE `tab{self.document_type}`
 					SET `{self.workflow_state_field}` = %s
-					WHERE ifnull(`{self.workflow_state_field}`, '') = ''
+					WHERE COALESCE(`{self.workflow_state_field}`, '') = ''
 					AND `docstatus` = %s
 				""",
 					(d.state, d.doc_status),

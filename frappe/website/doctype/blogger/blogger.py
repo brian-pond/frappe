@@ -42,7 +42,7 @@ class Blogger(Document):
 		if self.user:
 			for blog in frappe.db.sql_list(
 				"""select name from `tabBlog Post` where owner=%s
-				and ifnull(blogger,'')=''""",
+				and COALESCE(blogger,'')=''""",
 				self.user,
 			):
 				b = frappe.get_doc("Blog Post", blog)

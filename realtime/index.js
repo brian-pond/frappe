@@ -61,5 +61,6 @@ const subscriber = get_redis_subscriber();
 let uds = conf.socketio_uds;
 let port = conf.socketio_port;
 server.listen(uds || port, () => {
+	console.log(conf);
 	console.log("Realtime service listening on: ", uds || port);
 });

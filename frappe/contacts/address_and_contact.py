@@ -53,14 +53,14 @@ def get_permission_query_conditions(doctype):
 	elif not links.get("permitted_links"):
 		# when everything is not permitted
 		conditions = [
-			f"ifnull(`tab{doctype}`.`{df.fieldname}`, '')=''" for df in links.get("not_permitted_links")
+			f"COALESCE(`tab{doctype}`.`{df.fieldname}`, '')=''" for df in links.get("not_permitted_links")
 		]
 
 		return "( " + " and ".join(conditions) + " )"
 
 	else:
 		conditions = [
-			f"ifnull(`tab{doctype}`.`{df.fieldname}`, '')!=''" for df in links.get("permitted_links")
+			f"COALESCE(`tab{doctype}`.`{df.fieldname}`, '')!=''" for df in links.get("permitted_links")
 		]
 
 		return "( " + " or ".join(conditions) + " )"

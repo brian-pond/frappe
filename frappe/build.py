@@ -272,6 +272,9 @@ def watch(apps=None):
 
 	check_node_executable()
 	frappe_app_path = frappe.get_app_source_path("frappe")
+	print(f"Command = {command}")
+	print(f"CWD = {frappe_app_path}")
+	print(f"ENV = {get_node_env()}")
 	frappe.commands.popen(command, cwd=frappe_app_path, env=get_node_env())
 
 

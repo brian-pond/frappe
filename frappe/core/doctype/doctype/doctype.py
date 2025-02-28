@@ -367,7 +367,7 @@ class DocType(Document):
 							SET `{fieldname}` = source.`{source_fieldname}`
 							FROM `tab{link_doctype}` as source
 							WHERE `{link_fieldname}` = source.name
-							AND ifnull(`{fieldname}`, '')=''
+							AND COALESCE(`{fieldname}`, '')=''
 						"""
 					else:
 						update_query = """
@@ -375,7 +375,7 @@ class DocType(Document):
 							INNER JOIN `tab{link_doctype}` as source
 							ON `target`.`{link_fieldname}` = `source`.`name`
 							SET `target`.`{fieldname}` = `source`.`{source_fieldname}`
-							WHERE ifnull(`target`.`{fieldname}`, '')=""
+							WHERE COALESCE(`target`.`{fieldname}`, '')=""
 						"""
 
 					self.flags.update_fields_to_fetch_queries.append(
@@ -1390,7 +1390,7 @@ def validate_fields(meta: Meta):
 			if not d.get("__islocal") and frappe.db.has_column(d.parent, d.fieldname):
 				has_non_unique_values = frappe.db.sql(
 					f"""select `{d.fieldname}`, count(*)
-					from `tab{d.parent}` where ifnull(`{d.fieldname}`, '') != ''
+					from `tab{d.parent}` where COALESCE(`{d.fieldname}`, '') != ''
 					group by `{d.fieldname}` having count(*) > 1 limit 1"""
 				)
 

@@ -126,7 +126,7 @@ def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 				`tabAddress` addr, `tabDynamic Link` dl
 			WHERE
 				dl.parent = addr.name and dl.link_doctype = {} and
-				dl.link_name = {} and ifnull(addr.disabled, 0) = 0 and
+				dl.link_name = {} and COALESCE(addr.disabled, 0) = 0 and
 				{} = {}
 			""".format("%s", "%s", preferred_key, "%s"),
 			(doctype, name, 1),
@@ -310,7 +310,7 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
 		where
 			`tabDynamic Link`.link_doctype = %(link_doctype)s and
 			`tabDynamic Link`.link_name = %(link_name)s and
-			ifnull(`tabAddress`.disabled, 0) = 0 and
+			COALESCE(`tabAddress`.disabled, 0) = 0 and
 			({search_condition})
 			{mcond} {condition}
 		order by

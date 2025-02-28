@@ -773,7 +773,7 @@ def get_all_roles():
 			"name": ("not in", frappe.permissions.AUTOMATIC_ROLES),
 			"disabled": 0,
 		},
-		or_filters={"ifnull(restrict_to_domain, '')": "", "restrict_to_domain": ("in", active_domains)},
+		or_filters={"COALESCE(restrict_to_domain, '')": "", "restrict_to_domain": ("in", active_domains)},
 		order_by="name",
 	)
 

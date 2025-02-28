@@ -83,7 +83,7 @@ def get_desktop_icons(user=None):
 
 		blocked_doctypes = frappe.get_all(
 			"DocType",
-			filters={"ifnull(restrict_to_domain, '')": ("not in", ",".join(active_domains))},
+			filters={"COALESCE(restrict_to_domain, '')": ("not in", ",".join(active_domains))},
 			fields=["name"],
 		)
 

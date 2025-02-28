@@ -697,7 +697,7 @@ def get_filter_dashboard_data(stats, doctype, filters=None):
 			tagcount = frappe.get_list(
 				doctype,
 				fields=[tag["name"], "count(*)"],
-				filters=[*filters, "ifnull(`%s`,'')!=''" % tag["name"]],
+				filters=[*filters, "COALESCE(`%s`,'')!=''" % tag["name"]],
 				group_by=tag["name"],
 				as_list=True,
 			)

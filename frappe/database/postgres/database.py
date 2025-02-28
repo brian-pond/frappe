@@ -220,8 +220,8 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		try:
 			return super().sql(modify_query(query), modify_values(values), *args, **kwargs)
 		except Exception as ex:
-			print(f"SQL Exception: {ex}")
-			print(f"SQL Query: {query}")
+			print(f"Postgres SQL Exception: {ex}")
+			print(f"Postgres SQL Query: {query}")
 			raise ex
 
 	def lazy_mogrify(self, *args, **kwargs) -> str:
