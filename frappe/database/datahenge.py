@@ -85,6 +85,9 @@ class SQLTransaction():
 		Returns the current SQL connection identifier.
 		This value should not change in the middle of a gunicorn thread's execution.
 		"""
+		if frappe.db.db_type != "mariadb":
+			raise NotImplementedError("Function get_connection_id() is not implemented for non-MySQL databases.")
+
 		query_result = frappe.db.sql("SELECT connection_id() AS connection_id;", as_dict=True)
 		if query_result:
 			return query_result[0]['connection_id']
