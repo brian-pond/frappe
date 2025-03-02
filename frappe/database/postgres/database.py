@@ -222,6 +222,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		except Exception as ex:
 			print(f"Postgres SQL Exception: {ex}")
 			print(f"Postgres SQL Query: {query}")
+			print(f"Postgres SQL Values: {values}")
 			raise ex
 
 	def lazy_mogrify(self, *args, **kwargs) -> str:

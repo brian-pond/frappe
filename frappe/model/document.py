@@ -621,6 +621,7 @@ class Document(BaseDocument):
 
 	def set_user_and_timestamp(self):
 		self._original_modified = self.modified
+
 		# Datahenge: Stop treating modified as a String
 		# self.modified = now()
 		self.modified = frappe.utils.dh_get_system_datetime_now()
@@ -743,9 +744,6 @@ class Document(BaseDocument):
 				elif field.fieldtype in ("Datetime"):
 					# Datahenge: Treat DateTime properly instead of casting to Strings.
 					fail = value.astimezone(TZ_UTC) != original_value.astimezone(TZ_UTC)
-					#if fail:
-					#	frappe.whatis(f"Original value in UTC: {original_value.astimezone(TZ_UTC)}")
-					#	frappe.whatis(f"Current value in UTC: {value.astimezone(TZ_UTC)}")
 				else:
 					fail = value != original_value
 
@@ -909,9 +907,9 @@ class Document(BaseDocument):
 		# if cstr(previous.modified) != cstr(self._original_modified):
 
 		if not isinstance(previous.modified, datetime_type):
-			raise TypeError("DocField \"modified\" should always have a Type of datetime.")
+			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified)} but should a Type of datetime instead.")
 		if not isinstance(self._original_modified, datetime_type):
-			raise TypeError("Attribute \"self._original_modified\" should always have a Type of datetime.")
+			raise TypeError(f"Attribute \"self._original_modified\" is a {type(self._original_modified)} but should be Type datetime instead.")
 
 		if previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):
 			frappe.msgprint(

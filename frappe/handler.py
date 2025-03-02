@@ -309,6 +309,12 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 	else:
 		docs = frappe.parse_json(docs)
 		doc = frappe.get_doc(docs)
+
+		# Convert the untyped JSON values to correct types (for now just creation and modified)
+		from temporal_lib.tlib_types import any_to_datetime
+		doc.creation = any_to_datetime(doc.creation)
+		doc.modified = any_to_datetime(doc.modified)		
+
 		doc._original_modified = doc.modified
 		doc.check_if_latest()
 
