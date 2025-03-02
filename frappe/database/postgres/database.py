@@ -12,8 +12,9 @@ from psycopg2.errorcodes import (
 	UNDEFINED_TABLE,
 	UNIQUE_VIOLATION,
 )
+from psycopg2 import InterfaceError
+# Datahenge: Not sure why these are not importing.  :/
 from psycopg2.errors import (
-	InterfaceError,
 	LockNotAvailable,
 	ReadOnlySqlTransaction,
 	SequenceGeneratorLimitExceeded,
@@ -190,7 +191,8 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		# Postgres expects milliseconds as input
 		self.sql("set local statement_timeout = %s", int(seconds) * 1000)
 
-	def escape(self, s, percent=True):
+	@staticmethod
+	def escape(s, percent=True):
 		"""Escape quotes and percent in given string."""
 		if isinstance(s, bytes):
 			s = s.decode("utf-8")

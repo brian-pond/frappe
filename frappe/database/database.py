@@ -35,7 +35,7 @@ from frappe.exceptions import DoesNotExistError, ImplicitCommitError
 from frappe.monitor import get_trace_id
 from frappe.query_builder import Case
 from frappe.query_builder.functions import Count
-from frappe.utils import CallbackManager, cint, get_datetime, get_table_name, getdate, now, sbool
+from frappe.utils import CallbackManager, cint, get_datetime, get_table_name, getdate, sbool
 from frappe.utils import cast as cast_fieldtype
 from frappe.utils.deprecations import deprecated, deprecation_warning
 from frappe.database.datahenge import SQLTransaction  # Datahenge
