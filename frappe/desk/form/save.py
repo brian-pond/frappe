@@ -15,7 +15,16 @@ from frappe.utils.telemetry import capture_doc
 @frappe.whitelist()
 def savedocs(doc, action):
 	"""save / submit / update doclist"""
+	# NOTE: The argument 'doc' is a string from the web browser.
+	#       One consequence is that after converting to JSON, then get_doc(), DocField datatypes are being lost.
+	#       For example, Dates and Datetimes will only be Strings.  Booleans are integers.
 	doc = frappe.get_doc(json.loads(doc))
+	# TODO:  What we need here is something that *reestablishes* the correct datatypes!
+	#        For today, I think just transforming "creation" and "modified" is acceptable.
+	from temporal_lib.tlib_types import any_to_datetime
+	doc.creation = any_to_datetime(doc.creation)
+	doc.modified = any_to_datetime(doc.modified)
+
 	capture_doc(doc, action)
 	if doc.get("__islocal") and doc.name.startswith("new-" + doc.doctype.lower().replace(" ", "-")):
 		# required to relink missing attachments if they exist.

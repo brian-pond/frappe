@@ -1,8 +1,12 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
+
+
+from datetime import date as date_type, datetime as datetime_type
 import hashlib
 import json
 import time
+import zoneinfo
 from collections.abc import Generator, Iterable
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -28,12 +32,12 @@ from frappe.utils.global_search import update_global_search
 if TYPE_CHECKING:
 	from frappe.core.doctype.docfield.docfield import DocField
 
+TZ_UTC = zoneinfo.ZoneInfo("UTC")
 
 DOCUMENT_LOCK_EXPIRTY = 12 * 60 * 60  # All locks expire in 12 hours automatically
 DOCUMENT_LOCK_SOFT_EXPIRY = 60 * 60  # Let users force-unlock after 60 minutes
 
 DEBUG_ENV_VARIABLE="FTP_DEBUG_DOCUMENT"  # Datahenge: if this OS environment variable = 1, then dprint() messages will print to stdout.
-from datetime import date as date_type
 
 
 def get_doc(*args, **kwargs):
@@ -617,7 +621,9 @@ class Document(BaseDocument):
 
 	def set_user_and_timestamp(self):
 		self._original_modified = self.modified
-		self.modified = now()
+		# Datahenge: Stop treating modified as a String
+		# self.modified = now()
+		self.modified = frappe.utils.dh_get_system_datetime_now()
 		self.modified_by = frappe.session.user
 
 		# We'd probably want the creation and owner to be set via API
@@ -732,13 +738,19 @@ class Document(BaseDocument):
 
 				if field.fieldtype in table_fields:
 					fail = not self.is_child_table_same(field.fieldname)
-				elif field.fieldtype in ("Date", "Datetime", "Time"):
+				elif field.fieldtype in ("Date", "Time"):
 					fail = str(value) != str(original_value)
+				elif field.fieldtype in ("Datetime"):
+					# Datahenge: Treat DateTime properly instead of casting to Strings.
+					fail = value.astimezone(TZ_UTC) != original_value.astimezone(TZ_UTC)
+					#if fail:
+					#	frappe.whatis(f"Original value in UTC: {original_value.astimezone(TZ_UTC)}")
+					#	frappe.whatis(f"Current value in UTC: {value.astimezone(TZ_UTC)}")
 				else:
 					fail = value != original_value
 
 				if fail:
-					# Datahenge: Needed a better error message
+					# Datahenge: I wanted a slightly better error message:
 					frappe.throw(
 						_("Value cannot be changed for field '{0}' (Set Once Only)").format(
 							frappe.bold(self.meta.get_label(field.fieldname))
@@ -890,7 +902,18 @@ class Document(BaseDocument):
 			self.check_docstatus_transition(0)
 			return
 
-		if cstr(previous.modified) != cstr(self._original_modified):
+		# NOTE:  For Postgres, the SQL column "modified" is a datetime with time zone.
+		#        But in vanilla Frappe, the "self._original_modified" is a *string* without a time zone.
+		#        So the comparison -always- fails!
+		#        My fix is trying to always treated ""creation" and "modified" as timezone-aware datetimes
+		# if cstr(previous.modified) != cstr(self._original_modified):
+
+		if not isinstance(previous.modified, datetime_type):
+			raise TypeError("DocField \"modified\" should always have a Type of datetime.")
+		if not isinstance(self._original_modified, datetime_type):
+			raise TypeError("Attribute \"self._original_modified\" should always have a Type of datetime.")
+
+		if previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):
 			frappe.msgprint(
 				_("Error: Document has been modified after you have opened it")
 				+ (f" ({previous.modified}, {self.modified}). ")
@@ -2219,7 +2242,9 @@ def _document_values_generator(
 	columns: list[str],
 ) -> Generator[tuple[Any], None, None]:
 	for doc in documents:
-		doc.creation = doc.modified = now()
+		# Datahenge: Stop treating "creation" and "modified" as Strings
+		# doc.creation = doc.modified = now()
+		doc.creation = doc.modified = frappe.utils.dh_get_system_datetime_now()
 		doc.owner = doc.modified_by = frappe.session.user
 		doc_values = doc.get_valid_dict(
 			convert_dates_to_str=True,

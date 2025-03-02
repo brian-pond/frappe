@@ -261,7 +261,7 @@ class Database:
 			# TODO: added temporarily
 			elif self.db_type == "postgres":
 				traceback.print_stack()
-				frappe.log(f"Error in query:\n{e}")
+				frappe.log(f"Error in Postgres Query:\n{e}\n{query}")
 				raise
 
 			elif isinstance(e, self.ProgrammingError):
@@ -400,11 +400,11 @@ class Database:
 		"""Print `EXPLAIN` in error log."""
 		frappe.log("--- query explain ---")
 		try:
-			self._cursor.execute(f"EXPLAIN {query}", values)
+			explanation = self._cursor.execute(f"EXPLAIN {query}", values)
 		except Exception as e:
 			frappe.log(f"error in query explain: {e}")
 		else:
-			frappe.log(json.dumps(self.fetch_as_dict(), indent=1))
+			frappe.log(json.dumps(self.fetch_as_dict(explanation), indent=1))
 			frappe.log("--- query explain end ---")
 
 	def sql_list(self, query, values=(), debug=False, **kwargs):
@@ -779,7 +779,8 @@ class Database:
 		update_dict = fieldname if isinstance(fieldname, dict) else {fieldname: value}
 
 		if update_modified:
-			modified = modified or now()
+			# Cease using strings for datetime values
+			modified = modified or frappe.utils.dh_get_system_datetime_now()
 			modified_by = modified_by or frappe.session.user
 			update_dict.update({"modified": modified, "modified_by": modified_by})
 

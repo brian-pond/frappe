@@ -4,6 +4,7 @@
 import base64
 import calendar
 import datetime
+from datetime import datetime as DateTimeType  # Datahenge
 import hashlib
 import json
 import math
@@ -13,8 +14,9 @@ import time
 import typing
 from code import compile_command
 from enum import Enum
-from typing import Any, Literal, Optional, TypeVar, Union
+from typing import Any, Literal, Optional, TypeVar, Union  # pylint: disable=unused-import
 from urllib.parse import parse_qsl, quote, urlencode, urljoin, urlparse, urlunparse
+import zoneinfo
 
 import pytz
 from click import secho
@@ -527,8 +529,8 @@ def get_time_str(timedelta_obj) -> str:
 	if isinstance(timedelta_obj, str):
 		timedelta_obj = to_timedelta(timedelta_obj)
 
-	hours, remainder = divmod(timedelta_obj.seconds, 3600)
-	minutes, seconds = divmod(remainder, 60)
+	hours, _remainder = divmod(timedelta_obj.seconds, 3600)
+	minutes, seconds = divmod(_remainder, 60)
 	return f"{hours}:{minutes}:{seconds}"
 
 
@@ -2032,8 +2034,8 @@ def md_to_html(markdown_text: str) -> Optional["UnicodeWithAttrs"]:
 		pass
 
 
-def markdown(markdown_text):
-	return md_to_html(markdown_text)
+#def markdown(markdown_text):
+#	return md_to_html(markdown_text)
 
 
 def is_subset(list_a: list, list_b: list) -> bool:
@@ -2285,3 +2287,38 @@ def _get_rss_memory_usage():
 
 	rss = psutil.Process().memory_info().rss // (1024 * 1024)
 	return rss
+
+
+# Datahenge: Copying these from Temporal to avoid any direct circular references.
+def dh_get_system_timezone():
+	"""
+	Returns the Time Zone of the Site.
+	"""
+	from temporal_lib.tlib_timezone import TimeZone
+
+	system_time_zone = frappe.db.get_system_setting('time_zone')
+	if not system_time_zone:
+		raise ValueError("Please configure a Time Zone under 'System Settings'.")
+	return TimeZone(system_time_zone)
+
+
+def dh_get_system_datetime_now() -> DateTimeType:
+	"""
+	Return the current DateTime in the system's local Time Zone.
+	"""
+	utc_datetime = DateTimeType.now(zoneinfo.ZoneInfo("UTC"))
+	return utc_datetime.astimezone(dh_get_system_timezone())  # NOTE: May have to ".replace(microsecond=0)" but trying not to.
+
+
+def dh_get_system_date():
+	"""
+	Returns only the date component of the system's wall-clock datetime.
+	"""
+	return dh_get_system_datetime_now().date()
+
+
+def dh_datetime_to_system_timezone(some_datetime):
+
+	if some_datetime.tzinfo != dh_get_system_timezone():
+		return some_datetime.astimezone(dh_get_system_timezone())
+	return some_datetime

@@ -358,7 +358,7 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 
 		return {
 			"mariadb": MariaDBDatabase.default_port,  # 3306
-			"postgres": 5432,
+			"postgres": PostgresDatabase.default_port,  # 5432
 		}[db_type]
 
 	config["redis_queue"] = (
@@ -2500,7 +2500,7 @@ def parse_json(val):
 
 
 def mock(type, size=1, locale="en"):
-	import faker  # TODO: Datahenge:  Why does Frappe Framework not have 'faker' as a Python dependency?
+	import faker
 
 	results = []
 	fake = faker.Faker(locale)

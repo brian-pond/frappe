@@ -542,7 +542,9 @@ class BaseDocument:
 			conflict_handler = "on conflict (name) do nothing"
 
 		if not self.creation:
-			self.creation = self.modified = now()
+			# Datahenge: Stop treating "creation" and "modified" as Strings.
+			# self.creation = self.modified = now()
+			self.creation = self.modified = frappe.utils.dh_get_system_datetime_now()
 			self.owner = self.modified_by = frappe.session.user
 
 		# if doctype is "DocType", don't insert null values as we don't know who is valid yet
@@ -565,7 +567,7 @@ class BaseDocument:
 				list(d.values()),
 			)
 			if DH_DEBUG_INSERT:
-				print(f"SQL INSERT ({self.doctype} : {self.name})")			
+				print(f"SQL INSERT ({self.doctype} : {self.name})")
 		except Exception as e:
 			if frappe.db.is_primary_key_violation(e):
 				if self.meta.autoname == "hash":
@@ -625,7 +627,7 @@ class BaseDocument:
 			if frappe.db.is_unique_key_violation(e):
 				self.show_unique_validation_message(e)
 			if frappe.db.is_deadlocked(e):
-				print(f"Deadlock while trying to update table 'tab{self.doctype}' {columns}")				
+				print(f"Deadlock while trying to update table 'tab{self.doctype}' {columns}")
 			else:
 				raise
 
@@ -957,9 +959,10 @@ class BaseDocument:
 			return
 
 		constants = [d.fieldname for d in self.meta.get("fields", {"set_only_once": ("=", 1)})]
-		if constants:
-			values = frappe.db.get_value(self.doctype, self.name, constants, as_dict=True)
+		if not constants:
+			return
 
+		values = frappe.db.get_value(self.doctype, self.name, constants, as_dict=True)
 		for fieldname in constants:
 			df = self.meta.get_field(fieldname)
 
@@ -1219,7 +1222,7 @@ class BaseDocument:
 
 		return format_value(val, df=df, doc=doc, currency=currency, format=format)
 
-	def is_print_hide(self, fieldname, df=None, for_print=True):
+	def is_print_hide(self, fieldname, df=None):
 		"""Returns true if fieldname is to be hidden for print.
 
 		Print Hide can be set via the Print Format Builder or in the controller as a list
@@ -1297,7 +1300,7 @@ class BaseDocument:
 					if (not self.get(df.fieldname)) and (not ref_doc.get(df.fieldname)):
 						continue
 					# Otherwise, append to the 'change_values_string' variable:
-					changed_values_string += f"\n    * '{df.fieldname}' changed from '{self.get(df.fieldname)}' to '{ref_doc.get(df.fieldname)}'"				
+					changed_values_string += f"\n    * '{df.fieldname}' changed from '{self.get(df.fieldname)}' to '{ref_doc.get(df.fieldname)}'"
 				self.set(df.fieldname, ref_doc.get(df.fieldname))
 
 			if changed_values_string:
