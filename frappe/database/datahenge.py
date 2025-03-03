@@ -67,7 +67,7 @@ class SQLTransaction():
 	def err_on_autocommit():
 		query_result = frappe.db.sql("SELECT @@autocommit;")
 		if query_result and query_result[0] and query_result[0][0]:
-			raise Exception("SQL auto-commit is currently enabled!")
+			raise IOError("SQL auto-commit is currently enabled!")
 
 	@staticmethod
 	def in_transaction():
@@ -170,7 +170,7 @@ class SQLTransaction():
 
 		if transaction_details['trx_rows_modified'] > 0:
 			if error_on_true:
-				raise Exception(f"Uncommitted SQL Transactions exist: {transaction_details}")
+				raise IOError(f"Uncommitted SQL Transactions exist: {transaction_details}")
 			if to_stdout:
 				print(f"Uncommitted SQL Transactions exist: {transaction_details}")
 			return True
@@ -194,3 +194,34 @@ class SQLTransaction():
 	def show_processes():
 		result = frappe.db.sql("SHOW PROCESSLIST;")
 		print(result)
+
+
+def new_database_connection():
+	"""
+	Creates a new SQL database connection.
+	Extremely useful when a developer requires Transaction isolation (example: when writing to log records to SQL tables)
+
+	CLI:  bench execute frappe.database.datahenge.new_database_connection
+	"""
+	# NOTE: This is *very* different code in v15 versus v13, and took a while to reverse engineer.
+
+	# NOTE: For this to succeed, the primary connection *must* be established already.
+	#       I could write a completely standalone way.  But not much point, since if the main connection isn't established,
+	#       there are much bigger problems anyway.
+
+	# NOTE: Because it's using pre-existing connection settings, I don't have to distinguish between Postgres and MariaDB.
+
+	connection = frappe.db.get_connection()  # poorly named, it's actually creating + establishing a connection.  Not fetching an existing one.
+	connection_settings: dict = frappe.db.get_connection_settings()
+
+	this_database: frappe.database.database.Database = frappe.database.get_db(
+		host=connection_settings["host"],
+		user=connection_settings["user"],
+		password=connection_settings["user"],
+		port=connection_settings.get("port", None),
+		cur_db_name=connection_settings.get("database", None) or connection_settings.get("dbname", None),
+		socket=connection_settings.get("unix_socket", None)
+	)
+	this_database._conn = connection  # pylint: disable=protected-access
+	this_database._cursor = connection.cursor()  # pylint: disable=protected-access
+	return this_database

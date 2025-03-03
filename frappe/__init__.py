@@ -1,5 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
+
+# pylint: disable=unnecessary-pass
+
 """
 Frappe - Low Code Open Source Framework in Python and JS
 
@@ -30,7 +33,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, overload
 import click
 from werkzeug.local import Local, release_local
 
-import frappe
+# import frappe
 from frappe.query_builder import (
 	get_query,
 	get_query_builder,
@@ -194,6 +197,8 @@ lang = local("lang")
 
 def init(site: str, sites_path: str = ".", new_site: bool = False, force=False) -> None:
 	"""Initialize frappe for the current site. Reset thread locals `frappe.local`"""
+
+	import frappe
 	if getattr(local, "initialised", None) and not force:
 		return
 
@@ -1452,9 +1457,9 @@ def rename_doc(
 	Calls `frappe.model.rename_doc.rename_doc`
 	"""
 
-	from frappe.model.rename_doc import rename_doc
+	from frappe.model.rename_doc import rename_doc as _rename_doc
 
-	return rename_doc(
+	return _rename_doc(
 		doctype=doctype,
 		old=old,
 		new=new,
@@ -1725,7 +1730,7 @@ def get_file_items(path, raise_not_found=False, ignore_empty_lines=True):
 
 def get_file_json(path):
 	"""Read a file and return parsed JSON object."""
-	with open(path) as f:
+	with open(path, encoding="utf-8") as f:
 		return json.load(f)
 
 
@@ -1735,7 +1740,7 @@ def read_file(path, raise_not_found=False):
 		path = path.encode("utf-8")
 
 	if os.path.exists(path):
-		with open(path) as f:
+		with open(path, encoding="utf-8") as f:
 			return as_unicode(f.read())
 	elif raise_not_found:
 		raise OSError(f"{path} Not Found")
@@ -1857,15 +1862,12 @@ def make_property_setter(
 
 def import_doc(path):
 	"""Import a file using Data Import."""
-	from frappe.core.doctype.data_import.data_import import import_doc
-
-	import_doc(path)
+	from frappe.core.doctype.data_import.data_import import import_doc as _import_doc
+	_import_doc(path)
 
 
 def copy_doc(doc: "Document", ignore_no_copy: bool = True) -> "Document":
 	"""No_copy fields also get copied."""
-	import copy
-
 	def remove_no_copy_fields(d):
 		for df in d.meta.get("fields", {"no_copy": 1}):
 			if hasattr(d, df.fieldname):
@@ -2372,9 +2374,9 @@ def bold(text):
 def safe_eval(code, eval_globals=None, eval_locals=None):
 	"""A safer `eval`"""
 
-	from frappe.utils.safe_exec import safe_eval
+	from frappe.utils.safe_exec import safe_eval as _safe_eval
 
-	return safe_eval(code, eval_globals, eval_locals)
+	return _safe_eval(code, eval_globals, eval_locals)
 
 
 def get_website_settings(key):
@@ -2500,7 +2502,7 @@ def parse_json(val):
 
 
 def mock(type, size=1, locale="en"):
-	import faker
+	import faker  # pylint: disable=import-error; this is an optional dependency.
 
 	results = []
 	fake = faker.Faker(locale)

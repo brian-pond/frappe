@@ -170,18 +170,24 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 	def last_query(self):
 		return LazyDecode(self._cursor.query)
 
-	def get_connection(self):
-		conn_settings = {
-			"user": self.user,
-			"dbname": self.cur_db_name,
-			# libpg defaults to default socket if not specified
+	def get_connection_settings(self) -> dict:
+		"""
+		Dictionary showing connection parameters for the SQL database.
+		"""
+		return {
+			"db_type": self.db_type,
 			"host": self.host or self.socket,
+			"port": self.port,
+			"dbname": self.cur_db_name,
+			"schema": "public",
+			"user": self.user,
+			"password": self.password,
 		}
-		if self.password:
-			conn_settings["password"] = self.password
-		if not self.socket and self.port:
-			conn_settings["port"] = self.port
 
+	def get_connection(self):
+		conn_settings = self.get_connection_settings()
+		# Must reduce the dictionary to only Keys that pyscopg2 expects:
+		conn_settings = { key:value for key, value in conn_settings.items() if key in ("host", "port", "dbname", "user", "password") }
 		conn = psycopg2.connect(**conn_settings)
 		conn.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)
 
@@ -444,6 +450,21 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 	def get_database_list(self):
 		return self.sql("SELECT datname FROM pg_database", pluck=True)
+
+	def current_connection_id(self):
+		if not self._conn:
+			return None
+		identifier = frappe.db.sql("SELECT pg_backend_pid();")[0][0]
+		return identifier
+
+
+	def get_isolation_levels(self) -> tuple:
+		"""
+		Returns a tuple (current_level, default_level)
+		"""
+		current_level = frappe.db.sql("SHOW TRANSACTION ISOLATION LEVEL;")[0][0]
+		default_level = frappe.db.sql("SHOW default_transaction_isolation;")[0][0]
+		return current_level, default_level
 
 	# ========
 	# DATAHENGE
