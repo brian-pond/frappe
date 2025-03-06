@@ -30,6 +30,8 @@ from frappe.desk.utils import slug
 DateTimeLikeObject = str | datetime.date | datetime.datetime
 NumericType = int | float
 
+NoneType = type(None)
+
 
 if typing.TYPE_CHECKING:
 	T = TypeVar("T")
@@ -911,7 +913,9 @@ def cast(fieldtype, value=None):
 		if value:
 			value = getdate(value)
 		else:
-			value = datetime.datetime(1, 1, 1).date()
+			# Datahenge: Stop this nonsense
+			# value = datetime.datetime(1, 1, 1).date()
+			value = None
 
 	elif fieldtype == "Datetime":
 		if value:
@@ -920,6 +924,9 @@ def cast(fieldtype, value=None):
 			value = datetime.datetime(1, 1, 1)
 
 	elif fieldtype == "Time":
+		# And this nonsense too.
+		if isinstance(value, NoneType):
+			return None
 		value = get_timedelta(value)
 
 	return value

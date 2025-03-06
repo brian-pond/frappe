@@ -2,6 +2,7 @@
 # License: MIT. See LICENSE
 
 # metadata
+# pylint: disable=protected-access
 
 """
 Load metadata (DocType) class
@@ -75,7 +76,7 @@ def get_table_columns(doctype):
 
 def load_doctype_from_file(doctype):
 	fname = frappe.scrub(doctype)
-	with open(frappe.get_app_path("frappe", "core", "doctype", fname, fname + ".json")) as f:
+	with open(frappe.get_app_path("frappe", "core", "doctype", fname, fname + ".json"), encoding="utf-8") as f:
 		txt = json.loads(f.read())
 
 	for d in txt.get("fields", []):
@@ -280,7 +281,7 @@ class Meta(Document):
 		fetch_from property is set as `link_fieldname`.`source_fieldname`"""
 
 		out = []
-
+		link_fields = []
 		if not link_fieldname:
 			link_fields = [df.fieldname for df in self.get_link_fields()]
 
@@ -481,7 +482,7 @@ class Meta(Document):
 					# worst case scenario, invalidate field_order
 					field_order = fields_to_prepend
 
-		existing_fields = set(field_order) if field_order else False
+		existing_fields = set(field_order) if field_order else set()
 		insert_after_map = {}
 
 		for index, field in enumerate(self.fields):
@@ -729,7 +730,7 @@ def is_single(doctype):
 	try:
 		return frappe.db.get_value("DocType", doctype, "issingle")
 	except IndexError:
-		raise Exception("Cannot determine whether %s is single" % doctype)
+		raise IOError(f"Cannot determine whether DocType {doctype} is single")  # pylint: disable=raise-missing-from
 
 
 def get_parent_dt(dt):
@@ -815,6 +816,9 @@ def get_field_precision(df, doc=None, currency=None):
 
 
 def get_default_df(fieldname):
+	"""
+	Returns a datatype for the core DocFields that most tables have by default.
+	"""
 	if fieldname in (default_fields + child_table_fields):
 		if fieldname in ("creation", "modified"):
 			return frappe._dict(fieldname=fieldname, fieldtype="Datetime")

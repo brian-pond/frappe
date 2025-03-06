@@ -166,7 +166,7 @@ class Document(BaseDocument):
 		from fields"""
 		self.flags.ignore_children = True
 		if not getattr(self, "_metaclass", False) and self.meta.issingle:
-			single_doc = frappe.db.get_singles_dict(self.doctype, for_update=self.flags.for_update)
+			single_doc = frappe.db.get_singles_dict(self.doctype, for_update=self.flags.for_update, cast=True)  # Datahenge: Cast to strong datatypes
 			if not single_doc:
 				single_doc = frappe.new_doc(self.doctype, as_dict=True)
 				single_doc["name"] = self.doctype

@@ -39,6 +39,7 @@ from frappe.utils import CallbackManager, cint, get_datetime, get_table_name, ge
 from frappe.utils import cast as cast_fieldtype
 from frappe.utils.deprecations import deprecated, deprecation_warning
 from frappe.database.datahenge import SQLTransaction  # Datahenge
+from frappe.model.meta import get_default_df  # Datahenge
 
 if TYPE_CHECKING:
 	from psycopg2 import connection as PostgresConnection
@@ -754,9 +755,12 @@ class Database:
 
 		return_value = frappe._dict()
 
+		# Datahenge: Had to make some alterations so that None/NULL dates and times were treated as None/NULL.
 		for fieldname, value in queried_result:
 			if df := meta.get_field(fieldname):
 				casted_value = cast_fieldtype(df.fieldtype, value)
+			elif meta_dict := get_default_df(fieldname):  # Datahenge: Very Important to also Cast the 10 core DocFields.
+				casted_value = cast_fieldtype(meta_dict["fieldtype"], value)
 			else:
 				casted_value = value
 			return_value[fieldname] = casted_value
