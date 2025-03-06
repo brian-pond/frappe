@@ -1148,7 +1148,11 @@ class DatabaseQuery:
 
 			r._comment_count = 0
 			if "_comments" in r:
-				r._comment_count = len(json.loads(r._comments or "[]"))
+				try:
+					r._comment_count = len(json.loads(r._comments or "[]"))
+				except Exception as ex:
+					print(f"Function 'add_comment_count' found invalid JSON in r._comments = '{r._comments}' : {ex}")
+					r._comment_count = 0
 
 	def update_user_settings(self):
 		# update user settings if new search
