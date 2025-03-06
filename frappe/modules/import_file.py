@@ -1,5 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
+
+from datetime import datetime as DateTimeType
 import hashlib
 import json
 import os
@@ -108,6 +110,7 @@ def import_file_by_path(
 	Returns:
 	        [bool]: True if import takes place. False if it wasn't imported.
 	"""
+	from temporal_lib.core import make_datetime_naive
 	try:
 		docs = read_doc_from_file(path)
 	except OSError:
@@ -123,8 +126,14 @@ def import_file_by_path(
 		for doc in docs:
 			# modified timestamp in db, none if doctype's first import
 			db_modified_timestamp = frappe.db.get_value(doc["doctype"], doc["name"], "modified")
-			is_db_timestamp_latest = db_modified_timestamp and (
-				get_datetime(doc.get("modified")) <= get_datetime(db_modified_timestamp)
+
+			# Very likely that JSON and Database will have a mixture of naive and timezone-aware values.
+			# So for comparison purposes, just make them all naive.
+			database_modified_value = make_datetime_naive(get_datetime(db_modified_timestamp))
+			json_modified_value: DateTimeType = make_datetime_naive(get_datetime(doc.get("modified")))  # Naive datetime value of the "modified" key in the JSON file
+
+			is_db_timestamp_latest = database_modified_value and (
+				json_modified_value <= database_modified_value
 			)
 
 			if not force and db_modified_timestamp:
