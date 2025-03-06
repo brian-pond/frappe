@@ -404,6 +404,7 @@ def call_with_form_dict(function, kwargs):
 @contextmanager
 def patched_qb():
 	require_patching = isinstance(frappe.qb.terms, types.ModuleType)
+	_terms = None
 	try:
 		if require_patching:
 			_terms = frappe.qb.terms
@@ -467,10 +468,8 @@ def check_safe_sql_query(query: str, throw: bool = True) -> bool:
 	query = query.strip().lower()
 	whitelisted_statements = ("select", "explain")
 
-	# TODO: Datahenge : Concerned that Frappe isn't going to allow WITH syntax with PostgreSQL?
-	if query.startswith(whitelisted_statements) or (
-		query.startswith("with") and frappe.db.db_type == "mariadb"
-	):
+	# Datahenge: Cannot think of a reason why WITH queries wouldn't be allowed for both MariaDB and Postgres.
+	if query.startswith(whitelisted_statements) or query.startswith("with"):
 		return True
 
 	if throw:
