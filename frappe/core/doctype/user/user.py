@@ -767,13 +767,14 @@ def get_all_roles():
 	"""return all roles"""
 	active_domains = frappe.get_active_domains()
 
+  	# NOTE: The 'ifnull' below is fine with Postgres; it gets converted by the framework
 	roles = frappe.get_all(
 		"Role",
 		filters={
 			"name": ("not in", frappe.permissions.AUTOMATIC_ROLES),
 			"disabled": 0,
 		},
-		or_filters={"COALESCE(restrict_to_domain, '')": "", "restrict_to_domain": ("in", active_domains)},
+		or_filters={"ifnull(restrict_to_domain, '')": "", "restrict_to_domain": ("in", active_domains)},
 		order_by="name",
 	)
 

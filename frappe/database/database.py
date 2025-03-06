@@ -118,9 +118,10 @@ class Database:
 
 	def connect(self):
 		"""Connects to a database as set in `site_config.json`."""
+		# TODO: Datahenge - Connection Pooling (pgBouncer to start with)
 		self._conn: "MariadbConnection" | "PostgresConnection" = self.get_connection()
 		self._cursor: "MariadbCursor" | "PostgresCursor" = self._conn.cursor()
-		print(f"Established a new SQL connection ({self.db_type})")
+		# print(f"Established a new SQL connection ({self.db_type})")
 		try:
 			if execution_timeout := get_query_execution_timeout():
 				self.set_execution_timeout(execution_timeout)
