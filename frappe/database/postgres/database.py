@@ -226,6 +226,15 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 	# pylint: disable=W0221
 	def sql(self, query, values=EmptyQueryValues, *args, **kwargs):
 		try:
+			# print("--------------------------")
+			# print(query)
+			# print("--------------------------")
+			# print(values)
+			# print("--------------------------")
+			# print(modify_query(query))
+			# print("--------------------------")
+			# print(modify_values(values))
+
 			return super().sql(modify_query(query), modify_values(values), *args, **kwargs)
 		except Exception as ex:
 			print(f"Postgres SQL Exception: {ex}")

@@ -781,7 +781,16 @@ class Database:
 		fieldname: str | dict, value: Any, *, modified: str, modified_by: str, update_modified: bool
 	) -> dict[str, Any]:
 		"""Create update dict that represents column-values to be updated."""
-		update_dict = fieldname if isinstance(fieldname, dict) else {fieldname: value}
+
+		# Datahenge: This function can cause Postgres SQL errors
+		#            One of the problems is that DocField "Check" types are supposedly Booleans.
+		#            But the framework creates them as Integers.
+		correctly_typed_value = value
+		if frappe.db.db_type == "postgres":
+			if isinstance(correctly_typed_value, bool):
+				correctly_typed_value = int(correctly_typed_value)  # for the time being, recast to an Integer
+
+		update_dict = fieldname if isinstance(fieldname, dict) else {fieldname: correctly_typed_value}
 
 		if update_modified:
 			# Cease using strings for datetime values
