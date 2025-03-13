@@ -728,6 +728,7 @@ class Document(BaseDocument):
 
 	def validate_set_only_once(self):
 		"""Validate that fields are not changed if not in insert"""
+		from temporal_lib.tlib_types import any_to_datetime
 		set_only_once_fields = self.meta.get_set_only_once_fields()
 
 		if set_only_once_fields and self._doc_before_save:
@@ -743,6 +744,15 @@ class Document(BaseDocument):
 					fail = str(value) != str(original_value)
 				elif field.fieldtype in ("Datetime"):
 					# Datahenge: Treat DateTime properly instead of casting to Strings.
+					# If value is January 1st year 1, change it to Janaury first 1900
+					if value and value.year == 1:
+						value = value.replace(year=1900)
+					if original_value and original_value.year == 1:
+						original_value = original_value.replace(year=1900)
+					if not original_value:
+						original_value = any_to_datetime("1900-01-01 00:00:00")
+					if not value:
+						value = any_to_datetime("1900-01-01 00:00:00")
 					fail = value.astimezone(TZ_UTC) != original_value.astimezone(TZ_UTC)
 				else:
 					fail = value != original_value
