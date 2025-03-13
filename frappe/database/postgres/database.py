@@ -189,7 +189,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		# Must reduce the dictionary to only Keys that pyscopg2 expects:
 		conn_settings = { key:value for key, value in conn_settings.items() if key in ("host", "port", "dbname", "user", "password") }
 		conn = psycopg2.connect(**conn_settings)
-		conn.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)
+		conn.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)  # TODO: Do not hardcode this, object the DB Server Settings
 
 		return conn
 

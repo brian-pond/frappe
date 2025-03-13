@@ -909,7 +909,9 @@ class Document(BaseDocument):
 		if not isinstance(previous.modified, datetime_type):
 			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified)} but should a Type of datetime instead.")
 		if not isinstance(self._original_modified, datetime_type):
-			raise TypeError(f"Attribute \"self._original_modified\" is a {type(self._original_modified)} but should be Type datetime instead.")
+			# TODO: Why????
+			self._original_modified = datetime_type(self._original_modified)
+			# raise TypeError(f"Attribute \"self._original_modified\" is a {type(self._original_modified)} but should be Type datetime instead.")
 
 		if previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):
 			frappe.msgprint(
