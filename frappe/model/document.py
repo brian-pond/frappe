@@ -756,7 +756,6 @@ class Document(BaseDocument):
 					fail = value.astimezone(TZ_UTC) != original_value.astimezone(TZ_UTC)
 				else:
 					fail = value != original_value
-
 				if fail:
 					# Datahenge: I wanted a slightly better error message:
 					frappe.throw(
