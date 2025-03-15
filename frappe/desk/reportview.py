@@ -465,8 +465,10 @@ def append_totals_row(data):
 	return data
 
 
-def get_field_info(fields, doctype):
-	"""Get column names, labels, field types, and translatable properties based on column names."""
+def get_field_info(fields: list, doctype: str):
+	"""
+	Get column names, labels, field types, and translatable properties based on column names.
+	"""
 
 	field_info = []
 	for key in fields:
@@ -538,10 +540,15 @@ def handle_duration_fieldtype_values(doctype, data, fields):
 
 def parse_field(field: str) -> tuple[str | None, str]:
 	"""Parse a field into parenttype and fieldname."""
+
+	# Datahenge: This seems fraught with peril.
 	key = field.split(" as ", 1)[0]
 
 	if key.startswith(("count(", "sum(", "avg(")):
 		raise ValueError
+
+	if key.startswith("cast("):  # Datahenge: Important due to Postgres including a cast(something as varchar)
+		key = key[5:]
 
 	if "." in key:
 		table, column = key.split(".", 2)[:2]

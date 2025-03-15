@@ -211,10 +211,10 @@ class DatabaseQuery:
 			return []
 
 		if args.conditions:
-			args.conditions = "where " + args.conditions
+			args.conditions = "WHERE " + args.conditions
 
 		if self.distinct:
-			args.fields = "distinct " + args.fields
+			args.fields = "DISTINCT " + args.fields
 			args.order_by = ""  # TODO: recheck for alternative
 
 		# Postgres requires any field that appears in the select clause to also

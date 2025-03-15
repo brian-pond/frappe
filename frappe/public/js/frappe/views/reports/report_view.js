@@ -812,12 +812,12 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 			let column_name = frappe.model.get_full_column_name(f[0], f[1]);
 			if (f[1] !== this.doctype) {
 				// child table field
-				column_name = column_name + " as " + `'${f[1]}:${f[0]}'`;
+				column_name = column_name + " as " + `"${f[1]}:${f[0]}"`;  // Datahenge - Make compatible with Postgres
 			}
 			return column_name;
 		});
 		const cdt_name_fields = this.get_unique_cdt_in_view().map(
-			(cdt) => frappe.model.get_full_column_name("name", cdt) + " as " + `'${cdt}:name'`
+			(cdt) => frappe.model.get_full_column_name("name", cdt) + " as " + `"${cdt}:name"`  // Datahenge - Make compatible with Postgres
 		);
 		fields = fields.concat(cdt_name_fields);
 
