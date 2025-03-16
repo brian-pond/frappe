@@ -14,6 +14,7 @@ from frappe.model.document import Document
 from frappe.utils import get_datetime, now_datetime
 from frappe.utils.background_jobs import enqueue, is_job_enqueued
 
+from temporal_lib.core import make_datetime_naive
 
 class ScheduledJobType(Document):
 	# begin: auto-generated types
@@ -87,7 +88,7 @@ class ScheduledJobType(Document):
 	def is_event_due(self, current_time=None):
 		"""Return true if event is due based on time lapsed since last execution"""
 		# if the next scheduled event is before NOW, then its due!
-		return self.get_next_execution() <= (current_time or now_datetime())
+		return self.get_next_execution() <= make_datetime_naive(current_time or now_datetime())
 
 	def is_job_in_queue(self) -> bool:
 		return is_job_enqueued(self.rq_job_id)
