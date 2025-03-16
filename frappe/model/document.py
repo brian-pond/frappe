@@ -914,12 +914,11 @@ class Document(BaseDocument):
 		#        So the comparison -always- fails!
 		#        My fix is trying to always treated ""creation" and "modified" as timezone-aware datetimes
 		# if cstr(previous.modified) != cstr(self._original_modified):
-
 		if not isinstance(previous.modified, datetime_type):
 			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified)} but should a Type of datetime instead.")
 		if not isinstance(self._original_modified, datetime_type):
-			# TODO: Why????
-			self._original_modified = datetime_type(self._original_modified)
+			from temporal_lib.tlib_types import any_to_datetime
+			self._original_modified = any_to_datetime(self._original_modified)
 			# raise TypeError(f"Attribute \"self._original_modified\" is a {type(self._original_modified)} but should be Type datetime instead.")
 
 		if previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):

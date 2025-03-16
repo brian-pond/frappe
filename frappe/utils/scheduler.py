@@ -168,10 +168,12 @@ def schedule_jobs_based_on_activity(check_time=None):
 
 
 def is_dormant(check_time=None):
+	from temporal_lib.core import make_datetime_naive  # Datahenge
+
 	# Assume never dormant if developer_mode is enabled
 	if frappe.conf.developer_mode:
 		return False
-	last_activity_log_timestamp = _get_last_modified_timestamp("Activity Log")
+	last_activity_log_timestamp = make_datetime_naive(_get_last_modified_timestamp("Activity Log"))
 	since = (frappe.get_system_settings("dormant_days") or 4) * 86400
 	if not last_activity_log_timestamp:
 		return True
