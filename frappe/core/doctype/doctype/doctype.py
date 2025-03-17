@@ -9,6 +9,8 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Union
 
+from temporal_lib.core import make_datetime_naive
+
 import frappe
 from frappe import _
 from frappe.cache_manager import clear_controller_cache, clear_user_cache
@@ -1034,7 +1036,7 @@ class DocType(Document):
 
 		file = Path(get_file_path(frappe.scrub(self.module), self.doctype, self.name))
 		content = json.loads(file.read_text())
-		if content.get("modified") and get_datetime(self.modified) < get_datetime(content.get("modified")):
+		if content.get("modified") and make_datetime_naive(get_datetime(self.modified)) < make_datetime_naive(get_datetime(content.get("modified"))):
 			frappe.msgprint(
 				_(
 					"This doctype has pending migrations, run 'bench migrate' before modifying the doctype to avoid losing changes."
