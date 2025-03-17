@@ -37,8 +37,13 @@ def get_roles_and_doctypes():
 			"istable": 0,
 			"name": ("not in", ",".join(not_allowed_in_permission_manager)),
 		},
-		or_filters={"COALESCE(restrict_to_domain, '')": "", "restrict_to_domain": ("in", active_domains)},
-		fields=["name"],
+		# or_filters={"COALESCE(restrict_to_domain, '')": "", "restrict_to_domain": ("in", active_domains)},
+		or_filters=[
+            {"restrict_to_domain": ""},
+            {"restrict_to_domain": ("in", active_domains)},
+            {"restrict_to_domain": None},  # Handle NULL values correctly
+        ],
+        fields=["name"],
 	)
 
 	restricted_roles = ["Administrator"]
@@ -53,8 +58,12 @@ def get_roles_and_doctypes():
 			"name": ("not in", restricted_roles),
 			"disabled": 0,
 		},
-		or_filters={"COALESCE(restrict_to_domain, '')": "", "restrict_to_domain": ("in", active_domains)},
-		fields=["name"],
+		or_filters=[
+            {"restrict_to_domain": ""},
+            {"restrict_to_domain": ("in", active_domains)},
+            {"restrict_to_domain": None},  # Handle NULL values correctly
+        ],
+        fields=["name"],
 	)
 
 	doctypes_list = [{"label": _(d.get("name")), "value": d.get("name")} for d in doctypes]
