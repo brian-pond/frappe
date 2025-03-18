@@ -162,7 +162,7 @@ class SQLTransaction():
 		# server has had an opportunity to update itself.  And you'll get a false negative about Uncommitted Transactions.
 		# https://stackoverflow.com/questions/34303079/how-do-i-determine-if-i-have-uncommitted-writes-in-a-mysql-transaction
 
-		frappe.db.sql("SELECT SLEEP(0.5);")
+		frappe.db.sql("SELECT pg_sleep(0.5);")
 
 		transaction_details = SQLTransaction.get_sql_transaction_details()
 		if not transaction_details:
