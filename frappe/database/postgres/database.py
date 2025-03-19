@@ -398,6 +398,8 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 			fields = [fields]
 		if not constraint_name:
 			constraint_name = "unique_" + "_".join(fields)
+		else:
+			constraint_name = constraint_name.lower()  # Datahenge: Postgres saves the constraints in lowercase
 
 		if not self.sql(
 			"""
