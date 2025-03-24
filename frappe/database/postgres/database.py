@@ -20,7 +20,7 @@ from psycopg2.errors import (
 	SequenceGeneratorLimitExceeded,
 	SyntaxError,
 )
-from psycopg2.extensions import ISOLATION_LEVEL_REPEATABLE_READ
+from psycopg2.extensions import ISOLATION_LEVEL_REPEATABLE_READ, ISOLATION_LEVEL_READ_COMMITTED
 
 import frappe
 from frappe.database.database import Database
@@ -189,8 +189,10 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		# Must reduce the dictionary to only Keys that pyscopg2 expects:
 		conn_settings = { key:value for key, value in conn_settings.items() if key in ("host", "port", "dbname", "user", "password") }
 		conn = psycopg2.connect(**conn_settings)
-		conn.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)  # TODO: Do not hardcode this, object the DB Server Settings
-
+		# Datahenge: Hard coding this is a bad idea.  Either obey the Database defaults.  Or make this an editable config (file, doctype, etc)
+		# Also, Repeatable Read appears to be too string.  Getting too many errors in the ERP.
+		# conn.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)
+		conn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
 		return conn
 
 	def set_execution_timeout(self, seconds: int):

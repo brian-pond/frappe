@@ -203,6 +203,9 @@ class DatabaseQuery:
 		return result
 
 	def build_and_run(self):
+		# TODO: Datahenge:  A ton of the problems with Postgres are happening here, because of bad
+		#                   calls from JavaScript, badly formed queries, and more.
+		#
 		args = self.prepare_args()
 		args.limit = self.add_limit()
 
