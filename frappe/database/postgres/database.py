@@ -237,6 +237,10 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 			# print("--------------------------")
 			# print(modify_values(values))
 
+			# NOTE:  The 'modify_query()' is taking care of almost all MariaDB to Postgres conversions.
+			#        But it does NOT substitute ifnull with coalesce.
+			#        That happens <somewhere else>
+
 			return super().sql(modify_query(query), modify_values(values), *args, **kwargs)
 		except Exception as ex:
 			print(f"Postgres SQL Exception: {ex}")
