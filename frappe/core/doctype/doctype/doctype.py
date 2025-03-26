@@ -363,6 +363,7 @@ class DocType(Document):
 						continue  # Invalid expression
 					link_df = new_meta.get_field(link_fieldname)
 
+					# Datahenge:  Postgres has a completely different syntax for UPDATE + JOIN, compared to MariaDB.
 					if frappe.db.db_type == "postgres":
 						update_query = """
 							UPDATE `tab{doctype}`
