@@ -228,15 +228,6 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 	# pylint: disable=W0221
 	def sql(self, query, values=EmptyQueryValues, *args, **kwargs):
 		try:
-			# print("--------------------------")
-			# print(query)
-			# print("--------------------------")
-			# print(values)
-			# print("--------------------------")
-			# print(modify_query(query))
-			# print("--------------------------")
-			# print(modify_values(values))
-
 			# NOTE:  The 'modify_query()' is taking care of almost all MariaDB to Postgres conversions.
 			#        But it does NOT substitute ifnull with coalesce.
 			#        That happens <somewhere else>
@@ -246,6 +237,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 			print(f"Postgres SQL Exception: {ex}")
 			print(f"Postgres SQL Query: {query}")
 			print(f"Postgres SQL Values: {values}")
+			frappe.msgprint(ex)
 			raise ex
 
 	def lazy_mogrify(self, *args, **kwargs) -> str:
