@@ -909,11 +909,17 @@ class Document(BaseDocument):
 			self.check_docstatus_transition(0)
 			return
 
-		# NOTE:  For Postgres, the SQL column "modified" is a datetime with time zone.
-		#        But in vanilla Frappe, the "self._original_modified" is a *string* without a time zone.
+		# NOTE:  For Postgres, a DateTime column has 2 flavors: with or without Time Zone.
+		#        In vanilla Frappe, the "self._original_modified" is a *string* (without a time zone)
 		#        So the comparison -always- fails!
 		#        My fix is trying to always treated ""creation" and "modified" as timezone-aware datetimes
+
 		# if cstr(previous.modified) != cstr(self._original_modified):
+
+		#frappe.whatis(previous.modified)
+		#frappe.whatis(self._original_modified)
+		#frappe.whatis(self.modified)
+
 		if not isinstance(previous.modified, datetime_type):
 			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified)} but should a Type of datetime instead.")
 		if not isinstance(self._original_modified, datetime_type):

@@ -34,12 +34,13 @@ class PostgresTable(DBTable):
 			name_column = "name bigint primary key"
 
 		# TODO: set docstatus length
+		# Datahenge: I want the Creation and Modified to always have a Time Zone.
 		# create table
 		frappe.db.sql(
 			f"""create table `{self.table_name}` (
 			{name_column},
-			creation timestamp(6),
-			modified timestamp(6),
+			creation timestamp(6) WITH TIME ZONE,
+			modified timestamp(6) WITH TIME ZONE,
 			modified_by varchar({varchar_len}),
 			owner varchar({varchar_len}),
 			docstatus smallint not null default '0',
