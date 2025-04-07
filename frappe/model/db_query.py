@@ -217,7 +217,9 @@ class DatabaseQuery:
 			args.conditions = "WHERE " + args.conditions
 
 		if self.distinct:
-			args.fields = "DISTINCT " + args.fields
+			# Datahenge: Prevent a double distinct by checking for it first:
+			if not args.fields.strip().lower().startswith('distinct'):
+				args.fields = "DISTINCT " + args.fields
 			args.order_by = ""  # TODO: recheck for alternative
 
 		# Postgres requires any field that appears in the select clause to also
