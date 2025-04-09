@@ -366,11 +366,11 @@ class DocType(Document):
 					# Datahenge:  Postgres has a completely different syntax for UPDATE + JOIN, compared to MariaDB.
 					if frappe.db.db_type == "postgres":
 						update_query = """
-							UPDATE `tab{doctype}`
+							UPDATE `tab{doctype}` as target
 							SET `{fieldname}` = source.`{source_fieldname}`
 							FROM `tab{link_doctype}` as source
-							WHERE `{link_fieldname}` = source.name
-							AND COALESCE(`{fieldname}`, '')=''
+							WHERE target.`{link_fieldname}` = source.name
+							AND COALESCE(target.`{fieldname}`, '')=''
 						"""
 					else:
 						update_query = """
