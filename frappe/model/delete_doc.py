@@ -137,7 +137,7 @@ def delete_doc(
 
 				# check if links exist
 				if not force:
-					# Datahenge: These kinds of link validations are causing headaches with Web Subscription Items.
+					# Datahenge: These kinds of link validations are causing headaches with Customer Subscriptions.
 					#            And also Daily Order Item parent and child lines that relate to each other.
 					try:
 						check_if_doc_is_linked(doc)
@@ -209,7 +209,7 @@ def update_naming_series(doc):
 	"""
 	Datahenge: Frappe is using this to revert a Naming Series consumption, if the deleted
 	document has the most-recent Series value.  I guess this exists to prevent unnecessary "holes" in the Series?  :shrug:
-	"""	
+	"""
 	if doc.meta.autoname:
 		if doc.meta.autoname.startswith("naming_series:") and getattr(doc, "naming_series", None):
 			revert_series_if_last(doc.naming_series, doc.name, doc)

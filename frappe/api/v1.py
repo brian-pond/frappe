@@ -66,7 +66,7 @@ def update_doc(doctype: str, name: str):
 	# What happens is when a Child DocType is saved, the ENTIRE parent DocType is save()
 	# This can result in a HUGE ripple effect of unwanted code execution and validation
 	#
-	# Consider a Web Subscription with 20 Lines.  One line is touched by a PUT.  This results
+	# Consider a Customer Subscription with 20 Lines.  One line is touched by a PUT.  This results
 	# in a save() to the Parent.  That save() executes before_validate(), validate(), before_save(),
 	# a SQL UPDATE to the table, on_update() and on_change().
 	#
