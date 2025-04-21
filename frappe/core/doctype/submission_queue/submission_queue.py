@@ -102,7 +102,7 @@ class SubmissionQueue(Document):
 			)
 			values = {"status": "Finished"}
 		except Exception:
-			values = {"status": "Failed", "exception": frappe.get_traceback(with_context=True)}
+			values = {"status": "Failed", "exception": frappe.utils.get_traceback(with_context=True)}
 			frappe.db.rollback()
 
 		values["ended_at"] = now()

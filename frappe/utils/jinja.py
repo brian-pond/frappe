@@ -80,8 +80,8 @@ def render_template(template, context=None, is_path=None, safe_render=True):
 
 	from jinja2 import TemplateError
 
-	from frappe import _, get_traceback, throw
-
+	from frappe import _, throw
+	from frappe.utils import get_traceback
 	if not template:
 		return ""
 

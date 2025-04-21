@@ -39,6 +39,7 @@ def no_wait(func):
 	"Disable tenacity waiting on some function"
 	from tenacity import stop_after_attempt
 
+	original_stop = None
 	try:
 		original_stop = func.retry.stop
 		func.retry.stop = stop_after_attempt(1)
@@ -56,7 +57,7 @@ def health_check(step: str):
 			try:
 				return func(*args, **kwargs)
 			except Exception as e:
-				frappe.log(frappe.get_traceback())
+				frappe.log(frappe.utils.get_traceback())
 				# nosemgrep
 				frappe.msgprint(
 					f"System Health check step {frappe.bold(step)} failed: {e}", alert=True, indicator="red"

@@ -14,6 +14,7 @@ be used to build database driven apps.
 Read the documentation: https://frappeframework.com/docs
 """
 import copy
+from enum import Enum  # Datahenge
 import faulthandler
 import functools
 import gc
@@ -445,19 +446,12 @@ def destroy():
 
 def setup_redis_cache_connection():
 	"""Defines `frappe.cache` as `RedisWrapper` instance"""
-	global cache
+	global cache  # pylint: disable=global-statement
 
 	if not cache:
 		from frappe.utils.redis_wrapper import setup_cache
 
 		cache = setup_cache()
-
-
-def get_traceback(with_context: bool = False) -> str:
-	"""Returns error traceback."""
-	from frappe.utils import get_traceback
-
-	return get_traceback(with_context=with_context)
 
 
 def errprint(msg: str) -> None:
@@ -2572,7 +2566,7 @@ re.purge()
 
 from enum import Enum
 
-# I tried guerilla patching the 'whatis()' function in FTP's hooks.py.
+# I tried guerilla patching the 'whatis()' function in a custom Application's hooks.py.
 # The result was inconsistent.  For example, I could not run automation.py code
 # using `bench execute`, because the Bench wasn't aware of the patched Frappe module.
 # This guerilla patching simply isn't worth the effort.  Hard-coding the function here, for now.

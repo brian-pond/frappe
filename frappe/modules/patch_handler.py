@@ -213,7 +213,7 @@ def update_patch_log(patchmodule, skipped=False):
 	patch = frappe.get_doc({"doctype": "Patch Log", "patch": patchmodule})
 
 	if skipped:
-		traceback = frappe.get_traceback(with_context=True)
+		traceback = frappe.utils.get_traceback(with_context=True)
 		patch.skipped = 1
 		patch.traceback = traceback
 		print(traceback, end="\n\n")

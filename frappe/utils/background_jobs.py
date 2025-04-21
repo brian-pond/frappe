@@ -269,7 +269,7 @@ def execute_job(site, method, event, job_name, kwargs, user=None, is_async=True,
 		frappe.db.rollback()
 		frappe.log_error(title=method_name)
 		frappe.db.commit()
-		print(frappe.get_traceback())
+		print(frappe.utils.get_traceback())
 		raise
 
 	else:

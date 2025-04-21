@@ -168,7 +168,7 @@ class ScheduledJobType(Document):
 		if frappe.debug_log:
 			self.scheduler_log.db_set("debug_log", "\n".join(frappe.debug_log))
 		if status == "Failed":
-			self.scheduler_log.db_set("details", frappe.get_traceback(with_context=True))
+			self.scheduler_log.db_set("details", frappe.utils.get_traceback(with_context=True))
 		if status == "Start":
 			self.db_set("last_execution", now_datetime(), update_modified=False)
 		frappe.db.commit()
@@ -193,7 +193,7 @@ def run_scheduled_job(job_type: str):
 	try:
 		frappe.get_doc("Scheduled Job Type", dict(method=job_type)).execute()
 	except Exception:
-		print(frappe.get_traceback())
+		print(frappe.utils.get_traceback())
 
 
 def sync_jobs(hooks: dict | None = None):
