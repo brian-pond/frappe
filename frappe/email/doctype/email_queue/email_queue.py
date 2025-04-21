@@ -249,7 +249,7 @@ class SendMailContext:
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if exc_type:
-			update_fields = {"error": frappe.get_traceback()}
+			update_fields = {"error": frappe.utils.get_traceback()}
 			if self.queue_doc.retry < get_email_retry_limit():
 				update_fields.update(
 					{
