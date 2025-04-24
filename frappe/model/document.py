@@ -761,8 +761,9 @@ class Document(BaseDocument):
 				if fail:
 					# Datahenge: I wanted a slightly better error message:
 					frappe.throw(
-						_("Value cannot be changed for field '{0}' (Set Once Only)").format(
-							frappe.bold(self.meta.get_label(field.fieldname))
+						_("Value cannot be changed for field '{0}' {1} (Set Once Only)").format(
+							frappe.bold(self.meta.get_label(field.fieldname)),
+							field.fieldname
 						),
 						exc=frappe.CannotChangeConstantError,
 					)

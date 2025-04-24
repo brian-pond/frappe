@@ -505,6 +505,11 @@ class BaseDocument:
 			if value := getattr(self, key, None):
 				doc[key] = value
 
+		# Datahenge Begin: Let's have a *consistent* datatype for docstatus, please.
+		if 'docstatus' in doc:
+			doc['docstatus'] = DocStatus(cint(doc['docstatus']))
+		# Datahenge End
+
 		return doc
 
 	def as_json(self):
