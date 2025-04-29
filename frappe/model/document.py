@@ -2141,7 +2141,7 @@ class Document(BaseDocument):
 		# There are 3 possibilities we have to handle:
 		# 1. The child document was updated directly via a REST API call.
 		# 2. The child document was updated via the ERPNext website, as a member of a Parent.
-		# 3. The child document was updated by code using save()
+		# 3. The child document was updated by calling 'doc_child.save()'
 
 		# This should handle Scenarios 1 and 3:
 		doc_before_save = self.get_doc_before_save()

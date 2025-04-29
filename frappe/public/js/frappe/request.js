@@ -342,7 +342,7 @@ frappe.request.call = function (opts) {
 					try {
 						data = JSON.parse(xhr.responseText);
 					} catch (e) {
-						console.log("Unable to parse reponse text");
+						console.log("Unable to parse response text");
 						console.log(xhr.responseText);
 						console.log(e);
 					}

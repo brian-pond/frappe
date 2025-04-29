@@ -89,7 +89,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 controllers = {}
 local = Local()
-cache = None
+cache = None  # DH: This becomes the frappe.cache function
 STANDARD_USERS = ("Guest", "Administrator")
 
 _qb_patched = {}
