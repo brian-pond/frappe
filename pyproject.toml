@@ -88,7 +88,7 @@ dependencies = [
     "posthog~=3.0.1",
 
     # Datahenge dependencies
-    "deepdiff~=8.0.1",
+    "deepdiff~=8.4.1",
 ]
 
 [project.urls]
