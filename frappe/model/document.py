@@ -1,8 +1,9 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+# pylint: disable=protected-access, too-many-lines
 
-from datetime import date as date_type, datetime as datetime_type
+from datetime import date as date_type, datetime as datetime_type, timedelta
 import hashlib
 import json
 import time
@@ -25,7 +26,7 @@ from frappe.model.naming import set_new_name, validate_name
 from frappe.model.utils import is_virtual_doctype
 from frappe.model.workflow import set_workflow_state_on_action, validate_workflow
 from frappe.types import DF
-from frappe.utils import compare, cstr, date_diff, file_lock, flt, get_datetime_str, now
+from frappe.utils import compare, date_diff, file_lock, flt, now
 from frappe.utils.data import get_absolute_url, get_datetime, get_timedelta, getdate
 from frappe.utils.global_search import update_global_search
 
@@ -530,8 +531,6 @@ class Document(BaseDocument):
 	def has_value_changed(self, fieldname, ignore_new=False, debug=False):
 		"""Return True if value has changed before and after saving."""
 		# Datahenge : Add the ability to ignore new records.
-		from datetime import date, datetime, timedelta
-
 		previous = self.get_doc_before_save()
 
 		# DH Begin
@@ -547,9 +546,9 @@ class Document(BaseDocument):
 		previous_value = previous.get(fieldname)
 		current_value = self.get(fieldname)
 
-		if isinstance(previous_value, datetime):
+		if isinstance(previous_value, datetime_type):
 			current_value = get_datetime(current_value)
-		elif isinstance(previous_value, date):
+		elif isinstance(previous_value, date_type):
 			current_value = getdate(current_value)
 		elif isinstance(previous_value, timedelta):
 			current_value = get_timedelta(current_value)
@@ -2106,7 +2105,7 @@ class Document(BaseDocument):
 		"""
 		Datahenge: Function to assign a class variable 'parent_doc' of type Document Class.
 		"""
-		DEBUG = False
+		DEBUG = False  # pylint: disable=invalid-name
 
 		if _parent_doc and not isinstance(_parent_doc, Document):
 			raise TypeError("Argument '_parent_doc' is not a Document type.")
