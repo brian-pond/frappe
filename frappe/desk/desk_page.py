@@ -27,7 +27,7 @@ def getpage():
 	"""
 	Load the page from `frappe.form` and send it via `frappe.response`
 	"""
-	page = frappe.form_dict.get("name")
+	page: str = frappe.form_dict.get("name")
 	doc = get(page)
 
 	frappe.response.docs.append(doc)

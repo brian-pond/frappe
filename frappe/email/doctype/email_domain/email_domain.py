@@ -138,8 +138,8 @@ def validate_domain(email_domain_name):
 	if not doc:
 		frappe.throw(_(f"Could not find document 'Email Domain' named '{email_domain_name}'"))
 
-	if doc.email_id:
-		validate_email_address(doc.email_id, True)
+	# if doc.email_id:
+	#	validate_email_address(doc.email_id, True)
 
 	if frappe.local.flags.in_patch:
 		frappe.msgprint(_("Skipping domain tests because mode = 'in patch'"))

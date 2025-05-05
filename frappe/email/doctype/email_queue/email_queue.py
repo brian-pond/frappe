@@ -249,7 +249,7 @@ class SendMailContext:
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if exc_type:
-			update_fields = {"error": frappe.get_traceback()}
+			update_fields = {"error": frappe.utils.get_traceback()}
 			if self.queue_doc.retry < get_email_retry_limit():
 				update_fields.update(
 					{
@@ -390,8 +390,8 @@ class SendMailContext:
 			elif attachment.get("print_format_attachment") == 1:
 				attachment.pop("print_format_attachment", None)
 				print_format_file = frappe.attach_print(**attachment)
-				self._store_file(print_format_file["fname"], print_format_file["fcontent"])
 				if print_format_file:  # Datahenge - Make sure this dictionary actually exists before trying to update it.
+					self._store_file(print_format_file["fname"], print_format_file["fcontent"])
 					print_format_file.update({"parent": message_obj})
 					add_attachment(**print_format_file)
 
