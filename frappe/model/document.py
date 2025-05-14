@@ -920,14 +920,14 @@ class Document(BaseDocument):
 		#frappe.whatis(self._original_modified)
 		#frappe.whatis(self.modified)
 
-		if not isinstance(previous.modified, datetime_type):
-			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified)} but should a Type of datetime instead.")
-		if not isinstance(self._original_modified, datetime_type):
+		if previous.modified and not isinstance(previous.modified, datetime_type):
+			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified).__name__} but should a Type of datetime instead.")
+		if self._original_modified and not isinstance(self._original_modified, datetime_type):
 			from temporal_lib.tlib_types import any_to_datetime
 			self._original_modified = any_to_datetime(self._original_modified)
 			# raise TypeError(f"Attribute \"self._original_modified\" is a {type(self._original_modified)} but should be Type datetime instead.")
 
-		if previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):
+		if previous.modified and previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):
 			frappe.msgprint(
 				_("Error: Document has been modified after you have opened it")
 				+ (f" ({previous.modified}, {self.modified}). ")
