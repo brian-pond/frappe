@@ -81,7 +81,10 @@ class PostgresTable(DBTable):
 				# read more https://www.postgresql.org/docs/9.1/sql-altertable.html
 				using_clause = f"USING {col.fieldname}::timestamp without time zone"
 			elif col.fieldtype == "Check":
-				using_clause = f"USING {col.fieldname}::smallint"
+				if col.fieldname != 'unique':  # Datahenge: Frappe used a Reserved Keyword here
+					using_clause = f"USING {col.fieldname}::smallint"
+			elif col.fieldtype == "JSON":  # Datahenge: Necessary
+				using_clause = f"USING {col.fieldname}::json"
 
 			query.append(
 				"ALTER COLUMN `{}` TYPE {} {}".format(

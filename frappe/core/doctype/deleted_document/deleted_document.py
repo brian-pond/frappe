@@ -1,7 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies and contributors
 # License: MIT. See LICENSE
 
-import json
+# import json
 
 import frappe
 from frappe import _
@@ -19,7 +19,7 @@ class DeletedDocument(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		data: DF.Code | None
+		data: DF.JSON | None
 		deleted_doctype: DF.Data | None
 		deleted_name: DF.Data | None
 		new_name: DF.ReadOnly | None
@@ -44,7 +44,8 @@ def restore(name, alert=True):
 	if deleted.restored:
 		frappe.throw(_("Document {0} Already Restored").format(name), exc=frappe.DocumentAlreadyRestored)
 
-	doc = frappe.get_doc(json.loads(deleted.data))
+	doc = frappe.get_doc(deleted.data)  # DH : Modified framework so JSON DocFields are using Postgres JSON datatype, instead of a text.  No need to json.loads()
+	# doc = frappe.get_doc(json.loads(deleted.data))
 
 	try:
 		doc.insert()

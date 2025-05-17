@@ -211,6 +211,10 @@ scheduler_events = {
 		"0/10 * * * *": [
 			"frappe.email.doctype.email_account.email_account.pull",
 		],
+		# 5 minutes
+		"0/5 * * * *": [
+			"frappe.deferred_insert.save_to_db",
+		],
 		# Hourly but offset by 30 minutes
 		"30 * * * *": [
 			"frappe.core.doctype.prepared_report.prepared_report.expire_stalled_report",

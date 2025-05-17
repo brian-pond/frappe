@@ -28,55 +28,12 @@ class DocField(Document):
 		fetch_from: DF.SmallText | None
 		fetch_if_empty: DF.Check
 		fieldname: DF.Data | None
-		fieldtype: DF.Literal[
-			"Autocomplete",
-			"Attach",
-			"Attach Image",
-			"Barcode",
-			"Button",
-			"Check",
-			"Code",
-			"Color",
-			"Column Break",
-			"Currency",
-			"Data",
-			"Date",
-			"Datetime",
-			"Duration",
-			"Dynamic Link",
-			"Float",
-			"Fold",
-			"Geolocation",
-			"Heading",
-			"HTML",
-			"HTML Editor",
-			"Icon",
-			"Image",
-			"Int",
-			"JSON",
-			"Link",
-			"Long Text",
-			"Markdown Editor",
-			"Password",
-			"Percent",
-			"Phone",
-			"Read Only",
-			"Rating",
-			"Section Break",
-			"Select",
-			"Signature",
-			"Small Text",
-			"Tab Break",
-			"Table",
-			"Table MultiSelect",
-			"Text",
-			"Text Editor",
-			"Time",
-		]
+		fieldtype: DF.Literal["Autocomplete", "Attach", "Attach Image", "Barcode", "Button", "Check", "Code", "Color", "Column Break", "Currency", "Data", "Date", "Datetime", "Duration", "Dynamic Link", "Float", "Fold", "Geolocation", "Heading", "HTML", "HTML Editor", "Icon", "Image", "Int", "JSON", "Link", "Long Text", "Markdown Editor", "Password", "Percent", "Phone", "Read Only", "Rating", "Section Break", "Select", "Signature", "Small Text", "Tab Break", "Table", "Table MultiSelect", "Text", "Text Editor", "Time"]
 		hidden: DF.Check
 		hide_border: DF.Check
 		hide_days: DF.Check
 		hide_seconds: DF.Check
+		ignore_link_validation: DF.Check
 		ignore_user_permissions: DF.Check
 		ignore_xss_filter: DF.Check
 		in_filter: DF.Check
@@ -110,6 +67,7 @@ class DocField(Document):
 		remember_last_selected_value: DF.Check
 		report_hide: DF.Check
 		reqd: DF.Check
+		reqd_in_database: DF.Check
 		search_index: DF.Check
 		set_only_once: DF.Check
 		show_dashboard: DF.Check
