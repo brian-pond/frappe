@@ -90,7 +90,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 controllers = {}
 local = Local()
-cache = None  # DH: This becomes the frappe.cache function
+cache = None  # DH: Global variable that is a class instance RedisWrapper (frappe/frappe/utils/redis_wrapper.py), set by setup_redis_cache_connection()
 STANDARD_USERS = ("Guest", "Administrator")
 
 _qb_patched = {}

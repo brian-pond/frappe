@@ -1332,8 +1332,10 @@ class BaseDocument:
 			for df in self.meta.get("fields", {"fieldtype": ("=", "Text Editor")}):
 				extract_images_from_doc(self, df.fieldname)
 
-	# Datahenge: Safely assign Values, without accidentally creating new Keys.
 	def safeset(self, key, value, as_value=False):
+		"""
+		Datahenge: Update preexisting class attributes, but do not create new attributes.
+		"""
 		if not hasattr(self, key):
 			raise AttributeError(f"Cannot assign value to unknown attribute '{key}' in class {type(self).__name__}")
 		if isinstance(value, list) and not as_value:
