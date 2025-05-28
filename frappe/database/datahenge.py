@@ -3,9 +3,9 @@
 # NOTE:  I'm writing this class here in Frappe App, so I don't have to worry about circular references (if I were to write in FTP, for example)
 
 import os
-# import time
 import json
 import frappe
+
 
 class SQLTransaction():
 	"""
@@ -72,12 +72,19 @@ class SQLTransaction():
 	@staticmethod
 	def in_transaction():
 		"""
-		Returns a boolean True if inside a MySQL Transaction (which happens immediately after most SQL statements, including SELECT.
+		Returns a boolean True if inside a SQL Transaction
 		"""
-		query_result = frappe.db.sql("SELECT @@in_transaction AS in_transaction;", as_dict=True)
-		if query_result:
-			return bool(query_result[0]['in_transaction'])
-		return False
+		if frappe.conf.db_type == "mariadb":
+			# NOTE: MariaDB creates a transaction immediately upon most SQL statements, including SELECT.
+			query_result = frappe.db.sql("SELECT @@in_transaction AS in_transaction;", as_dict=True)
+			return bool(query_result[0]['in_transaction']) if query_result else False
+
+		if frappe.conf.db_type == "postgres":
+			# NOTE: Postgres only creates a Transaction ID during a write.  There won't be one if you just BEGIN TRANSACTION + SELECT
+			query_result = frappe.db.sql("SELECT pg_current_xact_id_if_assigned() IS NOT NULL AS in_transaction;", as_dict=True)
+			return bool(query_result[0]['in_transaction']) if query_result else False
+
+		raise NotImplementedError(f"Method in_transaction() not implemented for SQL database type '{frappe.conf.db_type}'")
 
 	@staticmethod
 	def get_connection_id():
@@ -98,9 +105,11 @@ class SQLTransaction():
 		"""
 		NOTE: Requires granting a new privilege to the SQL User:  GRANT Process ON *.* TO 'user_name'@'%';`
 		"""
+		from ftp.app_logging import logger
 
 		if frappe.db.db_type != "mariadb":
-			raise NotImplementedError(f"get_sql_transaction_details() not implemented for {frappe.db.db_type}")
+			logger.warning(f"get_sql_transaction_details() not implemented for {frappe.db.db_type}")
+			return {}
 
 		connection_id = SQLTransaction.get_connection_id()
 		if not connection_id:
