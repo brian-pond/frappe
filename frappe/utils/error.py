@@ -51,7 +51,7 @@ def log_error(title=None, message=None, reference_doctype=None, reference_name=N
 			traceback = message
 
 	title = title or "Error"
-	traceback = frappe.as_unicode(traceback or frappe.get_traceback(with_context=True))
+	traceback = frappe.as_unicode(traceback or frappe.utils.get_traceback(with_context=True))
 
 	if not frappe.db:
 		print(f"Failed to log error in db: {title}")

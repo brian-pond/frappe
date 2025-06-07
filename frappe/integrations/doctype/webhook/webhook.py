@@ -214,7 +214,7 @@ def log_request(
 			"headers": frappe.as_json(headers) if headers else None,
 			"data": frappe.as_json(data) if data else None,
 			"response": res.text if res is not None else None,
-			"error": frappe.get_traceback(),
+			"error": frappe.utils.get_traceback(),
 		}
 	)
 

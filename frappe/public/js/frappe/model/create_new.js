@@ -286,9 +286,21 @@ $.extend(frappe.model, {
 		var no_copy_list = ["name", "amended_from", "amendment_date", "cancel_reason"];
 		var newdoc = frappe.model.get_new_doc(doc.doctype, parent_doc, parentfield);
 
+		// Datahenge
+		const no_copy_daily_order_items = [ "ref_subscription_item", "subscription_cadence_key", "subscribed_qty_sales_unit"];
+
 		for (var key in doc) {
 			// dont copy name and blank fields
 			var df = frappe.meta.get_docfield(doc.doctype, key);
+
+			// DH: Need a means of preventing certain DocFields from duplicating.
+			if ( doc.parenttype == 'Daily Order' && doc.doctype == 'Daily Order Item' && df && df.parent == 'Daily Order Item' ) {
+				if (no_copy_daily_order_items.includes(df.fieldname)) {
+					// console.log("Nullifying subscription-based DocField");
+					continue;
+				}
+			}
+			// DH : End
 
 			if (
 				df &&

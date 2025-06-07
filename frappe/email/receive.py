@@ -9,7 +9,6 @@ import json
 import poplib
 import re
 import ssl
-import time
 from contextlib import suppress
 from email.header import decode_header
 
@@ -317,7 +316,7 @@ class EmailServer:
 
 	def make_error_msg(self, uid, msg_num):
 		partial_mail = None
-		traceback = frappe.get_traceback(with_context=True)
+		traceback = frappe.utils.get_traceback(with_context=True)
 		with suppress(Exception):
 			# retrieve headers
 			if not cint(self.settings.use_imap):
@@ -878,7 +877,7 @@ class InboundMail(Email):
 		return fields
 
 	@staticmethod
-	def get_document(self, doctype, name):
+	def get_document(doctype, name):
 		"""Is same as frappe.get_doc but suppresses the DoesNotExist error."""
 		try:
 			return frappe.get_doc(doctype, name)

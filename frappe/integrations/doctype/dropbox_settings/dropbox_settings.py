@@ -104,10 +104,10 @@ def take_backup_to_dropbox(retry_count=0, upload_db_backup=True):
 			)
 	except Exception:
 		if isinstance(error_log, str):
-			error_message = error_log + "\n" + frappe.get_traceback()
+			error_message = error_log + "\n" + frappe.utils.get_traceback()
 		else:
 			file_and_error = [" - ".join(f) for f in zip(did_not_upload, error_log, strict=False)]
-			error_message = "\n".join(file_and_error) + "\n" + frappe.get_traceback()
+			error_message = "\n".join(file_and_error) + "\n" + frappe.utils.get_traceback()
 
 		send_email(False, "Dropbox", "Dropbox Settings", "send_notifications_to", error_message)
 
@@ -180,7 +180,7 @@ def upload_from_folder(path, is_private, dropbox_folder, dropbox_client, did_not
 					update_file_dropbox_status(f.name)
 					break
 			except Exception:
-				error_log.append(frappe.get_traceback())
+				error_log.append(frappe.utils.get_traceback())
 
 		if not found:
 			try:
@@ -188,7 +188,7 @@ def upload_from_folder(path, is_private, dropbox_folder, dropbox_client, did_not
 				update_file_dropbox_status(f.name)
 			except Exception:
 				did_not_upload.append(filepath)
-				error_log.append(frappe.get_traceback())
+				error_log.append(frappe.utils.get_traceback())
 
 
 def upload_file_to_dropbox(filename, folder, dropbox_client):
@@ -226,7 +226,7 @@ def upload_file_to_dropbox(filename, folder, dropbox_client):
 	except dropbox.exceptions.ApiError as e:
 		if isinstance(e.error, dropbox.files.UploadError):
 			error = f"File Path: {path}\n"
-			error += frappe.get_traceback()
+			error += frappe.utils.get_traceback()
 			frappe.log_error(error)
 		else:
 			raise

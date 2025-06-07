@@ -106,7 +106,12 @@ def sync_for(app_name, force=0, reset_permissions=False):
 				files.append(file)
 
 	for module_name in frappe.local.app_modules.get(app_name) or []:
-		folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
+
+		module_file = frappe.get_module(app_name + "." + module_name).__file__
+		if not module_file:
+			raise RuntimeError(f"Cannot find a Python module for {app_name + '.' + module_name}")
+
+		folder = os.path.dirname(module_file)
 		files = get_doc_files(files=files, start_path=folder)
 
 	l = len(files)

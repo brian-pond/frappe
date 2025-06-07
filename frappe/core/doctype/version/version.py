@@ -110,6 +110,11 @@ def get_diff(old, new, for_child=False, compare_cancelled=False):
 		if df.fieldtype in no_value_fields and df.fieldtype not in table_fields:
 			continue
 
+		# Datahenge: Skip Virtual DocFields.  Doesn't make sense to do change tracking for them.
+		if df.is_virtual:
+			continue
+		# Datahenge: End
+
 		old_value, new_value = old.get(df.fieldname), new.get(df.fieldname)
 
 		if not for_child and df.fieldtype in table_fields:

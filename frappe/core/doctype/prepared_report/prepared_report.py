@@ -116,7 +116,7 @@ def generate_report(prepared_report):
 		instance.status = "Completed"
 	except Exception:
 		# we need to ensure that error gets stored
-		_save_error(instance, error=frappe.get_traceback(with_context=True))
+		_save_error(instance, error=frappe.utils.get_traceback(with_context=True))
 
 	instance.report_end_time = frappe.utils.now()
 	instance.save(ignore_permissions=True)

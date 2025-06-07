@@ -374,7 +374,7 @@ def handle_exception(e):
 		response = frappe.rate_limiter.respond()
 
 	else:
-		traceback = "<pre>" + escape_html(frappe.get_traceback()) + "</pre>"
+		traceback = "<pre>" + escape_html(frappe.utils.get_traceback()) + "</pre>"
 		# disable traceback in production if flag is set
 		if frappe.local.flags.disable_traceback or not allow_traceback and not frappe.local.dev_server:
 			traceback = ""
@@ -396,7 +396,7 @@ def handle_exception(e):
 
 	if frappe.conf.get("developer_mode") and not respond_as_json:
 		# don't fail silently for non-json response errors
-		print(frappe.get_traceback())
+		print(frappe.utils.get_traceback())
 
 	return response
 

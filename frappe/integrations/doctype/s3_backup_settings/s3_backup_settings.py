@@ -122,7 +122,7 @@ def take_backups_s3(retry_count=0):
 
 
 def notify():
-	error_message = frappe.get_traceback()
+	error_message = frappe.utils.get_traceback()
 	send_email(False, "Amazon S3", "S3 Backup Settings", "notify_email", error_message)
 
 

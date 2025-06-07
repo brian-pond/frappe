@@ -1,6 +1,8 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+# pylint: disable=protected-access
+
 import json
 import os
 import re
@@ -197,7 +199,7 @@ class Importer:
 						log_index,
 						{
 							"success": False,
-							"exception": frappe.get_traceback(),
+							"exception": frappe.utils.get_traceback(),
 							"messages": messages,
 							"row_indexes": row_indexes,
 						},
@@ -610,7 +612,8 @@ class ImportFile:
 			data = read_xlsx_file_from_attached_file(fcontent=content)
 		elif extension == "xls":
 			data = read_xls_file_from_attached_file(content)
-
+		else:
+			data = None
 		return data
 
 

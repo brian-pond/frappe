@@ -66,9 +66,9 @@ def process_setup_stages(stages, user_input, is_background_task=False):
 	from frappe.utils.telemetry import capture
 
 	capture("initated_server_side", "setup")
+	current_task = None
 	try:
 		frappe.flags.in_setup_wizard = True
-		current_task = None
 		for idx, stage in enumerate(stages):
 			frappe.publish_realtime(
 				"setup_task",
@@ -154,7 +154,7 @@ def get_setup_complete_hooks(args):  # nosemgrep
 def handle_setup_exception(args):  # nosemgrep
 	frappe.db.rollback()
 	if args:
-		traceback = frappe.get_traceback(with_context=True)
+		traceback = frappe.utils.get_traceback(with_context=True)
 		print(traceback)
 		for hook in frappe.get_hooks("setup_wizard_exception"):
 			frappe.get_attr(hook)(traceback, args)
@@ -381,7 +381,7 @@ def email_setup_wizard_exception(traceback, args):  # nosemgrep
 
 
 def log_setup_wizard_exception(traceback, args):  # nosemgrep
-	with open("../logs/setup-wizard.log", "w+") as setup_log:
+	with open("../logs/setup-wizard.log", "w+", encoding="utf-8") as setup_log:
 		setup_log.write(traceback)
 		setup_log.write(json.dumps(args))
 
@@ -439,5 +439,5 @@ def make_records(records, debug=False):
 
 def show_document_insert_error():
 	print("Document Insert Error")
-	print(frappe.get_traceback())
+	print(frappe.utils.get_traceback())
 	frappe.log_error("Exception during Setup")

@@ -1,8 +1,9 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+# pylint: disable=protected-access, too-many-lines
 
-from datetime import date as date_type, datetime as datetime_type
+from datetime import date as date_type, datetime as datetime_type, timedelta
 import hashlib
 import json
 import time
@@ -25,7 +26,7 @@ from frappe.model.naming import set_new_name, validate_name
 from frappe.model.utils import is_virtual_doctype
 from frappe.model.workflow import set_workflow_state_on_action, validate_workflow
 from frappe.types import DF
-from frappe.utils import compare, cstr, date_diff, file_lock, flt, get_datetime_str, now
+from frappe.utils import compare, date_diff, file_lock, flt, now
 from frappe.utils.data import get_absolute_url, get_datetime, get_timedelta, getdate
 from frappe.utils.global_search import update_global_search
 
@@ -270,8 +271,6 @@ class Document(BaseDocument):
 		if self.flags.ignore_permissions:
 			return True
 
-		import frappe.permissions
-
 		return frappe.permissions.has_permission(self.doctype, permtype, self, debug=debug, user=user)
 
 	def raise_no_permission_to(self, perm_type):
@@ -417,7 +416,7 @@ class Document(BaseDocument):
 		self.set_name_in_children()
 
 		self.validate_higher_perm_levels()  # DH: This function modified.
-		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.		
+		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.
 		self._validate_links()  # DH: Note this call also validates the Links of -child- documents.
 		# --------
 		# Datahenge:
@@ -524,13 +523,14 @@ class Document(BaseDocument):
 			d.db_update()
 
 	def get_doc_before_save(self) -> "Document":
-		return getattr(self, "_doc_before_save", None)
+		result = getattr(self, "_doc_before_save", None)
+		if result and (not isinstance(result.docstatus, DocStatus)):
+			result.docstatus = DocStatus(result.docstatus)
+		return result
 
 	def has_value_changed(self, fieldname, ignore_new=False, debug=False):
 		"""Return True if value has changed before and after saving."""
 		# Datahenge : Add the ability to ignore new records.
-		from datetime import date, datetime, timedelta
-
 		previous = self.get_doc_before_save()
 
 		# DH Begin
@@ -546,9 +546,9 @@ class Document(BaseDocument):
 		previous_value = previous.get(fieldname)
 		current_value = self.get(fieldname)
 
-		if isinstance(previous_value, datetime):
+		if isinstance(previous_value, datetime_type):
 			current_value = get_datetime(current_value)
-		elif isinstance(previous_value, date):
+		elif isinstance(previous_value, date_type):
 			current_value = getdate(current_value)
 		elif isinstance(previous_value, timedelta):
 			current_value = get_timedelta(current_value)
@@ -667,6 +667,7 @@ class Document(BaseDocument):
 		self._save_passwords()
 		self.validate_workflow()
 
+		# pylint: disable=protected-access
 		for d in self.get_all_children():
 			d._validate_data_fields()
 			d._validate_selects()
@@ -759,8 +760,9 @@ class Document(BaseDocument):
 				if fail:
 					# Datahenge: I wanted a slightly better error message:
 					frappe.throw(
-						_("Value cannot be changed for field '{0}' (Set Once Only)").format(
-							frappe.bold(self.meta.get_label(field.fieldname))
+						_("Value cannot be changed for field '{0}' {1} (Set Once Only)").format(
+							frappe.bold(self.meta.get_label(field.fieldname)),
+							field.fieldname
 						),
 						exc=frappe.CannotChangeConstantError,
 					)
@@ -769,7 +771,7 @@ class Document(BaseDocument):
 
 	def is_child_table_same(self, fieldname):
 		"""Validate child table is same as original table before saving"""
-		# Datahenge: Disadvantage is only 1 field at a time.  And it doesn't return -how- they are different.		
+		# Datahenge: Disadvantage is only 1 field at a time.  And it doesn't return -how- they are different.
 		value = self.get(fieldname)
 		original_value = self._doc_before_save.get(fieldname)
 		same = True
@@ -912,13 +914,13 @@ class Document(BaseDocument):
 		# NOTE:  For Postgres, a DateTime column has 2 flavors: with or without Time Zone.
 		#        In vanilla Frappe, the "self._original_modified" is a *string* (without a time zone)
 		#        So the comparison -always- fails!
-		#        My fix is trying to always treated ""creation" and "modified" as timezone-aware datetimes
+		#        My fix is trying to always treat "creation" and "modified" as timezone-aware datetimes
 
 		# if cstr(previous.modified) != cstr(self._original_modified):
 
-		#frappe.whatis(previous.modified)
-		#frappe.whatis(self._original_modified)
-		#frappe.whatis(self.modified)
+		# print(previous.modified)
+		# print(self._original_modified)
+		# print(self.modified)
 
 		if previous.modified and not isinstance(previous.modified, datetime_type):
 			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified).__name__} but should a Type of datetime instead.")
@@ -1463,6 +1465,7 @@ class Document(BaseDocument):
 		collated in one dict and returned. Ideally, don't return values in hookable
 		methods, set properties in the document."""
 
+		# pylint: disable=protected-access
 		def add_to_return_value(self, new_return_value):
 			if new_return_value is None:
 				self._return_value = self.get("_return_value")
@@ -2102,7 +2105,7 @@ class Document(BaseDocument):
 		"""
 		Datahenge: Function to assign a class variable 'parent_doc' of type Document Class.
 		"""
-		DEBUG = False
+		DEBUG = False  # pylint: disable=invalid-name
 
 		if _parent_doc and not isinstance(_parent_doc, Document):
 			raise TypeError("Argument '_parent_doc' is not a Document type.")
@@ -2203,7 +2206,7 @@ def execute_action(__doctype, __name, __action, **kwargs):
 		if frappe.message_log:
 			msg = frappe.message_log[-1].get("message")
 		else:
-			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+			msg = "<pre><code>" + frappe.utils.get_traceback() + "</pre></code>"
 
 		doc.add_comment("Comment", _("Action Failed") + "<br><br>" + msg)
 	doc.notify_update()
@@ -2283,94 +2286,10 @@ def unlock_document(doctype: str | None = None, name: str | None = None, args=No
 # Datahenge Function Additions:
 # ------------------
 
-def get_field_differences(doc_before,
-						  doc_after,
-                          error_on_type_changes=True,
-						  ignore_creation=True,
-                          ignore_modified=True,
-						  ignore_list=None):
+def _exist_significant_differences(doc_before, doc_after) -> bool:
 	"""
-	Datahenge: Given 2 Documents, compare field values and types, and return a DeepDiff object.
-
-	Version 15 Problem:
-		{
-			'old_type': <class 'int'>,
-			'new_type': <class 'frappe.model.docstatus.DocStatus'>
-			,'old_value': 0,
-			,'new_value': 0}
-		}
+	Datahenge: Creating this here to support 'on_update_children' above.
 	"""
-	# Unfortunately need to define here, because it's needed in frappe.model.document
-	from deepdiff import DeepDiff
-	from temporal import validate_datatype  # Late Import due to cross-module dependency
-	from ftp.ftp_module.generics import doc_to_stringtyped_dict  # Late Import due to cross-module dependency
-
-	validate_datatype("doc_before", doc_before, Document, True)
-	validate_datatype("doc_after", doc_after, Document, True)
-	if doc_before.doctype != doc_after.doctype:
-		raise ValueError("It's unwise to compare the DocFields of 2 different DocTypes.")
-
-	#  frappe.utils.data.cast_fieldtype
-	#  frappe.utils.data.cast
-
-	before = doc_to_stringtyped_dict(doc_before)
-	after = doc_to_stringtyped_dict(doc_after)
-
-	# Create a list of fields to ignore, when calculating differences.
-	exclude_paths = []
-	if ignore_creation:
-		exclude_paths.append("root['creation']")  # ignore and strip 'creation' from the results.
-		exclude_paths.append("root['owner']")  # ignore and strip 'owner' from the results.
-
-	if ignore_modified:
-		exclude_paths.append("root['modified']")  # ignore and strip 'modified' from the results.
-		exclude_paths.append("root['modified_by']")  # ignore and strip 'modified_by' from the results.
-
-	if ignore_list:
-		for each in ignore_list:
-			exclude_paths.append(f"root['{each}']")
-	if not exclude_paths:
-		exclude_paths = None
-
-	diff = DeepDiff(before, after, exclude_paths=exclude_paths)
-	if error_on_type_changes and ('type_changes' in diff.keys()):
-		type_changes = diff['type_changes']
-		if isinstance(type_changes, dict):
-			# Scenario 1: 'type_changes' are a Dictionary:
-			for key in type_changes.keys():
-				old_type = type_changes[key]['old_type']
-				new_type = type_changes[key]['new_type']
-				NoneType = type(None)
-				if (old_type == NoneType) or (new_type == NoneType):
-					continue  # It's okay if either old or new is a NoneType
-				raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
-		else:
-			raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
-
-	# print(f"\nvalue of diff = \n{diff.to_dict()}\n")
-	return diff
-
-
-def _exist_significant_differences(document1, document2):
-	"""
-	Given 2 Frappe Documents, are there -significant- differences between them?
-	  * Ignore creation and modified datetime differences.
-	  * Ignore '__unsaved' attribute.
-	  * NOTE: Must handle insanity that is Dates and Datetimes switching data-types midstream :eyeroll:
-	"""
-
-	differences = get_field_differences(document1, document2).to_dict()
-	significant_differences = []
-
-	if 'values_changed' in differences:
-		for diff in differences['values_changed']:
-			if diff == "root['modified']":
-				continue
-			#if diff[2] == [('__unsaved', 1)]:
-			#	continue
-			significant_differences.append(diff)
-
-	if len(significant_differences) > 0:
-		# print(f"ESD: Significant differences found between 2 documents:\n{significant_differences}")
-		return True
-	return False
+	from ftp.utilities.compare import DocumentCompare  # importing from FTP, but the logic belongs in there, not here.
+	instance = DocumentCompare(doc_before, doc_after)
+	return instance.differences_exist()

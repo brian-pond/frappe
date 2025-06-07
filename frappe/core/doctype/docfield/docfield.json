@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "hash",
- "creation": "2013-02-22 01:27:33",
+ "creation": "2013-02-22 01:27:33+00:00",
  "doctype": "DocType",
  "document_type": "Setup",
  "editable_grid": 1,
@@ -145,10 +145,10 @@
   },
   {
    "depends_on": "eval:in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image', 'Int'], doc.fieldtype)",
+   "description": "For strings, the width of the SQL column.",
    "fieldname": "length",
    "fieldtype": "Int",
-   "label": "Length",
-   "description": "For strings, the width of the SQL column."
+   "label": "Length"
   },
   {
    "default": "0",
@@ -292,6 +292,7 @@
   },
   {
    "default": "0",
+   "description": "ToDo: Rename to something like \"unique_values\", because \"unique\" is a SQL keyword.",
    "fieldname": "unique",
    "fieldtype": "Check",
    "label": "Unique"
@@ -594,25 +595,25 @@
    "label": "Make Attachment Public (by default)"
   },
   {
-  "default": "0",
-  "depends_on": "eval:!in_list([\"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
-  "fieldname": "reqd_in_database",
-  "fieldtype": "Check",
-  "label": "Mandatory only in DB"
+   "default": "0",
+   "depends_on": "eval:!in_list([\"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
+   "fieldname": "reqd_in_database",
+   "fieldtype": "Check",
+   "label": "Mandatory only in DB"
   },
   {
-  "default": "0",
-  "description": "When marked, a DocField of type Link will accept any value, regardless of whether it's a valid Link.",
-  "fieldname": "ignore_link_validation",
-  "fieldtype": "Check",
-  "label": "Ignore Link Validation"
+   "default": "0",
+   "description": "When marked, a DocField of type Link will accept any value, regardless of whether it's a valid Link.",
+   "fieldname": "ignore_link_validation",
+   "fieldtype": "Check",
+   "label": "Ignore Link Validation"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-10-01 07:26:16.380090",
+ "modified": "2025-05-16 17:23:43.284853+00:00",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

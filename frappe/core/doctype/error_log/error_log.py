@@ -23,6 +23,9 @@ class ErrorLog(Document):
 		seen: DF.Check
 		trace_id: DF.Data | None
 
+	def on_trash(self):
+		self.flags.delete_permanently = True  # Ensures that no Deleted Document is written.
+
 	# end: auto-generated types
 	def onload(self):
 		if not self.seen and not frappe.flags.read_only:

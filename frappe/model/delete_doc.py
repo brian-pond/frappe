@@ -123,12 +123,16 @@ def delete_doc(
 				check_permission_and_not_submitted(doc)
 
 				if not ignore_on_trash:
+					doc.flags.in_delete = True  # DH - Moving this flag *before* 'on_trash', so it can be detected by code called via 'on_trash'
 					doc.run_method("on_trash")
-					doc.flags.in_delete = True
 
-					# Datahenge: Makes no sense that 'on_change' is called for Deletions prior to actual SQL
-					# deletion.  But -also- called post 'on_update()' for INSERT and UPDATE.
-					# Just nonsensical naming.
+					if doc.flags.get("delete_permanently"):
+						delete_permanently = True  # DH - Provide a means of skipping Deleted Documents, for certain DocTypes.
+
+					# Datahenge: Makes no sense that 'on_change':
+					#     1. Is called for during deletion *prior* to SQL operations.
+					#     2. But for insert/update, it is call *after* SQL operations (and after 'on_update' too)
+					# Also, just really poor naming.
 					# Also, results of a quick search: there are barely any 'on_change()' functions in all of ERPNext?
 					# Let's try to put an end to this madness.
 					if not ignore_on_change:
