@@ -1964,18 +1964,18 @@ class Document(BaseDocument):
 	def before_save_children(self, child_docfield_name, **kwargs):
 		"""
 		Datahenge:
-		  * Analyzes what is happeneing to Parent and Children (CRUD)
+		  * Analyzes what is happening to Parent and Children (CRUD)
 		  * Calls either children 'before_save' or 'on_trash', depending on the results.
 		"""
 		if not isinstance(child_docfield_name, str):
 			raise ValueError("Argument 'child_docfield_name' should be a String.")
 
 		current_children = self.get(child_docfield_name)
-		doc_orig = self.get_doc_before_save()
-		if doc_orig:
-			original_children = doc_orig.get(child_docfield_name)
-		else:
-			original_children = []
+		#doc_orig = self.get_doc_before_save()
+		#if doc_orig:
+		#	original_children = doc_orig.get(child_docfield_name)
+		#else:
+		#	original_children = []
 
 		save_scenarios = self.determine_save_scenarios(child_docfield_name)
 		for each_child_scenario in save_scenarios["children"]:
@@ -1983,10 +1983,12 @@ class Document(BaseDocument):
 				child_doc = [ each for each in current_children if each.name == each_child_scenario["name"]][0]
 				if hasattr(child_doc, 'before_save'):
 					child_doc.before_save(_parent_doc=self, **kwargs)
-			elif each_child_scenario["action"] in ["Delete"]:
-				child_doc = [ each for each in original_children if each.name == each_child_scenario["name"]][0]
-				if hasattr(child_doc, "on_trash"):
-					child_doc.on_trash(_parent_doc=self, **kwargs)
+
+			# Datahenge:  Only the Daily Order Items used this, and their on_trash() is now empty.  So it's rather pointless.
+			#elif each_child_scenario["action"] in ["Delete"]:
+			#	child_doc = [ each for each in original_children if each.name == each_child_scenario["name"]][0]
+			#	if hasattr(child_doc, "on_trash"):
+			#		child_doc.on_trash(_parent_doc=self, **kwargs)
 
 	# --------
 	# DELETION
