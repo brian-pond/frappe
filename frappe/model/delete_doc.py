@@ -127,13 +127,13 @@ def delete_doc(
 					doc.run_method("on_trash")
 
 					if doc.flags.get("delete_permanently"):
-						delete_permanently = True  # DH - Provide a means of skipping Deleted Documents, for certain DocTypes.
+						delete_permanently = True  # DH - Provide a means of skipping 'Deleted Documents', for certain DocTypes.
 
 					# Datahenge: Makes no sense that 'on_change':
 					#     1. Is called for during deletion *prior* to SQL operations.
 					#     2. But for insert/update, it is call *after* SQL operations (and after 'on_update' too)
-					# Also, just really poor naming.
-					# Also, results of a quick search: there are barely any 'on_change()' functions in all of ERPNext?
+					# Also this is just really poor naming.
+					# Also results of a quick search: there are barely any 'on_change()' use cases in all of ERPNext?
 					# Let's try to put an end to this madness.
 					if not ignore_on_change:
 						doc.run_method('on_change')

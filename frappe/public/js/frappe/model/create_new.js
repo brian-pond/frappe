@@ -284,6 +284,12 @@ $.extend(frappe.model, {
 
 	copy_doc: function (doc, from_amend, parent_doc, parentfield) {
 		var no_copy_list = ["name", "amended_from", "amendment_date", "cancel_reason"];
+
+		// Datahenge: Never copy Daily Order subproducts
+		if ( doc.parenttype == 'Daily Order' && doc.doctype == 'Daily Order Item' && doc.ref_parent_item) {
+			return
+		}
+
 		var newdoc = frappe.model.get_new_doc(doc.doctype, parent_doc, parentfield);
 
 		// Datahenge

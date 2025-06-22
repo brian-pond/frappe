@@ -324,7 +324,6 @@ class Document(BaseDocument):
 		self.set_user_and_timestamp()
 		self.set_docstatus()
 		self.check_if_latest()
-		self._prevalidate_links()	# TODO: Datahenge: Do we still need this? A means of running some additional code first.
 		self._validate_links()
 		self.check_permission("create")
 		self.run_method("before_insert")
@@ -334,7 +333,7 @@ class Document(BaseDocument):
 
 		self.flags.in_insert = True
 		self.run_before_validate_methods()  # Datahenge: New function.
-		self._validate()  # Frappe had this 2nd, but I want it to run 1st
+		self._validate()  # Frappe originally had this 2nd, but I want it to run 1st
 		self.run_before_save_methods()  # Frappe had this 1st, but I want it to run 2nd
 		self.set_docstatus()
 		self.flags.in_insert = False
@@ -415,8 +414,7 @@ class Document(BaseDocument):
 		self.set_parent_in_children()
 		self.set_name_in_children()
 
-		self.validate_higher_perm_levels()  # DH: This function modified.
-		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.
+		self.validate_higher_perm_levels()  # DH: This function was modified.
 		self._validate_links()  # DH: Note this call also validates the Links of -child- documents.
 		# --------
 		# Datahenge:
@@ -1032,15 +1030,6 @@ class Document(BaseDocument):
 			)
 		)
 
-	def _prevalidate_links(self, **kwargs):  # pylint: disable=unused-argument
-		"""
-		Datahenge: An opportunity to execute some code, just prior to Link validation.
-		# This is useful is situations where you know Links might be a problem.
-		# And you want a change to do some pre-cleaning first.
-		"""
-		for doc in self.get_all_children():
-			doc.run_method("_prevalidate_links", _parent_doc=self)
-
 	def _validate_links(self):
 		if self.flags.ignore_links or \
 			(hasattr(self, '_action') and self._action == "cancel"):  # Datahenge: Sometimes you want to Validate Links without an Action.
@@ -1257,9 +1246,10 @@ class Document(BaseDocument):
 
 		self.reset_seen()
 
-		# before_validate method should be executed before ignoring validations
-		if self._action in ("save", "submit"):
-			self.run_method("before_validate")  # Datahenge: Questioning this (it may be happening too late, after Link and Mandatory checks)
+		# Datahenge: Bypassing since we're using run_before_validate_methods() instead
+		# Datahenge:  Critical that 'before_validate' method completes before ignoring validations
+		#if self._action in ("save", "submit"):
+		#	self.run_method("before_validate")
 
 		if self.flags.ignore_validate:
 			return
@@ -1947,8 +1937,9 @@ class Document(BaseDocument):
 
 	def before_validate_children(self, child_docfield_name):
 		"""
-		Run the 'before_validate' code on all Child Documents.
-
+		Loop through Child Documents and call their 'before_validate' controller methods.
+		
+		NOTE: This is never called automatically by Frappe Framework code.  It has to be explicitely called document by document.
 		NOTE: If a Child document is being inserted, this calls the 'before_insert' function also.
 		"""
 		if not isinstance(child_docfield_name, str):
