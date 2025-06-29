@@ -344,6 +344,10 @@ def check_if_doc_is_linked(doc, method="Delete"):
 			if linked_parent_doctype in ignored_doctypes:
 				continue
 
+			# Datahenge:  Also doing it my way, because I have to:
+			if link_dt in doc.flags.get('dh_ignore_linked_doctypes', []):
+				continue
+
 			if method != "Delete" and (method != "Cancel" or not DocStatus(item.docstatus).is_submitted()):
 				# don't raise exception if not
 				# linked to a non-cancelled doc when deleting or to a submitted doc when cancelling
