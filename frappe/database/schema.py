@@ -211,6 +211,8 @@ class DbColumn:
 		return column_def
 
 	def build_for_alter_table(self, current_def):
+		# NOTE: self.fieldtype is a Frappe Framework datatype like Data, Select, Link, Check, etc.
+ 		# NOTE: column_type is Frappe's mapped interpretation.  So Currency or Float become 'decimal(21,9)' (even though actual Postgres may be numeric(21,9)
 		column_type = get_definition(self.fieldtype, self.precision, self.length)
 
 		# no columns

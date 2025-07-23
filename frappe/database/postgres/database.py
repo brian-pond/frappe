@@ -416,6 +416,8 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 	def get_table_columns_description(self, table_name):
 		"""Returns list of column and its description"""
+		# Datahenge: Special case for numerics: display them as 'decimal(21,9)' instead of 'numeric'
+
 		# pylint: disable=W1401
 		return self.sql(
 			f"""
@@ -423,6 +425,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 			CASE LOWER(a.data_type)
 				WHEN 'character varying' THEN CONCAT('varchar(', a.character_maximum_length ,')')
 				WHEN 'timestamp without time zone' THEN 'timestamp'
+				WHEN 'numeric' THEN CONCAT('decimal(', a.numeric_precision, ',', a.numeric_scale, ')')
 				ELSE a.data_type
 			END AS type,
 			BOOL_OR(b.index) AS index,
@@ -437,7 +440,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 					WHERE tablename='{table_name}') b
 				ON SUBSTRING(b.indexdef, '(.*)') LIKE CONCAT('%', a.column_name, '%')
 			WHERE a.table_name = '{table_name}'
-			GROUP BY a.column_name, a.data_type, a.column_default, a.character_maximum_length;
+			GROUP BY a.column_name, a.data_type, a.column_default, a.character_maximum_length, a.numeric_precision, a.numeric_scale	;
 		""",
 			as_dict=1,
 		)
