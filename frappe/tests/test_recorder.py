@@ -99,7 +99,7 @@ class TestRecorder(FrappeTestCase):
 			{"mariadb": "COMMIT", "postgres": "COMMIT"},
 		]
 
-		sql_dialect = frappe.db.db_type or "mariadb"
+		sql_dialect = frappe.db.db_type
 		for query in queries:
 			frappe.db.sql(query[sql_dialect])
 

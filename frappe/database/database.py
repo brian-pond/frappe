@@ -1479,7 +1479,7 @@ class Database:
 		return self.is_missing_column(e) or self.is_table_missing(e)
 
 	def multisql(self, sql_dict, values=(), **kwargs):
-		current_dialect = self.db_type or "mariadb"
+		current_dialect = self.db_type
 		query = sql_dict.get(current_dialect)
 		return self.sql(query, values, **kwargs)
 
