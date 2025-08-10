@@ -469,7 +469,6 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		identifier = frappe.db.sql("SELECT pg_backend_pid();")[0][0]
 		return identifier
 
-
 	def get_isolation_levels(self) -> tuple:
 		"""
 		Returns a tuple (current_level, default_level)
@@ -502,6 +501,30 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 		# print(query.get_sql())
 		return query.run(as_dict=True)
+
+	def table_exists(self, sql_table_name: str) -> bool:
+		"""
+		Does a table exist in the Postgres database?
+		"""
+
+		query = """	SELECT table_name FROM information_schema.tables
+			WHERE table_catalog = %(cur_db_name)s
+			AND table_type = 'BASE TABLE'
+			AND table_schema = %(cur_db_schema)s
+			AND table_name = %(sql_table_name)s
+		"""
+
+		filters = {
+			"cur_db_name": self.cur_db_name,
+			"cur_db_schema": frappe.conf.get("db_schema", "public"),
+			"sql_table_name": sql_table_name
+		}
+		try:
+			result = self.sql(query, values=filters)
+			return bool(result and result[0])
+		except Exception as ex:
+			print(f"Error in PostgresDatabase.table_exists() : {ex}")
+			return False
 
 
 def modify_query(query):
