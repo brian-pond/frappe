@@ -532,7 +532,7 @@ class DocType(Document):
 		# update index
 		if not self.custom:
 			# Datahenge: Don't bother if the table does not exist.
-			if frappe.db.table_exists(frappe.utils.get_table_name(self.doctype)):
+			if frappe.db.sql_table_exists(frappe.utils.get_table_name(self.doctype)):
 				self.run_module_method("on_doctype_update")
 			if self.flags.in_insert:
 				self.run_module_method("after_doctype_insert")

@@ -502,7 +502,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		# print(query.get_sql())
 		return query.run(as_dict=True)
 
-	def table_exists(self, sql_table_name: str) -> bool:
+	def sql_table_exists(self, sql_table_name: str) -> bool:
 		"""
 		Does a table exist in the Postgres database?
 		"""
