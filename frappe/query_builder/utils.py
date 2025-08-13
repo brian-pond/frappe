@@ -50,6 +50,9 @@ def get_query_builder(type_of_db: str) -> Postgres | MariaDB:
 	Returns:
 	        Query: [Query object]
 	"""
+
+	if not type_of_db:
+		type_of_db = "postgres"  # TODO: Read from the Site Config
 	db = db_type_is(type_of_db)
 	picks = {db_type_is.MARIADB: MariaDB, db_type_is.POSTGRES: Postgres}
 	return picks[db]
