@@ -547,6 +547,31 @@ class File(Document):
 
 		return self._content
 
+	def get_csv_content(self) -> list:
+		"""
+		Datahenge: Read some CSV data into a list of Dictionary.
+		"""
+		from frappe.utils.csvutils import read_csv_content
+		list_of_values = read_csv_content(self.get_content())
+
+		# Check CSV content
+		if not list_of_values or len(list_of_values) < 2:
+			raise ValueError(f"CSV data in {self.name} is either empty, or has fewer than 2 rows")
+
+		# Establish the first row (header)
+		header_indices: dict = { col_name.lower(): index for index, col_name in enumerate(list_of_values[0]) if col_name }  # 0th row is the header row
+		# header_columns: set = set(header_indices.keys())
+
+		result = []
+		for each_row in list_of_values[1:]:  # Skip the 1st row
+			row_dict = {
+				key: each_row[header_indices[key]].strip() if key in header_indices and each_row[header_indices[key]] else ""
+				for key in header_indices
+			}
+			result.append(row_dict)
+
+		return result  # Should be a list of dictionary
+
 	def get_full_path(self):
 		"""Returns file path from given file name"""
 
