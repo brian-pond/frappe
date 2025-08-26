@@ -262,7 +262,7 @@ class Database:
 
 			# TODO: added temporarily
 			elif self.db_type == "postgres":
-				traceback.print_stack()
+				# traceback.print_stack()
 				frappe.log(f"Error in Postgres Query:\n{e}\n{query}")
 				raise
 
