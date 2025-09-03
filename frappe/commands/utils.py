@@ -272,7 +272,8 @@ def execute(context, method, args=None, kwargs=None, profile=False):
 				try:
 					ret = eval(method + "(*args, **kwargs)", globals(), locals())  # nosemgrep
 				except Exception as ex:
-					print(f"execute() : {ex}")
+					raise ex
+					# print(f"execute() : {ex}")
 
 			if profile:
 				import pstats
