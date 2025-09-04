@@ -317,6 +317,7 @@ def start_worker(
 		from ftp.ftp_invent.redis.internals import get_redis_inventory_conn
 		from ftp.ftp_invent.redis import MW_CACHE  # creates a connection to MW Redis cache  pylint: disable=unused-import 
 		get_redis_inventory_conn()  # this creates a connection to Availability Redis cache.
+		frappe.db.commit()  # Does this make the "idle in transaction" go away?
 	except Exception as ex:
 		print(f"ERROR in start_worker() : {ex}")
 	# DW - END
