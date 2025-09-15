@@ -120,7 +120,7 @@ def delete_doc(
 
 			if not for_reload:
 				update_flags(doc, flags, ignore_permissions)
-				check_permission_and_not_submitted(doc)
+				# check_permission_and_not_submitted(doc)
 
 				if not ignore_on_trash:
 					doc.flags.in_delete = True  # DH - Moving this flag *before* 'on_trash', so it can be detected by code called via 'on_trash'
@@ -128,6 +128,8 @@ def delete_doc(
 
 					if doc.flags.get("delete_permanently"):
 						delete_permanently = True  # DH - Provide a means of skipping 'Deleted Documents', for certain DocTypes.
+
+					check_permission_and_not_submitted(doc)  # DH - Moving this below on_trash, so I have a way to bypass it
 
 					# Datahenge: Makes no sense that 'on_change':
 					#     1. Is called for during deletion *prior* to SQL operations.
@@ -279,7 +281,8 @@ def check_permission_and_not_submitted(doc):
 		)
 
 	# check if submitted
-	if doc.meta.is_submittable and doc.docstatus.is_submitted():
+	# DH: Add a flag so we can bypass this.
+	if (not doc.flags.ignore_submitted) and doc.meta.is_submittable and doc.docstatus.is_submitted():
 		frappe.msgprint(
 			_("{0} {1}: Submitted Record cannot be deleted. You must {2} Cancel {3} it first.").format(
 				_(doc.doctype),
