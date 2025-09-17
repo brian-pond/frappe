@@ -171,17 +171,6 @@ class Contact(Document):
 	def _get_full_name(self) -> str:
 		return get_full_name(self.first_name, self.middle_name, self.last_name, self.company_name)
 
-	# TODO:  Datahenge: Apply using hooks.py and the override DocType, ala ERPNextAddress
-	def remove_email_addresses(self, autosave=False):
-		"""
-		Remove all email addresses from a Contact.
-		"""
-		if self.email_ids:
-			for each_row in self.email_ids:
-				self.remove(each_row)
-			if autosave:
-				self.save(ignore_permissions=True)
-	# <- Datahenge Additions
 
 def get_default_contact(doctype, name):
 	"""Returns default contact for the given doctype, name"""
