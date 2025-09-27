@@ -81,7 +81,8 @@ def get_root_connection(root_login=None, root_password=None):
 			port=frappe.conf.db_port,
 			user=root_login,
 			password=root_password,
-			cur_db_name=root_login,
+			# cur_db_name=root_login,  # TODO: DH: Absolutely frelling not.  What a terrible assumption.
+			cur_db_name=frappe.conf.root_default_db_name  # Better.
 		)
 
 	return frappe.local.flags.root_connection
