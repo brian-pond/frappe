@@ -595,9 +595,6 @@ class Database:
 		        # return last login of **User** `test@example.com`
 		        user = frappe.db.get_values("User", "test@example.com", "*")[0]
 		"""
-		if not filters:
-			filters = {}
-
 		out = None
 		if cache and isinstance(filters, str) and (doctype, filters, fieldname) in self.value_cache:
 			return self.value_cache[(doctype, filters, fieldname)]
