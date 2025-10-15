@@ -361,7 +361,7 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 	# Generalized env variable overrides and defaults
 	def db_default_ports(db_type):
 		from frappe.database.mariadb.database import MariaDBDatabase
-
+		from frappe.database.postgres.database import PostgresDatabase
 		return {
 			"mariadb": MariaDBDatabase.default_port,  # 3306
 			"postgres": PostgresDatabase.default_port,  # 5432
@@ -373,7 +373,8 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 	config["redis_cache"] = (
 		os.environ.get("FRAPPE_REDIS_CACHE") or config.get("redis_cache") or "redis://127.0.0.1:13311"
 	)
-	config["db_type"] = os.environ.get("FRAPPE_DB_TYPE") or config.get("db_type") or "mariadb"
+	config["db_type"] = os.environ.get("FRAPPE_DB_TYPE") or config.get("db_type")
+
 	config["db_socket"] = os.environ.get("FRAPPE_DB_SOCKET") or config.get("db_socket")
 	config["db_host"] = os.environ.get("FRAPPE_DB_HOST") or config.get("db_host") or "127.0.0.1"
 	config["db_port"] = (

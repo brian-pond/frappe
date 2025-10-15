@@ -37,7 +37,7 @@ def trigger_scheduler_event(context, event):
 @pass_context
 def enable_scheduler(context):
 	"Enable scheduler"
-	import frappe.utils.scheduler
+	import frappe.utils.scheduler  # pylint: disable=redefined-outer-name
 
 	for site in context.sites:
 		try:
@@ -56,7 +56,7 @@ def enable_scheduler(context):
 @pass_context
 def disable_scheduler(context):
 	"Disable scheduler"
-	import frappe.utils.scheduler
+	import frappe.utils.scheduler  # pylint: disable=redefined-outer-name
 
 	for site in context.sites:
 		try:
@@ -174,7 +174,7 @@ def purge_jobs(site=None, queue=None, event=None):
 @click.command("schedule")
 def start_scheduler():
 	"""Start scheduler process which is responsible for enqueueing the scheduled job types."""
-	from frappe.utils.scheduler import start_scheduler
+	from frappe.utils.scheduler import start_scheduler  # pylint: disable=redefined-outer-name
 
 	start_scheduler()
 
@@ -196,10 +196,10 @@ def start_scheduler():
 	help="Dequeuing strategy to use",
 )
 def start_worker(queue, quiet=False, rq_username=None, rq_password=None, burst=False, strategy=None):
-	"""Start a backgrond worker"""
-	from frappe.utils.background_jobs import start_worker
+	"""Start a background worker"""
+	from frappe.utils.background_jobs import start_worker as _start_worker
 
-	start_worker(
+	_start_worker(
 		queue,
 		quiet=quiet,
 		rq_username=rq_username,
@@ -220,9 +220,9 @@ def start_worker(queue, quiet=False, rq_username=None, rq_password=None, burst=F
 @click.option("--burst", is_flag=True, default=False, help="Run Worker in Burst mode.")
 def start_worker_pool(queue, quiet=False, num_workers=2, burst=False):
 	"""Start a backgrond worker"""
-	from frappe.utils.background_jobs import start_worker_pool
+	from frappe.utils.background_jobs import start_worker_pool as _start_worker_pool
 
-	start_worker_pool(
+	_start_worker_pool(
 		queue=queue,
 		quiet=quiet,
 		burst=burst,

@@ -66,7 +66,12 @@ def get_logger(
 	if stream_only:
 		handler = logging.StreamHandler()
 	else:
+		temporary_mask = 0o000
+		previous_mask = os.umask(temporary_mask)  # DATAHENGE: VERY, VERY IMPORTANT FOR LINUX GROUP PERMISSIONS
+		# print(f"Mask is temporarily {temporary_mask}")
 		handler = RotatingFileHandler(log_filename, maxBytes=max_size, backupCount=file_count)
+		os.umask(previous_mask)
+		# print(f"Mask is reverted to {previous_mask}")
 	handler.setFormatter(formatter)
 	logger.addHandler(handler)
 

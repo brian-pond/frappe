@@ -3,6 +3,8 @@
 import frappe
 from frappe import _
 
+# pylint: disable=protected-access
+
 field_map = {
 	"Contact": [
 		"first_name",

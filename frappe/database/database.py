@@ -262,7 +262,7 @@ class Database:
 
 			# TODO: added temporarily
 			elif self.db_type == "postgres":
-				traceback.print_stack()
+				# traceback.print_stack()
 				frappe.log(f"Error in Postgres Query:\n{e}\n{query}")
 				raise
 
@@ -1208,8 +1208,12 @@ class Database:
 		mode = "READ ONLY" if read_only else ""
 		self.sql(f"START TRANSACTION {mode}")
 
-	def commit(self, end_rollback=False):
-		"""Commit current transaction. Calls SQL `COMMIT`."""
+	def commit(self, end_rollback=False, no_new_transaction=False):
+		"""
+		Commit current transaction. Calls SQL `COMMIT`.
+
+		DH : Added an option to *not* begin a new SQL Transaction.
+		"""
 
 		# Datahenge:  MySQL has no concept of nested transactions.  You're either inside a transaction, or you're not.
 		# Furthermore, certain statements like 'START TRANSACTION' will *implicitly* perform a commit.
@@ -1235,7 +1239,6 @@ class Database:
 				print("WARNING: Skipping db.commit() because we're in a Datahenge Rollback Option, and argument 'end_rollback' was not passed.")
 				return
 
-
 		self.before_rollback.reset()
 		self.after_rollback.reset()
 
@@ -1245,7 +1248,8 @@ class Database:
 		if debug_mode:
 			frappe.whatis("--> SQL COMMIT (Releasing Row Locks)")
 
-		self.begin()  # explicitly start a new transaction
+		if not no_new_transaction:
+			self.begin()  # explicitly start a new transaction
 
 		self.after_commit.run()
 
@@ -1479,7 +1483,7 @@ class Database:
 		return self.is_missing_column(e) or self.is_table_missing(e)
 
 	def multisql(self, sql_dict, values=(), **kwargs):
-		current_dialect = self.db_type or "mariadb"
+		current_dialect = self.db_type
 		query = sql_dict.get(current_dialect)
 		return self.sql(query, values, **kwargs)
 

@@ -2305,7 +2305,9 @@ def dh_get_system_timezone():
 
 	system_time_zone = frappe.db.get_system_setting('time_zone')
 	if not system_time_zone:
-		raise ValueError("Please configure a Time Zone under 'System Settings'.")
+		# DH August 7th 2025
+		system_time_zone = time.tzname[0]
+		# raise ValueError("Please configure a Time Zone under 'System Settings'.")
 	return TimeZone(system_time_zone)
 
 

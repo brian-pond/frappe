@@ -154,7 +154,9 @@ class AutoEmailReport(Document):
 			are_default_filters=False,
 		)
 
-		# add serial numbers
+		if not data:
+			return None
+
 		columns.insert(0, frappe._dict(fieldname="idx", label="", width="30px"))
 		for i in range(len(data)):
 			data[i]["idx"] = i + 1
@@ -332,6 +334,8 @@ def send_monthly():
 
 
 def make_links(columns, data):
+	if not data:
+		return columns, data
 	for row in data:
 		doc_name = row.get("name")
 		for col in columns:

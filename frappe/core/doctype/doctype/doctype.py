@@ -531,7 +531,9 @@ class DocType(Document):
 
 		# update index
 		if not self.custom:
-			self.run_module_method("on_doctype_update")
+			# Datahenge: Don't bother if the table does not exist.
+			if frappe.db.sql_table_exists(frappe.utils.get_table_name(self.doctype)):
+				self.run_module_method("on_doctype_update")
 			if self.flags.in_insert:
 				self.run_module_method("after_doctype_insert")
 
@@ -1784,7 +1786,8 @@ def validate_permissions(doctype, for_remove=False, alert=False):
 			return
 
 		if d.report:
-			frappe.msgprint(_("Report cannot be set for Single types"))
+			# DH: Tired of hearing this, when I didn't explicitly set 'Report'
+			# frappe.msgprint(_("Report cannot be set for Single types"))
 			d.report = 0
 			d.set("import", 0)
 			d.set("export", 0)

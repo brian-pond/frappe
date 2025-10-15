@@ -19,9 +19,8 @@ from frappe.utils import CallbackManager
 @click.option("--db-password", help="Database password")
 @click.option(
 	"--db-type",
-	default="mariadb",
 	type=click.Choice(["mariadb", "postgres"]),
-	help='Optional "postgres" or "mariadb". Default is "mariadb"',
+	help='Optional "postgres" or "mariadb".  No defaults, be explicit',
 )
 @click.option("--db-host", help="Database Host")
 @click.option("--db-port", type=int, help="Database Port")
