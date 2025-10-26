@@ -312,6 +312,9 @@ def time_diff_in_hours(string_ed_date, string_st_date):
 
 
 def now_datetime():
+	"""
+	Returns a naive datetime value.
+	"""
 	dt = convert_utc_to_system_timezone(datetime.datetime.now(pytz.UTC))
 	return dt.replace(tzinfo=None)
 

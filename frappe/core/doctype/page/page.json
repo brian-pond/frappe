@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:page_name",
- "creation": "2012-12-20 17:16:49",
+ "creation": "2012-12-20 17:16:49+00:00",
  "doctype": "DocType",
  "document_type": "System",
  "engine": "InnoDB",
@@ -22,6 +22,7 @@
  "fields": [
   {
    "default": "0",
+   "description": "DH: Cannot find any reference to this DocField in Frappe Framework v15.50",
    "fieldname": "system_page",
    "fieldtype": "Check",
    "label": "System Page"
@@ -102,7 +103,7 @@
  "icon": "fa fa-file",
  "idx": 1,
  "links": [],
- "modified": "2023-12-08 15:52:37.525003",
+ "modified": "2025-10-21 20:45:14.142958+00:00",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Page",
