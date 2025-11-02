@@ -1,16 +1,55 @@
+""" frappe/utils/logger.py """
+
 # imports - standard imports
-import logging
-import os
 from copy import deepcopy
-from logging.handlers import RotatingFileHandler
+import logging
+import logging.handlers
+# from logging.handlers import RotatingFileHandler
+import os
+import stat
 from typing import Literal
 
 # imports - module imports
 import frappe
 from frappe.utils import get_sites
 
-default_log_level = logging.WARNING if frappe._dev_server else logging.ERROR
+logging.handlers = logging.handlers
+default_log_level = logging.WARNING if frappe._dev_server else logging.ERROR  # pylint: disable=invalid-name, protected-access
 stream_logging = os.environ.get("FRAPPE_STREAM_LOGGING")
+
+
+class DHCustomRotatingClass(logging.handlers.RotatingFileHandler):
+	"""
+	Out of the box Python doesn't properly handle Group Permissions.  :eyeroll:
+	"""
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		# Change the permissions of the first, initial file created
+		os.chmod(self.baseFilename, 0o664)  # rw-rw-r--
+		# NOTE: To change the file's group:  os.chown(self.baseFilename, chosen_uid, chosen_gid)
+
+	def _open(self):
+		# DATAHENGE: VERY, VERY IMPORTANT FOR LINUX GROUP PERMISSIONS
+		temporary_mask = 0o002  # This mask will remove write access for Others
+		previous_mask = os.umask(temporary_mask)  # the response from umask() is the previous mask, so we'll store that
+		#os.fdopen(os.open('/path/to/file', os.O_WRONLY, 0600))
+		rtv=logging.handlers.RotatingFileHandler._open(self)  # pylint: disable=protected-access
+		os.umask(previous_mask)
+		return rtv
+
+	def doRollover(self):
+		"""
+		Override base class method to make the new log file group writable.
+		"""
+		# Rotate the file first.
+		super().doRollover()
+
+		# Add group write to the current permissions.
+		currMode = os.stat(self.baseFilename).st_mode  # pylint: disable-invalid-name
+		os.chmod(self.baseFilename, currMode | stat.S_IWGRP)
+
+logging.handlers.DHCustomRotatingClass = DHCustomRotatingClass
 
 
 def get_logger(
@@ -44,7 +83,7 @@ def get_logger(
 	else:
 		site = False
 
-	logger_name = "{}-{}".format(module, site or "all")
+	logger_name = f"{module}-{site or 'all'}"
 
 	try:
 		return frappe.loggers[logger_name]
@@ -66,18 +105,13 @@ def get_logger(
 	if stream_only:
 		handler = logging.StreamHandler()
 	else:
-		temporary_mask = 0o000
-		previous_mask = os.umask(temporary_mask)  # DATAHENGE: VERY, VERY IMPORTANT FOR LINUX GROUP PERMISSIONS
-		# print(f"Mask is temporarily {temporary_mask}")
-		handler = RotatingFileHandler(log_filename, maxBytes=max_size, backupCount=file_count)
-		os.umask(previous_mask)
-		# print(f"Mask is reverted to {previous_mask}")
+		handler = logging.handlers.DHCustomRotatingClass(log_filename, maxBytes=max_size, backupCount=file_count)
 	handler.setFormatter(formatter)
 	logger.addHandler(handler)
 
 	if site and not stream_only:
 		sitelog_filename = os.path.join(site, "logs", logfile)
-		site_handler = RotatingFileHandler(sitelog_filename, maxBytes=max_size, backupCount=file_count)
+		site_handler = logging.handlers.DHCustomRotatingClass(sitelog_filename, maxBytes=max_size, backupCount=file_count)
 		site_handler.setFormatter(formatter)
 		logger.addHandler(site_handler)
 
@@ -113,7 +147,7 @@ def sanitized_dict(form_dict):
 	if not isinstance(form_dict, dict):
 		return form_dict
 
-	sanitized_dict = deepcopy(form_dict)
+	_sanitized_dict = deepcopy(form_dict)
 
 	blocklist = [
 		"password",
@@ -124,8 +158,8 @@ def sanitized_dict(form_dict):
 		"pwd",
 	]
 
-	for k in sanitized_dict:
+	for k in _sanitized_dict:
 		for secret_kw in blocklist:
 			if secret_kw in k:
-				sanitized_dict[k] = "********"
-	return sanitized_dict
+				_sanitized_dict[k] = "********"
+	return _sanitized_dict
