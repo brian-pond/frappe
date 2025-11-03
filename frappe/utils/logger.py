@@ -26,7 +26,9 @@ class DHCustomRotatingClass(logging.handlers.RotatingFileHandler):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		# Change the permissions of the first, initial file created
-		os.chmod(self.baseFilename, 0o664)  # rw-rw-r--
+		
+		# TODO: This doesn't work, because a non-owner cannot execute chmod on a file.   :eyeroll:
+		# os.chmod(self.baseFilename, 0o664)  # rw-rw-r--
 		# NOTE: To change the file's group:  os.chown(self.baseFilename, chosen_uid, chosen_gid)
 
 	def _open(self):
