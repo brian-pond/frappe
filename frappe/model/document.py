@@ -928,8 +928,9 @@ class Document(BaseDocument):
 			# raise TypeError(f"Attribute \"self._original_modified\" is a {type(self._original_modified)} but should be Type datetime instead.")
 
 		if previous.modified and previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):
+			# Datahenge: Let's be nice to the Users and Tech Teams, and tell them *which* Document we're referring to.
 			frappe.msgprint(
-				_("Error: Document has been modified after you have opened it")
+				_(f"Error: Document has been modified after you have opened it ({self.doctype}, {self.name})")
 				+ (f" ({previous.modified}, {self.modified}). ")
 				+ _("Please refresh to get the latest document."),
 				raise_exception=frappe.TimestampMismatchError,
