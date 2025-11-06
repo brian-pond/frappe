@@ -345,10 +345,10 @@ class Document(BaseDocument):
 		if getattr(self.meta, "issingle", 0):
 			self.update_single(self.get_valid_dict())
 		else:
-			if self.creation != self.modified:
+			if self.modified and self.creation != self.modified:
 				frappe.whatis(self.creation)
 				frappe.whatis(self.modified)
-				raise ValueError("Creation and Modified dates should be identical during an insert()")
+				print("WARNING: Creation and Modified dates should be identical during an insert()")
 			self.db_insert(ignore_if_duplicate=ignore_if_duplicate)
 
 		# children
