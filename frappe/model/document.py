@@ -26,7 +26,7 @@ from frappe.model.naming import set_new_name, validate_name
 from frappe.model.utils import is_virtual_doctype
 from frappe.model.workflow import set_workflow_state_on_action, validate_workflow
 from frappe.types import DF
-from frappe.utils import compare, date_diff, file_lock, flt, now
+from frappe.utils import compare, date_diff, file_lock, flt, now, get_system_timezone
 from frappe.utils.data import get_absolute_url, get_datetime, get_timedelta, getdate
 from frappe.utils.global_search import update_global_search
 
@@ -322,6 +322,7 @@ class Document(BaseDocument):
 
 		self._set_defaults()
 		self.set_user_and_timestamp()
+		# At this point in the flow, Creation and Modified are identical and localized DateTime values.
 		self.set_docstatus()
 		self.check_if_latest()
 		self._validate_links()
@@ -344,6 +345,10 @@ class Document(BaseDocument):
 		if getattr(self.meta, "issingle", 0):
 			self.update_single(self.get_valid_dict())
 		else:
+			if self.creation != self.modified:
+				frappe.whatis(self.creation)
+				frappe.whatis(self.modified)
+				raise ValueError("Creation and Modified dates should be identical during an insert()")
 			self.db_insert(ignore_if_duplicate=ignore_if_duplicate)
 
 		# children
@@ -899,6 +904,10 @@ class Document(BaseDocument):
 		Will also validate document transitions (Save > Submit > Cancel) calling
 		`self.check_docstatus_transition`."""
 
+		# Begin: DATAHENGE IMPORTS
+		from temporal.core import localize_datetime, is_datetime_naive
+		# End: DATAHENGE IMPORTS
+
 		self.load_doc_before_save(raise_exception=True)
 
 		self._action = "save"
@@ -914,20 +923,20 @@ class Document(BaseDocument):
 		#        So the comparison -always- fails!
 		#        My fix is trying to always treat "creation" and "modified" as timezone-aware datetimes
 
-		# if cstr(previous.modified) != cstr(self._original_modified):
-
-		# print(previous.modified)
-		# print(self._original_modified)
-		# print(self.modified)
-
 		if previous.modified and not isinstance(previous.modified, datetime_type):
 			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified).__name__} but should a Type of datetime instead.")
+
+		# Unfortunately, at this point '_original_modified' could be a String or DateTime
 		if self._original_modified and not isinstance(self._original_modified, datetime_type):
 			from temporal_lib.tlib_types import any_to_datetime
 			self._original_modified = any_to_datetime(self._original_modified)
-			# raise TypeError(f"Attribute \"self._original_modified\" is a {type(self._original_modified)} but should be Type datetime instead.")
 
-		if previous.modified and previous.modified.astimezone(TZ_UTC) != self._original_modified.astimezone(TZ_UTC):
+		# Next, the '_original_modified' is a DateTime ... but it could be naive with the System Time Zone
+		if self._original_modified and is_datetime_naive(self._original_modified):
+			self._original_modified = localize_datetime(self._original_modified, get_system_timezone())
+
+		# if previous.modified and previous.modified.astimezone(TZ_UTC) != self._original_modified:
+		if previous.modified and previous.modified != self._original_modified:
 			# Datahenge: Let's be nice to the Users and Tech Teams, and tell them *which* Document we're referring to.
 			frappe.msgprint(
 				_(f"Error: Document has been modified after you have opened it ({self.doctype}, {self.name})")
@@ -1368,7 +1377,10 @@ class Document(BaseDocument):
 		if update_modified and (self.doctype, self.name) not in frappe.flags.currently_saving:
 			# don't update modified timestamp if called from post save methods
 			# like on_update or on_submit
-			self.set("modified", now())
+
+			# Datahenge: No more strings, no more naive timestamps, stop the madness
+			# self.set("modified", now())
+			self.set("modified", frappe.utils.dh_get_system_datetime_now())
 			self.set("modified_by", frappe.session.user)
 
 		# load but do not reload doc_before_save because before_change or on_change might expect it
