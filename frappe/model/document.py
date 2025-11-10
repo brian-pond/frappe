@@ -345,7 +345,7 @@ class Document(BaseDocument):
 		if getattr(self.meta, "issingle", 0):
 			self.update_single(self.get_valid_dict())
 		else:
-			if self.modified and self.creation != self.modified:
+			if self.modified and (self.creation != self.modified) and not self.flags.get("dh_skip_validate_modified_date", False):
 				frappe.whatis(self.creation)
 				frappe.whatis(self.modified)
 				print("WARNING: Creation and Modified dates should be identical during an insert()")
@@ -940,7 +940,7 @@ class Document(BaseDocument):
 			# Datahenge: Let's be nice to the Users and Tech Teams, and tell them *which* Document we're referring to.
 			frappe.msgprint(
 				_(f"Error: Document has been modified after you have opened it ({self.doctype}, {self.name})")
-				+ (f" ({previous.modified}, {self.modified}). ")
+				+ (f" ({previous.modified}, {self._original_modified}). ")
 				+ _("Please refresh to get the latest document."),
 				raise_exception=frappe.TimestampMismatchError,
 			)
@@ -1453,6 +1453,7 @@ class Document(BaseDocument):
 		version = frappe.new_doc("Version")
 		if version.update_version_info(doc_to_compare, self):
 			version.action_taken = 'Update' if doc_to_compare else 'Create'  # Datahenge
+			version.flags.dh_skip_validate_modified_date = True  # Even though an Insert, will not have identical Creation and Modified.
 			version.insert(ignore_permissions=True)
 
 			if not frappe.flags.in_migrate:
