@@ -926,6 +926,10 @@ class Document(BaseDocument):
 		if previous.modified and not isinstance(previous.modified, datetime_type):
 			raise TypeError(f"DocField \"previous.modified\" is a {type(previous.modified).__name__} but should a Type of datetime instead.")
 
+		if is_datetime_naive(previous.modified):
+			# Appears useful for situations like adding rows to tabSingles
+			previous.modified = localize_datetime(previous.modified, get_system_timezone())
+
 		# Unfortunately, at this point '_original_modified' could be a String or DateTime
 		if self._original_modified and not isinstance(self._original_modified, datetime_type):
 			from temporal_lib.tlib_types import any_to_datetime
