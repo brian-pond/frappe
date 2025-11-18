@@ -905,7 +905,7 @@ class Document(BaseDocument):
 		`self.check_docstatus_transition`."""
 
 		# Begin: DATAHENGE IMPORTS
-		from temporal.core import localize_datetime, is_datetime_naive
+		from temporal_lib.core import localize_datetime, is_datetime_naive
 		# End: DATAHENGE IMPORTS
 
 		self.load_doc_before_save(raise_exception=True)
