@@ -346,8 +346,8 @@ class Document(BaseDocument):
 			self.update_single(self.get_valid_dict())
 		else:
 			if self.modified and (self.creation != self.modified) and not self.flags.get("dh_skip_validate_modified_date", False):
-				frappe.whatis(self.creation)
-				frappe.whatis(self.modified)
+				# frappe.whatis(self.creation)
+				# frappe.whatis(self.modified)
 				print("WARNING: Creation and Modified dates should be identical during an insert()")
 			self.db_insert(ignore_if_duplicate=ignore_if_duplicate)
 
