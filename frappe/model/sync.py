@@ -118,15 +118,18 @@ def sync_for(app_name, force=0, reset_permissions=False):
 
 	if l:
 		for i, doc_path in enumerate(files):
-			import_file_by_path(
-				doc_path, force=force, ignore_version=True, reset_permissions=reset_permissions
-			)
 
-			frappe.db.commit()
+			try:
+				import_file_by_path(
+					doc_path, force=force, ignore_version=True, reset_permissions=reset_permissions
+				)
 
-			# show progress bar
-			update_progress_bar(f"Updating DocTypes for {app_name}", i, l)
+				frappe.db.commit()
 
+				# show progress bar
+				update_progress_bar(f"Updating DocTypes for {app_name}", i, l)
+			except Exception as ex:
+				print(f"Error while doing import_file_by_path for {app_name} {doc_path} : {ex}")
 		# print each progress bar on new line
 		print()
 
