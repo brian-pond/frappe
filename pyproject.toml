@@ -89,6 +89,7 @@ dependencies = [
 
     # Datahenge dependencies
     "deepdiff~=8.4.1",
+    "temporal-lib"
 ]
 
 [project.urls]

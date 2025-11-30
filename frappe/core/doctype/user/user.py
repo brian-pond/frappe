@@ -915,6 +915,8 @@ def _get_user_for_update_password(key, old_password):
 			"User", {"reset_password_key": hashed_key}, ["name", "last_reset_password_key_generated_on"]
 		)
 		result.user, last_reset_password_key_generated_on = user or (None, None)
+		if last_reset_password_key_generated_on:
+			last_reset_password_key_generated_on = last_reset_password_key_generated_on.replace(tzinfo=None)  # make a naive datetime
 		if result.user:
 			reset_password_link_expiry = cint(
 				frappe.db.get_single_value("System Settings", "reset_password_link_expiry_duration")

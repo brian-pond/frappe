@@ -247,6 +247,7 @@ def import_doc(
 
 	# Datahenge: Important to mention the DocType's name, otherwise there's no way of knowing from the error message or traceback.
 	try:
+		doc.flags.dh_skip_validate_modified_date = True
 		doc.insert()
 	except Exception as ex:
 		raise IOError(f"Failed to create SQL table for DocType '{doc.name}'") from ex

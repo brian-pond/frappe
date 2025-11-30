@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "field:report_name",
- "creation": "2013-03-09 15:45:57",
+ "creation": "2013-03-09 15:45:57+00:00",
  "doctype": "DocType",
  "document_type": "System",
  "engine": "InnoDB",
@@ -81,6 +81,7 @@
   {
    "fieldname": "report_type",
    "fieldtype": "Select",
+   "in_standard_filter": 1,
    "label": "Report Type",
    "options": "Report Builder\nQuery Report\nScript Report\nCustom Report",
    "reqd": 1
@@ -194,7 +195,7 @@
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-31 20:34:10.018811",
+ "modified": "2025-10-21 20:47:55.887195+00:00",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Report",

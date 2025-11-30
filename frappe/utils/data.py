@@ -312,6 +312,9 @@ def time_diff_in_hours(string_ed_date, string_st_date):
 
 
 def now_datetime():
+	"""
+	Returns a naive datetime value.
+	"""
 	dt = convert_utc_to_system_timezone(datetime.datetime.now(pytz.UTC))
 	return dt.replace(tzinfo=None)
 
@@ -2302,11 +2305,11 @@ def dh_get_system_timezone():
 	Returns the Time Zone of the Site.
 	"""
 	from temporal_lib.tlib_timezone import TimeZone
-
+	from tzlocal import get_localzone_name
 	system_time_zone = frappe.db.get_system_setting('time_zone')
 	if not system_time_zone:
-		# DH August 7th 2025
-		system_time_zone = time.tzname[0]
+		# returns ZoneInfo("America/Chicago") on macOS and Linux
+		system_time_zone = get_localzone_name()
 		# raise ValueError("Please configure a Time Zone under 'System Settings'.")
 	return TimeZone(system_time_zone)
 
