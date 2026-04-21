@@ -13,6 +13,7 @@ Click==7.0
 coverage==4.5.4
 croniter==0.3.30
 cryptography==3.3.2
+cssselect==1.2.0
 dropbox==9.1.0
 email_reply_parser==0.5.9
 Faker==2.0.4
@@ -52,7 +53,7 @@ PyPDF2==1.26.0
 pypng==0.0.20
 PyQRCode==1.2.1
 python-dateutil==2.8.1
-pytz==2019.3
+pytz==2025.2
 # The version of PyYAML below is mandatory for frontmatter 3.0.7
 PyYAML==5.1
 rauth==0.7.3
