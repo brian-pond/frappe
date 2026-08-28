@@ -201,7 +201,7 @@ class Database(object):
 				print(f"      \tQuery = '{query}'")
 				print(f"      \tValues = '{values}'")
 				print("--------")
-				raise e
+				raise
 
 		if auto_commit: self.commit()
 
