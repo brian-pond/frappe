@@ -866,9 +866,9 @@ class URLCalc():
 			return host_name
 
 		# Scenario 6:
-			if debug:
-				print("Scenario 6: http://localhost")
-			return "http://localhost"
+		if debug:
+			print("Scenario 6: http://localhost")
+		return "http://localhost"
 
 
 def get_url(uri=None, full_address=False, debug=False):

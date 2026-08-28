@@ -212,14 +212,9 @@ def get_site_config(sites_path=None, site_path=None):
 	`site_config` is a set of site wide settings like database name, password, email etc."""
 	config = {}
 
-	if site_path and ('159.65.233.6' in site_path):
-		print("ERROR: Argument 'site_path' is an IP address!")
-
 	sites_path = sites_path or getattr(local, "sites_path", None)
 	if not site_path:
 		site_path = getattr(local, "site_path", None)
-		if '159.65.233.6' in site_path:
-			print("ERROR: Variable 'site_path' became an IP address because of call to getattr(local, 'site_path')")
 
 	# Datahenge: Useful for debugging.  It's crazy how this isn't cached...
 	# TODO: Cannot think of a reason this isn't cached...
