@@ -23,50 +23,16 @@ PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError
 	"UnknownContentError", "RemoteHostClosedError"]
 
 
-def clean_line(line):
-	"""
-	Remove newlines and tabs.
-	"""
-	line = re.sub(r"[\n\t]*", "", line)
-	return line
-
-
-def search_html_for_string(html, string_to_search):
-	"""
-	Search for the given string in file and return a tuple (line number, line)
-	"""
-	list_of_results = []  # returning a List of Tuple
-	lines = html.splitlines()
-	# print(f"Total Number of Lines in HTML: {len(html.splitlines())}")
-
-	for idx, line in enumerate(lines):
-		if string_to_search in line:
-			# If yes, then add the line number & line as a tuple in the list
-			ret = (idx, clean_line(line))
-			list_of_results.append(ret)
-	return list_of_results
-
-
 def get_pdf(html, options=None, output=None):
 	""" Convert HTML string to a PDF document. """
 
 	# Datahenge: Official Frappe code likes to "assume" that the Site name is going to be the HTTP Domain.
 	# Pretty dumb assumption, and makes it a PITA if you want to copy whole environments.
-	# I believe I've fixed it in frappe/utils/data.py.  But leaving this debugging here anyway.
-	debug_mode = frappe.db.get_single_value("SF Data Migration", "enable_pdf_debugging")
-
-	if debug_mode:
-		results = search_html_for_string(html, "link type")
-		for result in results:
-			print(f"\nFunction get_pdf() has these HTML links before 'scrub_urls':\n{result[1]}")
+	# Fixed in frappe/utils/data.py -- see URLCalc, which resolves the base URL explicitly.
+	# For a one-off look at that resolution, call get_url(debug=True) from bench console.
 
 	# 1. Given a relative path (such as to CSS), this will append the domain.
-	html = scrub_urls(html, debug=debug_mode)
-
-	if debug_mode:
-		results = search_html_for_string(html, "link type")
-		for result in results:
-			print(f"\nFunction get_pdf() has these HTML links after 'scrub_urls'\n:{result[1]}")
+	html = scrub_urls(html)
 
 	# 2. Prepare options.  This strips some of the leading HTML.
 	html, options = prepare_options(html, options)
