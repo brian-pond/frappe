@@ -237,6 +237,3 @@ def js_month_start_date():
 	ret = month_start.strftime("%m-%d-%Y")
 	return ret
 
-
-def get_default_bank_account():
-	return frappe.get_cached_value('Company',  company,  "default_bank_account").name
